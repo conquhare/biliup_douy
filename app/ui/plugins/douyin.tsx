@@ -57,6 +57,31 @@ const Douyin: React.FC<Props> = props => {
             padding: 0,
           }}
         />
+        <Form.Select
+          field="douyin_danmaku_types"
+          extraText={
+            <div style={{ fontSize: '14px' }}>
+              选择要录制的弹幕消息类型，为空则录制所有类型。
+              <br />
+              可选值：danmaku(弹幕)、like(点赞)、member(进场)、gift(礼物)、social(关注)、room_user_seq(统计)
+            </div>
+          }
+          label="弹幕类型筛选（douyin_danmaku_types）"
+          style={{ width: '100%' }}
+          fieldStyle={{
+            alignSelf: 'stretch',
+            padding: 0,
+          }}
+          showClear={true}
+          multiple
+        >
+          <Select.Option value="danmaku">弹幕消息（danmaku）</Select.Option>
+          <Select.Option value="like">点赞消息（like）</Select.Option>
+          <Select.Option value="member">进场消息（member）</Select.Option>
+          <Select.Option value="gift">礼物消息（gift）</Select.Option>
+          <Select.Option value="social">关注消息（social）</Select.Option>
+          <Select.Option value="room_user_seq">统计消息（room_user_seq）</Select.Option>
+        </Form.Select>
         <Form.Input
           field="user.douyin_cookie"
           extraText={
