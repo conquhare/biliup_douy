@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 
 import httpx
 from datetime import datetime, timezone
@@ -24,15 +25,55 @@ DEFAULT_TIMEOUT = httpx.Timeout(
 DEFAULT_MAX_RETRIES = 2
 DEFAULT_CONNECTION_LIMITS = httpx.Limits(max_connections=100, max_keepalive_connections=100)
 
+def _get_proxy_config():
+    """从环境变量或配置中获取代理设置"""
+    # 优先使用环境变量
+    http_proxy = os.environ.get('HTTP_PROXY') or os.environ.get('http_proxy')
+    https_proxy = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
+    
+    # 如果环境变量未设置，尝试从配置文件中读取
+    if not http_proxy or not https_proxy:
+        try:
+            from biliup.config import config
+            http_proxy = http_proxy or config.get('http_proxy')
+            https_proxy = https_proxy or config.get('https_proxy')
+        except:
+            pass
+    
+    mounts = {}
+    if http_proxy:
+        mounts["http://"] = httpx.HTTPTransport(proxy=http_proxy)
+    if https_proxy:
+        mounts["https://"] = httpx.HTTPTransport(proxy=https_proxy)
+    
+    return mounts
+
 client = httpx.AsyncClient(
     http2=True,
     follow_redirects=True,
     timeout=DEFAULT_TIMEOUT,
     limits=DEFAULT_CONNECTION_LIMITS,
-    verify=_ssl_context
+    verify=_ssl_context,
+    mounts=_get_proxy_config()
 )
 loop = asyncio.get_running_loop()
 logger = logging.getLogger('biliup')
+
+
+def update_client_proxy():
+    """更新HTTP客户端的代理配置（在配置变更后调用）"""
+    global client
+    mounts = _get_proxy_config()
+    if mounts:
+        client = httpx.AsyncClient(
+            http2=True,
+            follow_redirects=True,
+            timeout=DEFAULT_TIMEOUT,
+            limits=DEFAULT_CONNECTION_LIMITS,
+            verify=_ssl_context,
+            mounts=mounts
+        )
+        logger.info(f"HTTP客户端代理配置已更新: {mounts}")
 
 
 def check_timerange(name):
