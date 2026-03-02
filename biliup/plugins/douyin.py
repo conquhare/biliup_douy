@@ -21,6 +21,7 @@ class Douyin(DownloadBase):
         self.douyin_protocol = config.get('douyin_protocol', 'flv')
         self.douyin_double_screen = config.get('douyin_double_screen', False)
         self.douyin_true_origin = config.get('douyin_true_origin', False)
+        self.douyin_danmaku_types = config.get('douyin_danmaku_types', None)  # 弹幕类型筛选
         self.fake_headers['cookie'] = config.get('user', {}).get('douyin_cookie', '')
         self.__web_rid = None # 网页端房间号 或 抖音号
         self.__room_id = None # 单场直播的直播房间
@@ -201,7 +202,8 @@ class Douyin(DownloadBase):
                     'web_rid': self.__web_rid,
                     'sec_uid': self.__sec_uid,
                     'room_id': self.__room_id,
-                    'config': self.config
+                    'config': self.config,
+                    'danmaku_types': self.douyin_danmaku_types  # 传递弹幕类型筛选配置
                 }
                 self.danmaku = DanmakuClient(self.url, self.gen_download_filename(), content)
             else:
