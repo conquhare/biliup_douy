@@ -1,0 +1,253 @@
+# PR 检查工作流
+# 在 Pull Request 时运行快速检查
+
+name: PR Check
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  # 快速检查 - 在 PR 时运行
+  quick-check:
+    name: 快速检查
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 检查 PR 标题
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          requireScope: false
+
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: 缓存 Rust 依赖
+        uses: Swatinem/rust-cache@v2
+
+      - name: 检查 Rust 代码格式
+        run: cargo fmt --all -- --check
+
+      - name: Clippy 检查
+        run: cargo clippy --all-features --all-targets -- -D warnings
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 缓存 pip 依赖
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+
+      - name: 安装 Python 依赖
+        run: |
+          pip install black ruff
+          pip install -e .
+
+      - name: 检查 Python 代码格式
+        run: black --check biliup/
+
+      - name: Python 代码静态检查
+        run: ruff check biliup/
+
+  # 编译检查
+  build-check:
+    name: 编译检查 (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 缓存 Rust 依赖
+        uses: Swatinem/rust-cache@v2
+
+      - name: 编译检查
+        run: cargo check --workspace --all-targets
+
+      - name: 运行单元测试
+        run: cargo test --workspace --lib --no-fail-fast
+        timeout-minutes: 10
+
+  # 前端检查
+  frontend-check:
+    name: 前端检查
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: TypeScript 类型检查
+        run: npm run type-check
+        working-directory: ./app
+        continue-on-error: true
+
+      - name: ESLint 检查
+        run: npm run lint
+        working-directory: ./app
+
+      - name: 构建检查
+        run: npm run build
+        working-directory: ./app
+
+  # PR 大小检查
+  pr-size-check:
+    name: PR 大小检查
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 检查 PR 大小
+        run: |
+          # 获取变更的文件数和行数
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}..HEAD | wc -l)
+          CHANGED_LINES=$(git diff --stat origin/${{ github.base_ref }}..HEAD | tail -1 | awk '{print $4}')
+
+          echo "变更文件数: $CHANGED_FILES"
+          echo "变更行数: $CHANGED_LINES"
+
+          # 如果变更文件超过 50 个或行数超过 1000 行，发出警告
+          if [ "$CHANGED_FILES" -gt 50 ]; then
+            echo "?? 警告: PR 包含超过 50 个文件的变更，建议拆分"
+          fi
+
+          if [ -n "$CHANGED_LINES" ] && [ "$CHANGED_LINES" -gt 1000 ]; then
+            echo "?? 警告: PR 包含超过 1000 行的变更，建议拆分"
+          fi
+
+  # 依赖安全检查
+  security-check:
+    name: 安全检查
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 运行 cargo audit
+        uses: actions-rust-lang/audit@v1
+        continue-on-error: true
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 运行 pip audit
+        run: |
+          pip install pip-audit
+          pip-audit --desc
+        continue-on-error: true
+
+  # 生成 PR 报告
+  pr-report:
+    name: PR 报告
+    needs: [quick-check, build-check, frontend-check]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: 生成报告
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment => {
+              return comment.user.type === 'Bot' && comment.body.includes('<!-- PR Check Report -->');
+            });
+
+            const status = {
+              quickCheck: '${{ needs.quick-check.result }}',
+              buildCheck: '${{ needs.build-check.result }}',
+              frontendCheck: '${{ needs.frontend-check.result }}',
+            };
+
+            const getStatusEmoji = (result) => {
+              if (result === 'success') return '?';
+              if (result === 'failure') return '?';
+              return '??';
+            };
+
+            const body = `<!-- PR Check Report -->
+            ## PR 检查报告
+
+            | 检查项 | 状态 |
+            |--------|------|
+            | 代码格式和静态检查 | ${getStatusEmoji(status.quickCheck)} |
+            | 编译和单元测试 | ${getStatusEmoji(status.buildCheck)} |
+            | 前端构建 | ${getStatusEmoji(status.frontendCheck)} |
+
+            ${Object.values(status).some(s => s === 'failure') ? '? **存在失败的检查，请修复后再合并**' : '? **所有检查通过**'}
+
+            [查看详细日志](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body,
+              });
+            }
