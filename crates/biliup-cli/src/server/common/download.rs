@@ -406,3 +406,4 @@ pub enum DownloaderMessage {
     /// 开始下载消息，包含插件、流信息、上下文和房间句柄
     Start(Box<dyn DownloadBase>, Context),
 }
+
