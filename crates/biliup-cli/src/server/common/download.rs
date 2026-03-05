@@ -222,8 +222,9 @@ impl DownloadTask {
         {
             error!("Error stopping danmaku client: {}", e);
         }
-        // 注意：wake_waker 现在在 execute 外部调用
-        // 先改变状态，再调用 wake_waker
+        // 清理资源
+        // 确保状态更新和资源清理
+        rooms_handle.wake_waker(ctx.worker_id()).await;
         info!("Download task completed: {:?}", result);
         self.done_notify.notify_one();
         Ok(())
@@ -383,13 +384,6 @@ impl DActor {
 
                 process(&[], &ctx.live_streamer().downloaded_processor).await;
 
-                // 下载完成后，将状态从 Working 改为 Idle
-                // 注意：必须先改变状态，再调用 wake_waker，否则 push_back 会拒绝放入队列
-                ctx.change_status(Stage::Download, WorkerStatus::Idle).await;
-                
-                // 将房间放回检测队列
-                self.rooms_handle.wake_waker(ctx.worker_id()).await;
-
                 info!(
                     "Download workflow completed {} => {:?}",
                     ctx.live_streamer().url,
@@ -406,4 +400,3 @@ pub enum DownloaderMessage {
     /// 开始下载消息，包含插件、流信息、上下文和房间句柄
     Start(Box<dyn DownloadBase>, Context),
 }
-

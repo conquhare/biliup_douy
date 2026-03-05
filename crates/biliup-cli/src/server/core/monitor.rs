@@ -15,21 +15,21 @@ use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info, trace, warn};
 
-/// ���䴦����
-/// �������ֱ�����״̬�Ͳ���
+/// 房间处理器
+/// 管理多个直播间的状态和操作
 #[derive(Debug)]
 pub struct Monitor {
-    /// ��Ϣ������
+    /// 消息发送器
     sender: tokio::sync::mpsc::Sender<ActorMessage>,
-    /// Actor������
+    /// Actor任务句柄
     pool: ConnectionPool,
-    /// ������Ϣ������
+    /// 下载消息发送器
     down_sender: Sender<DownloaderMessage>,
     monitors: RwLock<HashMap<String, JoinHandle<()>>>,
 }
 
 impl Drop for Monitor {
-    /// ���������ʱ�������߼�
+    /// 监控器销毁时的清理逻辑
     fn drop(&mut self) {
         let sender = self.sender.clone();
         tokio::spawn(async move {
@@ -37,22 +37,22 @@ impl Drop for Monitor {
             let _ = sender.send(msg).await;
             info!("RoomsHandle killed")
         });
-        // ��ֹ�������
+        // 终止监控任务
         // self.kill.abort();
         // self.rooms_handle.kill.abort();
     }
 }
 
 impl Monitor {
-    /// �����µķ��䴦����ʵ��
+    /// 创建新的房间处理器实例
     ///
-    /// # ����
-    /// * `name` - ƽ̨����
+    /// # 参数
+    /// * `name` - 平台名称
     pub fn new(down_sender: Sender<DownloaderMessage>, pool: ConnectionPool) -> Self {
-        // ������Ϣͨ��
+        // 创建消息通道
         let (sender, receiver) = tokio::sync::mpsc::channel(1);
         let mut actor = RoomsActor::new(receiver);
-        // ����Actor����
+        // 启动Actor任务
         let _kill = tokio::spawn(async move { actor.run().await });
 
         Self {
@@ -63,41 +63,41 @@ impl Monitor {
         }
     }
 
-    /// �����ͻ��˼��ѭ��
+    /// 启动客户端监控循环
     ///
-    /// # ����
-    /// * `rooms_handle` - ���䴦����
-    /// * `plugin` - ���ز��
-    /// * `actor_handle` - Actor������
-    /// * `interval` - ��ؼ�����룩
+    /// # 参数
+    /// * `rooms_handle` - 房间处理器
+    /// * `plugin` - 下载插件
+    /// * `actor_handle` - Actor处理器
+    /// * `interval` - 监控间隔（秒）
     pub(crate) async fn start_monitor(
         self: &Arc<Self>,
         platform_name: &str,
         plugin: Arc<dyn DownloadPlugin + Send + Sync>,
     ) {
         info!("start -> [{platform_name}]");
-        // ��ȡƽ̨�����ѭ��������״λ�ȡ����Ĭ��ֵ��
+        // 获取平台级别的循环间隔（首次获取用于默认值）
         let platform_interval = self
             .get_first_room_config(platform_name)
             .await
             .map(|c| c.event_loop_interval)
             .unwrap_or(30);
 
-        // ��ȡ��һ��Ҫ���ķ���
+        // 获取下一个要检查的房间
         while let Some(room) = self.next(platform_name).await {
-            // ����״̬Ϊ�ȴ���
+            // 更新状态为等待中
             room.change_status(Stage::Download, WorkerStatus::Pending)
                 .await;
             let url = room.get_streamer().url.clone();
             let config = room.get_config();
-            // ʹ�� checker_sleep ��Ϊ��������������������������ʹ�� event_loop_interval
+            // 使用 checker_sleep 作为单个主播检测间隔，如果不存在则使用 event_loop_interval
             let check_interval = if config.checker_sleep > 0 {
                 config.checker_sleep
             } else {
                 config.event_loop_interval
             };
             let mut ctx = PluginContext::new(room.clone(), self.pool.clone());
-            // ���ֱ��״̬
+            // 检查直播状态
             let mut downloader = plugin.create_downloader(&mut ctx);
             match downloader.check_stream().await {
                 Ok(StreamStatus::Live { mut stream_info }) => {
@@ -113,57 +113,57 @@ impl Monitor {
                     {
                         Ok(insert) => insert,
                         Err(e) => {
-                            error!(e=?e, "�������ݿ�ʧ��");
+                            error!(e=?e, "插入数据库失败");
                             continue;
                         }
                     };
-                    info!(url = url, "room: is live -> ������");
+                    info!(url = url, "room: is live -> 开播了");
 
-                    // �޸� ctx
+                    // 修改 ctx
                     // stream_info.streamer_info = insert;
                     let context = ctx.to_context(insert.id, *stream_info);
                     // context
                     // *ctx.mut_stream_info_ext() = *stream_info;
 
-                    // �������ؿ�ʼ��Ϣ
+                    // 发送下载开始消息
                     if self
                         .down_sender
                         .send(DownloaderMessage::Start(downloader, context))
                         .await
                         .is_ok()
                     {
-                        info!("�ɹ���ʼ¼�� {}", url)
+                        info!("成功开始录制 {}", url)
                     }
                 }
                 Ok(StreamStatus::Offline) => {
                     self.wake_waker(room.id()).await;
-                    debug!(url = ctx.live_streamer().url, "δ����")
+                    debug!(url = ctx.live_streamer().url, "未开播")
                 }
                 Err(e) => {
                     self.wake_waker(room.id()).await;
-                    error!(e=?e, ctx=ctx.live_streamer().url,"���ֱ�������")
+                    error!(e=?e, ctx=ctx.live_streamer().url,"检查直播间出错")
                 }
             };
-            // �ȴ���һ�μ�飨ʹ�õ��������������
+            // 等待下一次检查（使用单个主播检测间隔）
             tokio::time::sleep(Duration::from_secs(check_interval)).await;
         }
         info!("exit -> [{platform_name}]")
     }
 
-    /// ��ȡ��һ����������ã����ڻ�ȡƽ̨Ĭ�����ã�
+    /// 获取第一个房间的配置（用于获取平台默认配置）
     async fn get_first_room_config(&self, platform_name: &str) -> Option<crate::server::config::Config> {
         let workers = self.get_all().await;
         for worker in workers {
-            // �򵥷��ص�һ���ҵ��ķ��������
+            // 简单返回第一个找到的房间的配置
             return Some(worker.get_config());
         }
         None
     }
 
-    /// ���ӹ������������б�
+    /// 添加工作器到房间列表
     ///
-    /// # ����
-    /// * `worker` - Ҫ���ӵĹ�����
+    /// # 参数
+    /// * `worker` - 要添加的工作器
     pub async fn add(
         self: &Arc<Self>,
         worker: Arc<Worker>,
@@ -177,10 +177,10 @@ impl Monitor {
         Some(plugin)
     }
 
-    /// ���ӹ������������б�
+    /// 添加工作器到房间列表
     ///
-    /// # ����
-    /// * `worker` - Ҫ���ӵĹ�����
+    /// # 参数
+    /// * `worker` - 要添加的工作器
     pub async fn add_plugin(&self, plugin: Arc<dyn DownloadPlugin + Send + Sync>) {
         let (send, recv) = oneshot::channel();
         let msg = ActorMessage::AddPlugin(send, plugin);
@@ -188,13 +188,13 @@ impl Monitor {
         recv.await.expect("Actor task has been killed")
     }
 
-    /// ɾ��ָ��ID�Ĺ�����
+    /// 删除指定ID的工作器
     ///
-    /// # ����
-    /// * `id` - Ҫɾ���Ĺ�����ID
+    /// # 参数
+    /// * `id` - 要删除的工作器ID
     ///
-    /// # ����
-    /// ����ʣ�๤��������
+    /// # 返回
+    /// 返回剩余工作器数量
     pub async fn del(&self, id: i64) {
         let (send, recv) = oneshot::channel();
         let msg = ActorMessage::Del {
@@ -202,8 +202,8 @@ impl Monitor {
             id,
         };
 
-        // ���Է��ʹ����������ʧ�ܣ������recv.awaitҲ��ʧ��
-        // û�б�Ҫ�������ʧ��
+        // 忽略发送错误。如果发送失败，下面的recv.await也会失败
+        // 没有必要检查两次失败
         let _ = self.sender.send(msg).await;
         if let Some(worker) = recv.await.expect("Actor task has been killed") {
             worker
@@ -212,13 +212,13 @@ impl Monitor {
         }
     }
 
-    /// ɾ��ָ��ID�Ĺ�����
+    /// 获取指定ID的工作器
     ///
-    /// # ����
-    /// * `id` - Ҫɾ���Ĺ�����ID
+    /// # 参数
+    /// * `id` - 工作器ID
     ///
-    /// # ����
-    /// ����ʣ�๤��������
+    /// # 返回
+    /// 返回工作器
     pub async fn get_worker(&self, id: i64) -> Option<Arc<Worker>> {
         let (send, recv) = oneshot::channel();
         let msg = ActorMessage::GetWorker {
@@ -226,33 +226,33 @@ impl Monitor {
             id,
         };
 
-        // ���Է��ʹ����������ʧ�ܣ������recv.awaitҲ��ʧ��
-        // û�б�Ҫ�������ʧ��
+        // 忽略发送错误。如果发送失败，下面的recv.await也会失败
+        // 没有必要检查两次失败
         let _ = self.sender.send(msg).await;
         recv.await.expect("Actor task has been killed")
     }
 
-    /// ɾ��ָ��ID�Ĺ�����
+    /// 获取所有工作器
     ///
-    /// # ����
-    /// * `id` - Ҫɾ���Ĺ�����ID
+    /// # 参数
+    /// 无
     ///
-    /// # ����
-    /// ����ʣ�๤��������
+    /// # 返回
+    /// 返回剩余工作器数量
     pub async fn get_all(&self) -> Vec<Arc<Worker>> {
         let (send, recv) = oneshot::channel();
         let msg = ActorMessage::GetAll { respond_to: send };
 
-        // ���Է��ʹ����������ʧ�ܣ������recv.awaitҲ��ʧ��
-        // û�б�Ҫ�������ʧ��
+        // 忽略发送错误。如果发送失败，下面的recv.await也会失败
+        // 没有必要检查两次失败
         let _ = self.sender.send(msg).await;
         recv.await.expect("Actor task has been killed")
     }
 
-    /// ��ȡ��һ��Ҫ�����Ĺ�����
+    /// 获取下一个要处理的工作器
     ///
-    /// # ����
-    /// ������һ�������������û���򷵻�None
+    /// # 返回
+    /// 返回下一个工作器，如果没有则返回None
     async fn next(self: &Arc<Self>, platform_name: &str) -> Option<Arc<Worker>> {
         let (send, recv) = oneshot::channel();
         let msg = ActorMessage::NextRoom {
@@ -260,16 +260,16 @@ impl Monitor {
             platform_name: platform_name.to_owned(),
         };
 
-        // ���Է��ʹ����������ʧ�ܣ������recv.awaitҲ��ʧ��
-        // û�б�Ҫ�������ʧ��
+        // 忽略发送错误。如果发送失败，下面的recv.await也会失败
+        // 没有必要检查两次失败
         let _ = self.sender.send(msg).await;
         recv.await.expect("Actor task has been killed")
     }
 
-    /// �Żع�������
+    /// 放回工作队列
     ///
-    /// # ����
-    /// * `worker` - Ҫ�л��Ĺ�����
+    /// # 参数
+    /// * `worker` - 要切换的工作器
     pub async fn wake_waker(
         self: &Arc<Self>,
         id: i64,
@@ -278,23 +278,23 @@ impl Monitor {
 
         let msg = ActorMessage::WakeWaker(send, id);
 
-        // ���Է��ʹ���
+        // 忽略发送
         let _ = self.sender.send(msg).await;
         let plugin = recv.await.expect("Actor task has been killed")?;
         self.rooms_handle_pool(plugin.clone());
         Some(plugin)
     }
 
-    /// �Ƴ���������
+    /// 移除工作器
     ///
-    /// # ����
-    /// * `worker` - Ҫ�л��Ĺ�����
+    /// # 参数
+    /// * `worker` - 要移除的工作器
     pub async fn make_waker(&self, id: i64) {
         let (send, recv) = oneshot::channel();
 
         let msg = ActorMessage::MakeWaker(send, id);
 
-        // ���Է��ʹ���
+        // 忽略发送错误
         let _ = self.sender.send(msg).await;
         recv.await.expect("Actor task has been killed")
     }
@@ -313,21 +313,21 @@ impl Monitor {
         let platform_name = plugin.name().to_owned();
         match self.monitors.write().unwrap().entry(platform_name.clone()) {
             Entry::Occupied(mut entry) => {
-                // �Ѿ���һ�������ˣ�����Ƿ����
+                // 已经有一个任务了，检查是否结束
                 if entry.get().is_finished() {
-                    // �������Ѿ����������� spawn һ��
+                    // 旧任务已经结束，重新 spawn 一个
                     let handle = Self::spawn_monitor_task(
                         Arc::clone(self),
                         plugin.clone(),
                         platform_name.clone(),
                     );
-                    entry.insert(handle); // �滻�ɵ� JoinHandle
+                    entry.insert(handle); // 替换旧的 JoinHandle
                 } else {
-                    // �������ܣ������κ���
+                    // 任务还在跑，不做任何事
                 }
             }
             Entry::Vacant(entry) => {
-                // û���������� spawn
+                // 没有任务，正常 spawn
                 let handle = Self::spawn_monitor_task(
                     Arc::clone(self),
                     plugin.clone(),
@@ -339,71 +339,72 @@ impl Monitor {
     }
 }
 
-/// Actor��Ϣö��
-/// ����RoomsActor���Դ�������Ϣ����
+/// Actor消息枚举
+/// 定义RoomsActor可以处理的消息类型
 enum ActorMessage {
-    /// ��ȡ��һ������
+    /// 获取下一个房间
     NextRoom {
         respond_to: oneshot::Sender<Option<Arc<Worker>>>,
         platform_name: String,
     },
-    /// ���ӹ�����
+    /// 添加工作器
     Add(
         oneshot::Sender<Option<Arc<dyn DownloadPlugin + Send + Sync>>>,
         Arc<Worker>,
     ),
-    /// ���ӹ�����
+    /// 添加工作器
     AddPlugin(oneshot::Sender<()>, Arc<dyn DownloadPlugin + Send + Sync>),
-    /// ɾ��������
+    /// 删除工作器
     Del {
         respond_to: oneshot::Sender<Option<Arc<Worker>>>,
         id: i64,
     },
-    /// ����
+    /// 查找
     GetWorker {
         respond_to: oneshot::Sender<Option<Arc<Worker>>>,
         id: i64,
     },
-    /// ��������
+    /// 查找所有
     GetAll {
         respond_to: oneshot::Sender<Vec<Arc<Worker>>>,
     },
-    /// ����ƽ̨
+    /// 查找平台
     GetPlatform {
         respond_to: oneshot::Sender<Vec<Arc<Worker>>>,
         platform_name: String,
     },
-    /// �Żع�������
+    /// 放回工作队列
     WakeWaker(
         oneshot::Sender<Option<Arc<dyn DownloadPlugin + Send + Sync>>>,
         i64,
     ),
-    /// �Ƴ���������
+    /// 移出工作队列
     MakeWaker(oneshot::Sender<()>, i64),
     Shutdown,
 }
 
-/// ����Actor
-/// ���������б����ڲ�Actor
-/// ƽ̨����
+/// 房间Actor
+/// 管理房间列表的内部Actor
+/// 平台名称
+//     name: String,
 //     name: String,
 struct RoomsActor {
-    /// ��Ϣ������
+    /// 消息接收器
     receiver: tokio::sync::mpsc::Receiver<ActorMessage>,
-    /// ��Ծ�����б�
+    /// 活跃房间列表
     platforms: HashMap<String, VecDeque<Arc<Worker>>>,
-    /// ��ǰ����
-    /// �ȴ������б�
+    /// 当前索引
+    /// 等待房间列表
     all_workers: Vec<Arc<Worker>>,
     // index: usize,
     // rooms: Vec<Arc<Worker>>,
     // waiting: Vec<Arc<Worker>>,
-    /// ���ز��
+    /// 下载插件
     plugins: Vec<Arc<dyn DownloadPlugin + Send + Sync>>,
 }
 
 impl RoomsActor {
-    /// �����µķ���Actorʵ��
+    /// 创建新的房间Actor实例
     fn new(receiver: tokio::sync::mpsc::Receiver<ActorMessage>) -> Self {
         Self {
             receiver,
@@ -414,8 +415,8 @@ impl RoomsActor {
         }
     }
 
-    /// ����Actor��ѭ��
-    /// �������յ�����Ϣ
+    /// 运行Actor主循环
+    /// 处理接收到的消息
     async fn run(&mut self) {
         while let Some(msg) = self.receiver.recv().await {
             match msg {
@@ -423,8 +424,8 @@ impl RoomsActor {
                     respond_to,
                     platform_name,
                 } => {
-                    // `let _ =` ���Է���ʱ���κδ���
-                    // ���ʹ��`select!`��ȡ���ȴ���Ӧ�����ܻᷢ���������
+                    // `let _ =` 忽略发送时的任何错误
+                    // 如果使用`select!`宏取消等待响应，可能会发生这种情况
                     let _ = respond_to.send(self.next(&platform_name));
                 }
                 ActorMessage::Add(respond_to, worker) => {
@@ -432,13 +433,13 @@ impl RoomsActor {
                     let _ = respond_to.send(plugin);
                 }
                 ActorMessage::Del { respond_to, id } => {
-                    // `let _ =` ���Է���ʱ���κδ���
-                    // ���ʹ��`select!`��ȡ���ȴ���Ӧ�����ܻᷢ���������
+                    // `let _ =` 忽略发送时的任何错误
+                    // 如果使用`select!`宏取消等待响应，可能会发生这种情况
 
                     let _ = respond_to.send(self.del(id).await);
                 }
                 ActorMessage::WakeWaker(sender, id) => {
-                    // `let _ =` ���Է���ʱ���κδ���
+                    // `let _ =` 忽略发送时的任何错误
                     let _ = sender.send(self.push_back(id));
                 }
                 ActorMessage::Shutdown => {
@@ -446,11 +447,11 @@ impl RoomsActor {
                 }
                 ActorMessage::GetWorker { respond_to, id } => {
                     let option = self.get_worker(id);
-                    // `let _ =` ���Է���ʱ���κδ���
+                    // `let _ =` 忽略发送时的任何错误
                     let _ = respond_to.send(option);
                 }
                 ActorMessage::GetAll { respond_to } => {
-                    // `let _ =` ���Է���ʱ���κδ���
+                    // `let _ =` 忽略发送时的任何错误
                     let _ = respond_to.send(self.get_all());
                 }
 
@@ -458,17 +459,17 @@ impl RoomsActor {
                     respond_to,
                     platform_name,
                 } => {
-                    // `let _ =` ���Է���ʱ���κδ���
+                    // `let _ =` 忽略发送时的任何错误
                     let _ = respond_to.send(self.get_by_platform(&platform_name));
                 }
                 ActorMessage::MakeWaker(respond_to, id) => {
                     self.pop(id);
-                    // `let _ =` ���Է���ʱ���κδ���
+                    // `let _ =` 忽略发送时的任何错误
                     let _ = respond_to.send(());
                 }
                 ActorMessage::AddPlugin(respond_to, plugin) => {
                     self.add_plugin(plugin);
-                    // `let _ =` ���Է���ʱ���κδ���
+                    // `let _ =` 忽略发送时的任何错误
                     let _ = respond_to.send(());
                 }
             }
@@ -484,10 +485,10 @@ impl RoomsActor {
         match self.platforms.entry(platform_name) {
             Entry::Occupied(mut entry) => {
                 entry.get_mut().push_back(worker.clone());
-                // entry.remove(); // ����ɾ��
+                // entry.remove(); // 可以删除
             }
             Entry::Vacant(entry) => {
-                entry.insert(VecDeque::from([worker.clone()])); // ������ֵ
+                entry.insert(VecDeque::from([worker.clone()])); // 插入新值
             }
         }
         debug!("Added room [{}]", worker.live_streamer.url);
@@ -520,9 +521,9 @@ impl RoomsActor {
         reuse_vec_arc(&mut self.all_workers.iter())
     }
 
-    /// ��ȡ��һ����������ѭ��������
+    /// ȡһѭ
     fn next(&mut self, platform_name: &str) -> Option<Arc<Worker>> {
-        // ����ڲ�Vec�ǿյģ�������������Ȼ��ѭ�������������ռ����޷������κ�ֵ��
+        // 如果内部Vec是空的，迭代结束（虽然是循环迭代器，但空集合无法产生任何值）
         let arc = self.platforms.get_mut(platform_name)?.pop_front()?;
 
         *arc.downloader_status.write().unwrap() = WorkerStatus::Pending;
@@ -530,30 +531,30 @@ impl RoomsActor {
         Some(arc)
     }
 
-    /// �Żع�������
+    /// 放回工作队列
     fn push_back(&mut self, id: i64) -> Option<Arc<dyn DownloadPlugin + Send + Sync>> {
-        // �����������Ҳ�����˵���÷����ѱ��Ƴ�����Ҳ���Ż�
+        // 在总数组中找不到，说明该房间已被移除我们也不放回
         let worker = self.get_worker(id)?;
         
-        // ��鵱ǰ״̬
+        // 检查当前状态
         let current_status = worker.downloader_status.read().unwrap().clone();
         
-        // �����ǰ��Working״̬��˵����������������
-        // ��ʱ��Ӧ�÷Żض��У��ȴ�����������ɺ��ٵ��� push_back
+        // 如果当前是Working状态，说明下载任务还在运行
+        // 此时不应该放回队列，等待下载任务完成后再调用 push_back
         if matches!(current_status, WorkerStatus::Working(_)) {
             warn!("Room [{}] is still working, deferring push_back", worker.live_streamer.url);
             return None;
         }
         
         if let WorkerStatus::Pause = current_status {
-            // ��ͣ״̬�򲻷Ż�
+            // 暂停状态则不放回
             warn!("Paused room [{}]", worker.live_streamer.url);
             return None;
         }
         for (name, queue) in self.platforms.iter_mut() {
             if queue.iter().any(|w| w.id() == id) {
-                // ˵���ҵ����Ѿ���ӵķ��䣬���Ǹ��µ����
-                warn!(name = name, "�����Ѹ����������");
+                // 说明找到了已经入队的房间，则是更新的情况
+                warn!(name = name, "房间已更新无需入队");
                 return None;
             }
         }
@@ -562,49 +563,49 @@ impl RoomsActor {
         self.platforms
             .get_mut(plugin.name())?
             .push_back(worker.clone());
-        // ֱ������״̬ΪIdle����Ϊ��ʱӦ���Ѿ�����Working״̬��
+        // 直接设置状态为Idle，因为此时应该已经不是Working状态了
         *worker.downloader_status.write().unwrap() = WorkerStatus::Idle;
         info!("Room [{}] status changed to Idle", worker.live_streamer.url);
         Some(plugin)
     }
 
-    /// �Ƴ���������
+    /// 移出工作队列
     fn pop(&mut self, id: i64) {
         for (_name, queue) in self.platforms.iter_mut() {
             if let Some(pos) = queue.iter().position(|w| w.id() == id) {
-                queue.remove(pos); // ֻɾ����������е�һ��ƥ��� worker
+                queue.remove(pos); // 只删掉这个队列中第一个匹配的 worker
                 return;
             }
         }
-        warn!("�Ƴ��������� failed: No room found with id {}", id);
+        warn!("移出工作队列 failed: No room found with id {}", id);
     }
 
-    /// ɾ��ָ��ID�Ĺ�����
+    /// 删除指定ID的工作器
     async fn del(&mut self, id: i64) -> Option<Arc<Worker>> {
         let worker = self.get_worker(id)?;
         let plugin = self.matches(&worker.live_streamer.url)?;
         let platform_name = plugin.name();
-        // �� platforms ��ɾ��
+        // 从 platforms 中删除
         if let Some(workers) = self.platforms.get_mut(platform_name) {
             workers.retain(|w| w.id() != id);
         } else {
             error!("Removed room [{:?}] {}", platform_name, id);
         }
 
-        // �� all_workers ��ɾ��
+        // 从 all_workers 中删除
         self.all_workers.retain(|w| w.id() != id);
 
         debug!("del worker size[{}]", self.all_workers.len());
         Some(worker)
     }
 
-    /// ���URL�Ƿ�ƥ������ع������Ĳ��
+    /// 检查URL是否匹配此下载管理器的插件
     ///
-    /// # ����
-    /// * `url` - Ҫ����URL
+    /// # 参数
+    /// * `url` - 要检查的URL
     ///
-    /// # ����
-    /// ���URLƥ�䷵��true�����򷵻�false
+    /// # 返回
+    /// 如果URL匹配返回true，否则返回false
     pub fn matches(&self, url: &str) -> Option<Arc<dyn DownloadPlugin + Send + Sync>> {
         for plugin in &self.plugins {
             trace!(
@@ -623,4 +624,3 @@ impl RoomsActor {
 fn reuse_vec_arc<'a, T: 'a, U: Iterator<Item = &'a Arc<T>>>(v: &mut U) -> Vec<Arc<T>> {
     v.into_iter().cloned().collect()
 }
-

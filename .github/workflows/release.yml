@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false # don't fail other jobs if one fails
       matrix:
-        build: [x86_64-linux-musl, aarch64-linux, arm-linux, x86_64-windows] # ¾«¼ò°æ£ºÈ¥µô macOS ºÍ glibc
+        build: [x86_64-linux-musl, aarch64-linux, arm-linux, x86_64-windows] # ????????? macOS ?? glibc
         include:
           - build: x86_64-linux-musl
             os: ubuntu-latest
