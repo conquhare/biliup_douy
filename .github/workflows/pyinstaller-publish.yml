@@ -53,8 +53,8 @@ jobs:
         # 读取 Cargo.toml
         $cargoToml = Get-Content Cargo.toml -Raw
         
-        # 替换版本号
-        $cargoToml = $cargoToml -replace '(?m)^version = "[^"]+"', "version = `"$version`""
+        # 替换版本号（只匹配 workspace.package 下的 version）
+        $cargoToml = $cargoToml -replace '(?m)^\[workspace\.package\]\r?\nversion = "[^"]+"', "[workspace.package]`r`nversion = `"$version`""
         
         # 写回文件
         Set-Content Cargo.toml $cargoToml
