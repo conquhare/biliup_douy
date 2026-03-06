@@ -1,6 +1,7 @@
 'use client'
 
 import React, {useState} from 'react';
+import Image from 'next/image';
 import {Nav, Avatar, Form, Checkbox, Button, Toast} from '@douyinfe/semi-ui';
 import { IconSemiLogo, IconFeishuLogo, IconHelpCircle, IconBell } from '@douyinfe/semi-icons';
 import styles from './index.module.scss';
@@ -95,10 +96,12 @@ const Component = () => {
             <div className={styles.main}>
                 <div className={styles.login}>
                     <div className={styles.component66}>
-                        <img
+                        <Image
                             src="/logo.png"
                             className={styles.logo}
                             alt="logo"
+                            width={120}
+                            height={40}
                         />
                         <div className={styles.header}>
                             <p className={styles.title}>
