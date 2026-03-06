@@ -1,6 +1,10 @@
 name: Build Windows EXE
 
 on:
+  push:
+    branches:
+      - master
+      - main
   workflow_dispatch:
     inputs:
       version:
@@ -11,7 +15,7 @@ on:
       release:
         description: '是否创建 Release'
         required: true
-        default: true
+        default: false
         type: boolean
 
 jobs:
@@ -22,12 +26,29 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Set version
+      id: version
+      shell: pwsh
+      run: |
+        if ("${{ github.event.inputs.version }}") {
+          $version = "${{ github.event.inputs.version }}"
+        } else {
+          # 自动生成版本号：从 Cargo.toml 读取并添加构建号
+          $cargoVersion = (Select-String -Path Cargo.toml -Pattern '^version = "([^"]+)"' | Select-Object -First 1).Matches.Groups[1].Value
+          $shortSha = "${{ github.sha }}".Substring(0, 7)
+          $version = "v$cargoVersion-$shortSha"
+        }
+        Write-Host "VERSION=$version" >> $env:GITHUB_OUTPUT
+        Write-Host "设置版本号: $version"
+    
     - name: Update version in Cargo.toml
       shell: pwsh
       run: |
-        $version = "${{ github.event.inputs.version }}"
+        $version = "${{ steps.version.outputs.VERSION }}"
         # 移除 v 前缀
         $version = $version -replace '^v', ''
+        # 移除 -hash 后缀（只保留主版本号）
+        $version = $version -replace '-[a-f0-9]+$', ''
         
         # 读取 Cargo.toml
         $cargoToml = Get-Content Cargo.toml -Raw
@@ -74,7 +95,7 @@ jobs:
     - name: Package EXE
       shell: pwsh
       run: |
-        $version = "${{ github.event.inputs.version }}"
+        $version = "${{ steps.version.outputs.VERSION }}"
         $targetTriple = rustc -Vv | Select-String "host:" | ForEach-Object {$_.Line.split(" ")[1]}
         $archiveName = "biliup-$version-x86_64-windows.zip"
         
@@ -87,15 +108,15 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: biliup-windows-exe
+        name: biliup-windows-exe-${{ steps.version.outputs.VERSION }}
         path: biliup-*.zip
     
     - name: Create Release
       if: ${{ github.event.inputs.release == 'true' }}
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.event.inputs.version }}
-        name: ${{ github.event.inputs.version }}
+        tag_name: ${{ steps.version.outputs.VERSION }}
+        name: ${{ steps.version.outputs.VERSION }}
         files: biliup-*.zip
         generate_release_notes: true
       env:
