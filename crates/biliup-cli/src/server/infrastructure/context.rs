@@ -165,11 +165,6 @@ impl Worker {
         }
     }
 
-    /// 判断是否应该录制
-    fn should_record(&self, room_title: &str) -> bool {
-        true
-    }
-
     pub fn id(&self) -> i64 {
         self.live_streamer.id
     }
