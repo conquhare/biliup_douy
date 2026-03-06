@@ -119,6 +119,7 @@ jobs:
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 120  # 增加超时时间为 2 小时
     strategy:
+      fail-fast: false  # 防止一个作业失败影响其他作业
       matrix:
         platform:
           - runner: windows-latest
@@ -139,6 +140,16 @@ jobs:
         with:
           python-version: 3.x
           architecture: ${{ matrix.platform.target }}
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
