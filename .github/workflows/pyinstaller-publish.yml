@@ -1,9 +1,11 @@
-name: Upload Windows Python Package
+name: Upload Windows Python Package (暂时禁用)
 
 on:
-  release:
-    types: [created]
-  workflow_dispatch:
+  # 暂时禁用 Windows 编译
+  # release:
+  #   types: [created]
+  # workflow_dispatch:
+  workflow_dispatch:  # 仅保留手动触发，但不实际运行
 
 jobs:
   build:

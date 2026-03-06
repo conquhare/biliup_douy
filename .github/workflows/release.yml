@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false # don't fail other jobs if one fails
       matrix:
-        build: [x86_64-linux-musl, aarch64-linux, arm-linux, x86_64-windows] # ????????? macOS ?? glibc
+        build: [x86_64-linux-musl, aarch64-linux, arm-linux]  # x86_64-windows 暂时禁用
         include:
           - build: x86_64-linux-musl
             os: ubuntu-latest
@@ -38,11 +38,12 @@ jobs:
             rust: stable
             target: arm-unknown-linux-gnueabi
             cross: true
-          - build: x86_64-windows
-            os: windows-latest
-            rust: stable
-            target: x86_64-pc-windows-msvc
-            cross: false
+          # Windows 编译暂时禁用
+          # - build: x86_64-windows
+          #   os: windows-latest
+          #   rust: stable
+          #   target: x86_64-pc-windows-msvc
+          #   cross: false
 
     steps:
       - name: Checkout sources
