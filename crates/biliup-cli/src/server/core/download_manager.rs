@@ -11,7 +11,6 @@ use tracing::info;
 
 /// 下载管理器
 /// 负责管理特定平台的下载任务，包括监控器和插件
-#[derive(Clone)]
 pub struct DownloadManager {
     /// 下载插件
     // plugins: Vec<Arc<dyn DownloadPlugin + Send + Sync>>,
@@ -27,6 +26,20 @@ pub struct DownloadManager {
     pub(crate) d_kills: Vec<JoinHandle<()>>,
     /// 上传Actor任务句柄列表
     pub(crate) u_kills: Vec<JoinHandle<()>>,
+}
+
+impl Clone for DownloadManager {
+    fn clone(&self) -> Self {
+        Self {
+            rooms_handle: self.rooms_handle.clone(),
+            download_semaphore: self.download_semaphore,
+            update_semaphore: self.update_semaphore,
+            down_sender: self.down_sender.clone(),
+            // JoinHandle 不能克隆，创建空的 Vec
+            d_kills: Vec::new(),
+            u_kills: Vec::new(),
+        }
+    }
 }
 
 impl DownloadManager {
