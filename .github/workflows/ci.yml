@@ -152,6 +152,8 @@ jobs:
             ${{ runner.os }}-cargo-
       - name: Build wheels
         uses: PyO3/maturin-action@v1
+        env:
+          RUSTFLAGS: "-A warnings"  # 禁用所有 Rust 警告
         with:
           target: ${{ matrix.platform.target }}
           args: --release --out dist
