@@ -53,14 +53,18 @@ jobs:
         # 读取 Cargo.toml
         $cargoToml = Get-Content Cargo.toml -Raw
         
-        # 替换版本号（只匹配 workspace.package 下的 version）
-        $cargoToml = $cargoToml -replace '(?m)^\[workspace\.package\]\r?\nversion = "[^"]+"', "[workspace.package]`r`nversion = `"$version`""
+        # 替换版本号（匹配 [workspace.package] 下的 version）
+        # 使用更宽松的模式，处理不同的换行符
+        $pattern = '(\[workspace\.package\]\s*\nversion\s*=\s*)"[^"]*"'
+        $replacement = '$1"' + $version + '"'
+        $cargoToml = $cargoToml -replace $pattern, $replacement
         
         # 写回文件
         Set-Content Cargo.toml $cargoToml
         
         Write-Host "版本号已更新为: $version"
-        Get-Content Cargo.toml | Select-String "version" | Select-Object -First 5
+        Write-Host "--- Cargo.toml 中的版本配置 ---"
+        Get-Content Cargo.toml | Select-String -Pattern '\[workspace\.package\]|^version' | Select-Object -First 5
     
     - uses: actions/setup-node@v4
       with:
