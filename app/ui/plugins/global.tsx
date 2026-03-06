@@ -131,7 +131,7 @@ const Global: React.FC = () => {
             <div style={{ fontSize: '14px' }}>
               录制文件时间限制，超过此时间将文件分割。
               <br />
-              格式为'00:00:00'(时:分:秒)
+              格式为&apos;00:00:00&apos;(时:分:秒)
             </div>
           }
           label="视频分段时间(segment_time)"
