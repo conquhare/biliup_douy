@@ -39,7 +39,31 @@ pub async fn run(addr: (&str, u16), auth: bool, log_handle: LogHandle) -> AppRes
         conn_pool.clone(),
     );
     let service_register =
-        ServiceRegister::new(conn_pool, config.clone(), download_manager, log_handle);
+        ServiceRegister::new(conn_pool.clone(), config.clone(), download_manager.clone(), log_handle);
+
+    // 启动时自动加载所有主播并开始监控
+    tracing::info!("auto-loading streamers from database...");
+    match repositories::get_all_streamer(&conn_pool).await {
+        Ok(streamers) => {
+            let mut loaded_count = 0;
+            for streamer in streamers {
+                let worker = service_register.worker(streamer.clone(), None);
+                match download_manager.add_room(worker).await {
+                    Some(_) => {
+                        loaded_count += 1;
+                        tracing::info!("auto-loaded streamer: {} (ID: {})", streamer.remark, streamer.id);
+                    }
+                    None => {
+                        tracing::error!("failed to add streamer: {} (ID: {})", streamer.remark, streamer.id);
+                    }
+                }
+            }
+            tracing::info!("auto-loaded {} streamers on startup", loaded_count);
+        }
+        Err(e) => {
+            tracing::error!("failed to load streamers on startup: {}", e);
+        }
+    }
 
     tracing::info!("migrations successfully ran, initializing axum server...");
     let addr = addr

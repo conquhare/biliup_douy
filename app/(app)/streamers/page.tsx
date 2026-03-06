@@ -56,6 +56,9 @@ export default function Home() {
   }
   const data: LiveStreamerEntity[] | undefined = streamers?.map(live => {
     let statusTag
+    // 调试日志：查看实际状态值
+    console.log('Streamer status:', live.status, 'for', live.remark)
+    
     switch (live.status) {
       case 'Working':
         statusTag = <Tag color="red">直播中</Tag>
@@ -72,6 +75,10 @@ export default function Home() {
       case 'Pause':
         statusTag = <Tag color="pink">暂停中</Tag>
         break
+      default:
+        // 处理未知状态，显示实际状态值便于调试
+        statusTag = <Tag color="grey">{live.status || '未知'}</Tag>
+        console.warn('Unknown status:', live.status, 'for streamer:', live.remark)
     }
     return { ...handleEntityPostprocessor(live), statusTag }
   })
