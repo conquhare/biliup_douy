@@ -1,187 +1,132 @@
-# Biliup 项目知识库
+# 项目知识库
 
-## 配置系统架构
+## GitHub 代理连接问题解决方案
 
-### 配置存储位置
-- **数据库**: `data/data.sqlite3`
-- **表**: `configuration`
-- **格式**: JSON 字符串存储在 `value` 字段中
+### 问题现象
+- `failed to open socket: Invalid arguments`
+- `getaddrinfo() thread failed to start`
+- `TLS connect error: error:0A000126:SSL routines::unexpected eof while reading`
 
-### 配置结构
+### 排查步骤
 
-#### 后端配置结构 (`crates/biliup-cli/src/server/config.rs`)
-```rust
-pub struct Config {
-    // 全局下载设置
-    pub downloader: Option<DownloaderType>,
-    pub file_size: u64,
-    pub segment_time: Option<String>,
-    pub filtering_threshold: u64,
-    
-    // 全局上传设置
-    pub lines: String,
-    pub threads: u32,
-    pub delay: u64,
-    pub event_loop_interval: u64,
-    pub checker_sleep: u64,
-    pub pool1_size: u32,
-    pub pool2_size: u32,
-    
-    // 代理设置 (新增)
-    pub http_proxy: Option<String>,
-    pub https_proxy: Option<String>,
-    
-    // 平台特定设置
-    pub douyin_danmaku: Option<bool>,
-    pub douyin_danmaku_types: Option<Vec<String>>,  // 新增
-    pub douyin_quality: Option<String>,
-    
-    // 主播配置
-    pub streamers: HashMap<String, StreamerConfig>,
-}
+#### 1. 检查 Clash 是否运行
+```powershell
+# 检查 Clash 端口是否在监听（默认 7890 或 54350）
+netstat -ano | findstr :54350
+netstat -ano | findstr :7890
 ```
 
-#### 前端配置页面
-- **主页面**: `app/(app)/dashboard/page.tsx`
-- **全局设置组件**: `app/ui/plugins/global.tsx`
-- **平台设置组件**: `app/ui/plugins/*.tsx`
+#### 2. 测试代理连接
+```powershell
+# 方法1: 使用 curl 测试
+$env:http_proxy = "http://127.0.0.1:54350"
+$env:https_proxy = "http://127.0.0.1:54350"
+curl -I https://github.com
 
-### 添加新配置项步骤
+# 方法2: 使用 Invoke-WebRequest 测试
+Invoke-WebRequest -Uri "https://github.com" -Proxy "http://127.0.0.1:54350" -Method HEAD
 
-1. **后端配置结构** (`config.rs`):
-   ```rust
-   #[serde(default)]
-   pub new_field: Option<String>,
-   ```
-
-2. **前端全局配置** (`global.tsx`):
-   ```tsx
-   <Form.Input
-     field="new_field"
-     label="新字段名"
-     extraText="字段说明"
-     style={{ width: '100%' }}
-   />
-   ```
-
-3. **前端平台配置** (如 `douyin.tsx`):
-   ```tsx
-   <Form.Select
-     field="douyin_new_field"
-     label="新字段"
-     multiple  // 如果是多选
-   >
-     <Select.Option value="option1">选项1</Select.Option>
-   </Form.Select>
-   ```
-
-### 配置数据流
-
-```
-Web UI (React Form)
-    ↓ (submit)
-API Endpoint (/v1/configuration)
-    ↓ (PUT)
-Database (SQLite)
-    ↓ (JSON parse)
-Config Struct (Rust)
-    ↓ (use)
-Download Manager / Uploader
+# 方法3: 测试 GitHub API
+$env:http_proxy = "http://127.0.0.1:54350"
+$env:https_proxy = "http://127.0.0.1:54350"
+curl https://api.github.com
 ```
 
-### 配置热重载
-
-- **触发条件**: 调用 `/v1/configuration/reload` API
-- **检测间隔**: 每分钟检查一次系统状态
-- **安全条件**: 只有在无录制和上传任务时才能重载
-- **自动重启**: 配置 `auto_restart = true` 时，空闲自动重启
-
-### 重要配置项说明
-
-| 配置项 | 说明 | 生效方式 |
-|--------|------|----------|
-| `event_loop_interval` | 平台检测间隔 | 重载配置 |
-| `checker_sleep` | 单个主播检测间隔 | 重载配置 |
-| `delay` | 下播延迟检测 | 重载配置 |
-| `pool1_size` | 下载线程池大小 | 重启程序 |
-| `pool2_size` | 上传线程池大小 | 重启程序 |
-| `http_proxy` | HTTP代理 | 即时生效 |
-| `https_proxy` | HTTPS代理 | 即时生效 |
-
-## 状态管理
-
-### 工作器状态 (WorkerStatus)
-```rust
-pub enum WorkerStatus {
-    Working(Arc<DownloadTask>),  // 正在录制
-    Pending,                      // 等待检测
-    Idle,                         // 空闲
-    Pause,                        // 暂停
-}
-```
-
-### 状态流转
-```
-Idle → Pending → Working → Idle
-              ↓
-            Pause
-```
-
-### 状态更新机制
-1. **monitor.rs**: 检测直播状态，控制 `Pending` → `Working`
-2. **download.rs**: 下载任务完成，控制 `Working` → `Idle`
-3. **endpoints.rs**: API 调用控制暂停/恢复
-
-## 常见问题
-
-### 配置项不显示在前端
-**原因**: 只修改了后端配置结构，未添加前端表单字段
-**解决**: 在对应的 `app/ui/plugins/*.tsx` 中添加 Form 组件
-
-### 配置保存后未生效
-**原因**: 部分配置需要重载或重启才能生效
-**解决**: 
-- 点击"重载配置"按钮
-- 或设置 `auto_restart = true` 等待自动重启
-- 或手动重启程序
-
-### 直播状态显示不正确
-**原因**: 状态更新顺序问题
-**解决**: 确保 `change_status` 在 `wake_waker` 之前调用
-
-## 文件编码问题
-
-### 问题描述
-Windows 环境下文件容易出现 GBK/GB2312 编码，导致：
-- Rust 编译失败: `stream did not contain valid UTF-8`
-- 前端页面显示乱码（如"锟斤拷"或"??"）
-- 日志输出乱码
-
-### 根本原因
-- Windows 默认使用 GBK 编码
-- Rust 和现代前端工具链要求 UTF-8
-- 文件在不同编辑器间复制时编码可能改变
-
-### 从 Git 历史恢复乱码文件
-当文件出现乱码时，可以从 Git 历史中找到正确编码的版本：
-
+#### 3. 配置 Git 使用代理
 ```bash
-# 查看文件历史
-git log --oneline -- crates/biliup-cli/src/server/core/monitor.rs
+# 设置代理
+git config http.proxy http://127.0.0.1:54350
+git config https.proxy http://127.0.0.1:54350
 
-# 获取特定版本的文件内容
-git show 3c9cc3f:crates/biliup-cli/src/server/core/monitor.rs > monitor_fixed.rs
-
-# 对比当前版本和正确版本
-git diff HEAD 3c9cc3f -- crates/biliup-cli/src/server/core/monitor.rs
+# 验证配置
+git config --get http.proxy
+git config --get https.proxy
 ```
 
-**注意事项**:
-- 不要直接替换整个文件，可能丢失最新的逻辑修改
-- 应该逐行对比，只替换乱码的注释部分
-- 使用 `SearchReplace` 工具精确替换，保留代码逻辑
+#### 4. 如果代理不可用
+- 检查 Clash 是否开启系统代理
+- 尝试切换 Clash 模式（规则模式/全局模式）
+- 重启 Clash 服务
 
 ### 预防措施
-1. **配置编辑器**: VS Code 设置 `"files.encoding": "utf8"`
-2. **配置 Git**: `git config core.quotepath off`
-3. **EditorConfig**: 项目根目录创建 `.editorconfig` 设置 `charset = utf-8`
+
+#### 创建连接测试脚本
+创建 `test-proxy.ps1`:
+```powershell
+# 测试代理连接脚本
+$proxyPort = 54350  # 根据实际情况修改
+
+Write-Host "测试代理端口 $proxyPort..." -ForegroundColor Yellow
+$connection = Test-NetConnection -ComputerName 127.0.0.1 -Port $proxyPort
+
+if ($connection.TcpTestSucceeded) {
+    Write-Host "✓ 代理端口连接正常" -ForegroundColor Green
+    
+    # 测试 GitHub 访问
+    Write-Host "测试 GitHub 访问..." -ForegroundColor Yellow
+    try {
+        $env:http_proxy = "http://127.0.0.1:$proxyPort"
+        $env:https_proxy = "http://127.0.0.1:$proxyPort"
+        $response = Invoke-WebRequest -Uri "https://github.com" -Method HEAD -TimeoutSec 10
+        Write-Host "✓ GitHub 访问正常 (HTTP $($response.StatusCode))" -ForegroundColor Green
+    } catch {
+        Write-Host "✗ GitHub 访问失败: $_" -ForegroundColor Red
+    }
+} else {
+    Write-Host "✗ 代理端口 $proxyPort 未响应，请检查 Clash 是否运行" -ForegroundColor Red
+}
+```
+
+#### Git 配置检查清单
+```powershell
+# 推送前检查清单
+function Test-GitConnection {
+    Write-Host "=== Git 连接测试 ===" -ForegroundColor Cyan
+    
+    # 1. 检查远程仓库
+    Write-Host "`n1. 远程仓库配置:" -ForegroundColor Yellow
+    git remote -v
+    
+    # 2. 检查代理设置
+    Write-Host "`n2. Git 代理设置:" -ForegroundColor Yellow
+    git config --get http.proxy
+    git config --get https.proxy
+    
+    # 3. 测试连接
+    Write-Host "`n3. 测试 GitHub 连接..." -ForegroundColor Yellow
+    git ls-remote origin HEAD 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✓ 连接正常" -ForegroundColor Green
+        return $true
+    } else {
+        Write-Host "✗ 连接失败，请检查网络或代理" -ForegroundColor Red
+        return $false
+    }
+}
+```
+
+### 快速修复命令
+```powershell
+# 如果确认代理可用但 Git 无法连接，尝试以下命令：
+
+# 1. 清除 Git 代理设置
+git config --global --unset http.proxy
+git config --global --unset https.proxy
+
+# 2. 设置环境变量代理（当前会话有效）
+$env:http_proxy = "http://127.0.0.1:54350"
+$env:https_proxy = "http://127.0.0.1:54350"
+
+# 3. 或者设置 Git 代理
+git config http.proxy http://127.0.0.1:54350
+git config https.proxy http://127.0.0.1:54350
+
+# 4. 推送
+git push
+```
+
+### 常见 Clash 端口
+- HTTP 代理: `7890` 或 `54350`
+- SOCKS5 代理: `7891` 或 `54351`
+
+根据您的 Clash 配置选择正确的端口。
