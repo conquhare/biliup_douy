@@ -1,11 +1,18 @@
-name: Upload Windows Python Package (暂时禁用)
+name: Build Windows EXE
 
 on:
-  # 暂时禁用 Windows 编译
-  # release:
-  #   types: [created]
-  # workflow_dispatch:
-  workflow_dispatch:  # 仅保留手动触发，但不实际运行
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (例如: v0.1.1)'
+        required: true
+        default: 'v0.1.1'
+        type: string
+      release:
+        description: '是否创建 Release'
+        required: true
+        default: true
+        type: boolean
 
 jobs:
   build:
@@ -14,68 +21,82 @@ jobs:
     runs-on: 'windows-latest'
     steps:
     - uses: actions/checkout@v4
+    
+    - name: Update version in Cargo.toml
+      shell: pwsh
+      run: |
+        $version = "${{ github.event.inputs.version }}"
+        # 移除 v 前缀
+        $version = $version -replace '^v', ''
+        
+        # 读取 Cargo.toml
+        $cargoToml = Get-Content Cargo.toml -Raw
+        
+        # 替换版本号
+        $cargoToml = $cargoToml -replace '(?m)^version = "[^"]+"', "version = `"$version`""
+        
+        # 写回文件
+        Set-Content Cargo.toml $cargoToml
+        
+        Write-Host "版本号已更新为: $version"
+        Get-Content Cargo.toml | Select-String "version" | Select-Object -First 5
+    
     - uses: actions/setup-node@v4
       with:
         node-version: lts/*
+    
     - name: Build frontend
       run: |
         npm install
         npm run build
+    
     - uses: actions/setup-python@v5
       with:
         python-version: '3.x'
-    - uses: PyO3/maturin-action@v1
+    
+    - name: Install Rust stable
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Build Rust extension
+      uses: PyO3/maturin-action@v1
       with:
         command: build
         args: --release
-    - name: Build
+    
+    - name: Build EXE with PyInstaller
       shell: bash
       run: |
         python -m pip install --upgrade pip
         pip install target/wheels/*.whl
         pip install Pillow pyinstaller
         pyinstaller biliup.spec
-    - name: Rename and move sidecar
-      run: |
-        # 动态获取rustc的target triple
-        $TARGET_TRIPLE = rustc -Vv | Select-String "host:" | ForEach-Object {$_.Line.split(" ")[1]}
-        echo "Target Triple: $TARGET_TRIPLE"
-        
-        # 创建目标目录 (如果不存在)
-        New-Item -ItemType Directory -Force -Path tauri-app/src-tauri/binaries
-        
-        # 假设的原始路径和新路径
-        $SOURCE_PATH = "dist/biliup.exe"
-        $DESTINATION_PATH = "tauri-app/src-tauri/binaries/biliup-$TARGET_TRIPLE.exe"
-        
-        echo "Moving $SOURCE_PATH to $DESTINATION_PATH"
-        
-        # 使用PowerShell的Move-Item命令进行移动和重命名
-        #Move-Item -Path $SOURCE_PATH -Destination $DESTINATION_PATH
-        cp -r dist/bbup/* tauri-app/src-tauri/binaries
+    
+    - name: Package EXE
       shell: pwsh
-    # Optionally verify that it works (provided that it does not need user interaction)
-    #- run: ./dist/your-code/your-code
-    - name: install Rust stable
-      uses: dtolnay/rust-toolchain@stable
-    - name: install frontend dependencies
       run: |
-        cd tauri-app
-        npm install
-    - uses: tauri-apps/tauri-action@v0
+        $version = "${{ github.event.inputs.version }}"
+        $targetTriple = rustc -Vv | Select-String "host:" | ForEach-Object {$_.Line.split(" ")[1]}
+        $archiveName = "biliup-$version-x86_64-windows.zip"
+        
+        # 压缩 dist/bbup 文件夹
+        Compress-Archive -Path "dist/bbup/*" -DestinationPath $archiveName
+        
+        Write-Host "创建压缩包: $archiveName"
+        Write-Host "目标架构: $targetTriple"
+    
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: biliup-windows-exe
+        path: biliup-*.zip
+    
+    - name: Create Release
+      if: ${{ github.event.inputs.release == 'true' }}
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.event.inputs.version }}
+        name: ${{ github.event.inputs.version }}
+        files: biliup-*.zip
+        generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tagName: ${{ github.ref }} # the action automatically replaces \_\_VERSION\_\_ with the app version.
-        projectPath: tauri-app
-#    - uses: actions/upload-artifact@v4
-#      with:
-#        path: dist/*
-#    - name: Upload binaries to release
-#      uses: svenstaro/upload-release-action@v2
-#      with:
-#        repo_token: ${{ secrets.GITHUB_TOKEN }}
-##        file: target/release/${{ matrix.artifact_name }}
-#        file: dist/biliup.exe
-#        asset_name: biliup_$tag.exe
-#        tag: ${{ github.ref }}
