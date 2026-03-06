@@ -11,6 +11,7 @@ use tracing::info;
 
 /// 下载管理器
 /// 负责管理特定平台的下载任务，包括监控器和插件
+#[derive(Clone)]
 pub struct DownloadManager {
     /// 下载插件
     // plugins: Vec<Arc<dyn DownloadPlugin + Send + Sync>>,
