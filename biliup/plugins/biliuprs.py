@@ -1,4 +1,4 @@
-import multiprocessing as mp
+﻿import multiprocessing as mp
 import time
 
 import stream_gears
@@ -92,7 +92,7 @@ class BiliWeb(UploadBase):
         if ex_parent_conn.poll():
             raise RuntimeError(ex_parent_conn.recv())
 
-        logger.info(f"上传成功: {self.principal}")
+        logger.info(f"涓婁紶鎴愬姛: {self.principal}")
         return file_list
 
     def creditsToDesc_v2(self):
@@ -115,13 +115,13 @@ class BiliWeb(UploadBase):
                     "@credit", "@" + credit["username"] + "  ", 1)
                 desc_v2_tmp = desc_v2_tmp[num + 7:]
             except IndexError:
-                logger.error('简介中的@credit占位符少于credits的数量,替换失败')
+                logger.error('绠€浠嬩腑鐨凘credit鍗犱綅绗﹀皯浜巆redits鐨勬暟閲?鏇挎崲澶辫触')
         desc_v2.append({
             "raw_text": " " + desc_v2_tmp,
             "biz_id": "",
             "type": 1
         })
-        desc_v2[0]["raw_text"] = desc_v2[0]["raw_text"][1:]  # 开头空格会导致识别简介过长
+        desc_v2[0]["raw_text"] = desc_v2[0]["raw_text"][1:]  # 寮€澶寸┖鏍间細瀵艰嚧璇嗗埆绠€浠嬭繃闀?
         return desc_v2
 
 

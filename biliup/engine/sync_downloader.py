@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import logging
@@ -15,7 +15,7 @@ logger = logging.getLogger('biliup.engine.sync_downloader')
 
 def pad_file_to_size(filename, min_file_size):
     """
-    若文件大小不足 min_file_size，则在文件末尾填充 0x00 至目标大小。
+    鑻ユ枃浠跺ぇ灏忎笉瓒?min_file_size锛屽垯鍦ㄦ枃浠舵湯灏惧～鍏?0x00 鑷崇洰鏍囧ぇ灏忋€?
     """
     if not os.path.exists(filename):
         return
@@ -23,20 +23,20 @@ def pad_file_to_size(filename, min_file_size):
     current_size = os.path.getsize(filename)
     if current_size < min_file_size:
         need_pad = min_file_size - current_size
-        print(f"[pad_file_to_size] 补齐文件 {filename}："
-              f"填充 {need_pad} 字节 0x00 使其达到 {min_file_size} 字节")
+        print(f"[pad_file_to_size] 琛ラ綈鏂囦欢 {filename}锛?
+              f"濉厖 {need_pad} 瀛楄妭 0x00 浣垮叾杈惧埌 {min_file_size} 瀛楄妭")
         with open(filename, "ab") as f:
             f.write(b"\x00" * need_pad)
 
 
 class SyncDownloader:
     """
-    同步下载-切片类
-    说明：
-      1. 在 run() 方法中，单线程循环执行录制逻辑；
-      2. 每次启动一段 ffmpeg 录制，并读取 streamlink stdout 作为输入；
-      3. 当 ffmpeg 录制结束后，杀掉当前的 streamlink 进程并补齐文件大小；
-      4. 若中途发现 streamlink 无数据可读（EOF），则说明没有更多内容可下载，结束整个程序。
+    鍚屾涓嬭浇-鍒囩墖绫?
+    璇存槑锛?
+      1. 鍦?run() 鏂规硶涓紝鍗曠嚎绋嬪惊鐜墽琛屽綍鍒堕€昏緫锛?
+      2. 姣忔鍚姩涓€娈?ffmpeg 褰曞埗锛屽苟璇诲彇 streamlink stdout 浣滀负杈撳叆锛?
+      3. 褰?ffmpeg 褰曞埗缁撴潫鍚庯紝鏉€鎺夊綋鍓嶇殑 streamlink 杩涚▼骞惰ˉ榻愭枃浠跺ぇ灏忥紱
+      4. 鑻ヤ腑閫斿彂鐜?streamlink 鏃犳暟鎹彲璇伙紙EOF锛夛紝鍒欒鏄庢病鏈夋洿澶氬唴瀹瑰彲涓嬭浇锛岀粨鏉熸暣涓▼搴忋€?
     """
 
     def __init__(self,
@@ -47,12 +47,12 @@ class SyncDownloader:
                  output_prefix="segment_",
                  video_queue=None):
         """
-        :param stream_url:   拉流地址
+        :param stream_url:   鎷夋祦鍦板潃
 
-        :param segment_duration: 每段录制时长（秒）（暂时不用）
-        :param max_file_size:     文件最小大小，不足时进行 0x00 填充 单位 MB
-        :param read_block_size:   从 streamlink stdout 读取数据时的单次块大小
-        :param output_prefix:     输出文件名前缀
+        :param segment_duration: 姣忔褰曞埗鏃堕暱锛堢锛夛紙鏆傛椂涓嶇敤锛?
+        :param max_file_size:     鏂囦欢鏈€灏忓ぇ灏忥紝涓嶈冻鏃惰繘琛?0x00 濉厖 鍗曚綅 MB
+        :param read_block_size:   浠?streamlink stdout 璇诲彇鏁版嵁鏃剁殑鍗曟鍧楀ぇ灏?
+        :param output_prefix:     杈撳嚭鏂囦欢鍚嶅墠缂€
         """
         self.stream_url = stream_url
         self.quality = "best"
@@ -67,43 +67,43 @@ class SyncDownloader:
 
     def run_ffmpeg_with_url(self, ffmpeg_cmd, output_filename):
         with subprocess.Popen(ffmpeg_cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE) as ffmpeg_proc:
-            logger.info("[run] 启动 ffmpeg...")
+            logger.info("[run] 鍚姩 ffmpeg...")
             if output_filename == "-":
-                data = ffmpeg_proc.stdout.read(self.read_block_size)  # 读取第一个 data
-                if not data:  # 如果第一个 data 为空
-                    logger.info("[run] ffmpeg 没有输出数据，返回 False")
+                data = ffmpeg_proc.stdout.read(self.read_block_size)  # 璇诲彇绗竴涓?data
+                if not data:  # 濡傛灉绗竴涓?data 涓虹┖
+                    logger.info("[run] ffmpeg 娌℃湁杈撳嚭鏁版嵁锛岃繑鍥?False")
                     err = ffmpeg_proc.stderr.read()
                     if err:
                         logger.error("[run] ffmpeg err " + err.decode("utf-8", errors="replace"))
                     return False
-                self.video_queue.put(data)  # 将第一个数据放入队列
+                self.video_queue.put(data)  # 灏嗙涓€涓暟鎹斁鍏ラ槦鍒?
                 while True:
                     data = ffmpeg_proc.stdout.read(self.read_block_size)
                     if not data:
-                        logger.info("[run] ffmpeg stdout 已到达 EOF。结束本段写入。")
+                        logger.info("[run] ffmpeg stdout 宸插埌杈?EOF銆傜粨鏉熸湰娈靛啓鍏ャ€?)
                         break
                     self.video_queue.put(data)
             ffmpeg_proc.wait()
-            # 输出 ffmpeg 的错误信息（如果有的话）
+            # 杈撳嚭 ffmpeg 鐨勯敊璇俊鎭紙濡傛灉鏈夌殑璇濓級
             # err = ffmpeg_proc.stderr.read()
             # if err:
             #     logger.error("[run] ffmpeg err " + err.decode("utf-8", errors="replace"))
-        return True  # 如果正常执行，返回 True
+        return True  # 濡傛灉姝ｅ父鎵ц锛岃繑鍥?True
 
     def run_streamlink_with_ffmpeg(self, streamlink_cmd, ffmpeg_cmd, output_filename):
         with subprocess.Popen(streamlink_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as streamlink_proc:
-            logger.info("[run] 启动 streamlink...")
+            logger.info("[run] 鍚姩 streamlink...")
             with subprocess.Popen(ffmpeg_cmd, stdin=streamlink_proc.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as ffmpeg_proc:
-                logger.info("[run] 启动 ffmpeg...")
+                logger.info("[run] 鍚姩 ffmpeg...")
                 if output_filename == "-":
-                    logger.info("[run] 读取 ffmpeg stdout...")
-                    # 读取第一个数据
+                    logger.info("[run] 璇诲彇 ffmpeg stdout...")
+                    # 璇诲彇绗竴涓暟鎹?
                     data = ffmpeg_proc.stdout.read(self.read_block_size)
-                    if not data:  # 如果第一个数据为空
-                        logger.info("[run] ffmpeg 没有输出数据，返回 False")
-                        streamlink_proc.kill()  # 终止 streamlink 进程
-                        ffmpeg_proc.kill()  # 终止 ffmpeg 进程
-                        # 打印错误输出
+                    if not data:  # 濡傛灉绗竴涓暟鎹负绌?
+                        logger.info("[run] ffmpeg 娌℃湁杈撳嚭鏁版嵁锛岃繑鍥?False")
+                        streamlink_proc.kill()  # 缁堟 streamlink 杩涚▼
+                        ffmpeg_proc.kill()  # 缁堟 ffmpeg 杩涚▼
+                        # 鎵撳嵃閿欒杈撳嚭
                         ffmpeg_err = ffmpeg_proc.stderr.read()
                         if ffmpeg_err:
                             logger.error("[run] ffmpeg err " + ffmpeg_err.decode("utf-8", errors="replace"))
@@ -112,38 +112,38 @@ class SyncDownloader:
                             logger.error("[run] streamlink err " + streamlink_err.decode("utf-8", errors="replace"))
                         return False
 
-                    self.video_queue.put(data)  # 将第一个数据放入队列
-                    # 继续读取剩余数据
+                    self.video_queue.put(data)  # 灏嗙涓€涓暟鎹斁鍏ラ槦鍒?
+                    # 缁х画璇诲彇鍓╀綑鏁版嵁
                     while True:
                         data = ffmpeg_proc.stdout.read(self.read_block_size)
                         if not data:
-                            logger.info("[run] ffmpeg stdout 已到达 EOF。结束本段写入。")
+                            logger.info("[run] ffmpeg stdout 宸插埌杈?EOF銆傜粨鏉熸湰娈靛啓鍏ャ€?)
                             break
                         self.video_queue.put(data)
 
                 ffmpeg_proc.wait()
-                logger.info("[run] ffmpeg 已到达输出大小并退出。结束本段写入。")
-                # 打印 ffmpeg 子进程的错误输出
+                logger.info("[run] ffmpeg 宸插埌杈捐緭鍑哄ぇ灏忓苟閫€鍑恒€傜粨鏉熸湰娈靛啓鍏ャ€?)
+                # 鎵撳嵃 ffmpeg 瀛愯繘绋嬬殑閿欒杈撳嚭
                 # ffmpeg_err = ffmpeg_proc.stderr.read()
                 # if ffmpeg_err:
                 # logger.error("[run] ffmpeg err " + ffmpeg_err.decode("utf-8", errors="replace"))
-            # 打印 streamlink 子进程的错误输出
+            # 鎵撳嵃 streamlink 瀛愯繘绋嬬殑閿欒杈撳嚭
             # streamlink_err = streamlink_proc.stderr.read()
             # if streamlink_err:
             #     logger.error("[run] streamlink err " + streamlink_err.decode("utf-8", errors="replace"))
-        return True  # 如果一切正常，返回 True
+        return True  # 濡傛灉涓€鍒囨甯革紝杩斿洖 True
 
     def build_ffmpeg_cmd(self, input_source, output_filename, headers, segment_duration):
         cmd = [
             "ffmpeg",
             "-loglevel", "error",
-            # "-"  # 覆盖输出文件
+            # "-"  # 瑕嗙洊杈撳嚭鏂囦欢
         ]
         if headers:
             cmd += ["-headers", ''.join(f'{key}: {value}\r\n' for key, value in headers.items())]
         for i in [
             "-fflags", "+genpts",
-            "-i", input_source,  # 输入源
+            "-i", input_source,  # 杈撳叆婧?
             # "-t", str(segment_duration),
             "-fs", f"{self.max_file_size}M",
             "-c:v", "copy",
@@ -159,14 +159,14 @@ class SyncDownloader:
 
     def run(self):
         """
-        主逻辑：循环进行分段录制。
-        - 每段录制：
-          1) 启动 streamlink；若 EOF 则退出。
-          2) 启动 ffmpeg (带 -fs 参数限制输出大小)；
-          3) 从 streamlink stdout 读数据，写给 ffmpeg stdin；
-          4) ffmpeg 到时长后退出，然后杀掉 streamlink；
-          5) 进入下一段，如此往复。
-        - 若中途发现 streamlink 无数据（EOF）则跳出循环。
+        涓婚€昏緫锛氬惊鐜繘琛屽垎娈靛綍鍒躲€?
+        - 姣忔褰曞埗锛?
+          1) 鍚姩 streamlink锛涜嫢 EOF 鍒欓€€鍑恒€?
+          2) 鍚姩 ffmpeg (甯?-fs 鍙傛暟闄愬埗杈撳嚭澶у皬)锛?
+          3) 浠?streamlink stdout 璇绘暟鎹紝鍐欑粰 ffmpeg stdin锛?
+          4) ffmpeg 鍒版椂闀垮悗閫€鍑猴紝鐒跺悗鏉€鎺?streamlink锛?
+          5) 杩涘叆涓嬩竴娈碉紝濡傛寰€澶嶃€?
+        - 鑻ヤ腑閫斿彂鐜?streamlink 鏃犳暟鎹紙EOF锛夊垯璺冲嚭寰幆銆?
         """
 
         file_index = 1
@@ -175,18 +175,18 @@ class SyncDownloader:
             if self.stop_event.is_set():
                 break
             if retry_count >= 5:
-                logger.info("这个直播流已经失效，停止下载器")
+                logger.info("杩欎釜鐩存挱娴佸凡缁忓け鏁堬紝鍋滄涓嬭浇鍣?)
                 return
 
             output_filename = f"{self.output_prefix}{file_index:03d}.mkv"
-            # print(f"\n[run] ========== 准备录制第 {file_index} 段：{output_filename} ==========")
-            # logging.info(f"\n[run] == 当前下载流地址：{self.stream_url} ==")
-            logger.info(f"\n[run] == 准备录制第 {file_index} 段：{output_filename} ==")
+            # print(f"\n[run] ========== 鍑嗗褰曞埗绗?{file_index} 娈碉細{output_filename} ==========")
+            # logging.info(f"\n[run] == 褰撳墠涓嬭浇娴佸湴鍧€锛歿self.stream_url} ==")
+            logger.info(f"\n[run] == 鍑嗗褰曞埗绗?{file_index} 娈碉細{output_filename} ==")
             output_filename = "-"
             is_hls = '.m3u8' in urlparse(self.stream_url).path
             if not is_hls:
-                # print("[run] 输入源不是 HLS 地址，将直接使用 ffmpeg 进行录制。", self.stream_url)
-                logger.info("[run] 输入源不是 HLS 地址，将直接使用 ffmpeg 进行录制。")
+                # print("[run] 杈撳叆婧愪笉鏄?HLS 鍦板潃锛屽皢鐩存帴浣跨敤 ffmpeg 杩涜褰曞埗銆?, self.stream_url)
+                logger.info("[run] 杈撳叆婧愪笉鏄?HLS 鍦板潃锛屽皢鐩存帴浣跨敤 ffmpeg 杩涜褰曞埗銆?)
                 ffmpeg_cmd = self.build_ffmpeg_cmd(self.stream_url, output_filename,
                                                    self.headers, self.segment_duration)
                 if not self.run_ffmpeg_with_url(ffmpeg_cmd, output_filename):
@@ -194,8 +194,8 @@ class SyncDownloader:
                     time.sleep(1)
                     continue
             else:
-                # print("[run] 输入源是 HLS 地址，将使用 streamlink + ffmpeg 进行录制。")
-                logger.info("[run] 输入源是 HLS 地址，将使用 streamlink + ffmpeg 进行录制。")
+                # print("[run] 杈撳叆婧愭槸 HLS 鍦板潃锛屽皢浣跨敤 streamlink + ffmpeg 杩涜褰曞埗銆?)
+                logger.info("[run] 杈撳叆婧愭槸 HLS 鍦板潃锛屽皢浣跨敤 streamlink + ffmpeg 杩涜褰曞埗銆?)
                 if self.headers:
                     headers = []
                     for key, value in self.headers.items():
@@ -217,9 +217,9 @@ class SyncDownloader:
                     time.sleep(1)
                     continue
 
-            # 6. 进入下一段
+            # 6. 杩涘叆涓嬩竴娈?
             # if file_index != 1:
-            self.video_queue.put(None)  # 通知消费者线程本段录制结束
+            self.video_queue.put(None)  # 閫氱煡娑堣垂鑰呯嚎绋嬫湰娈靛綍鍒剁粨鏉?
             file_index += 1
 
 
@@ -231,41 +231,41 @@ def main():
         output_prefix="segment_"
     )
 
-    # ====【可选】消费者线程示例，演示如何拿到 video_queue 的数据====
+    # ====銆愬彲閫夈€戞秷璐硅€呯嚎绋嬬ず渚嬶紝婕旂ず濡備綍鎷垮埌 video_queue 鐨勬暟鎹?===
     def consumer():
         file_index = 1
         while True:
             data_count = 0
             with open(f"output_{file_index}.mkv", "wb") as f:
                 while True:
-                    data = slicer.video_queue.get()  # 阻塞式获取
+                    data = slicer.video_queue.get()  # 闃诲寮忚幏鍙?
                     if data is None:
                         break
                     f.write(data)
                     data_count += len(data)
-                    # print(f"[consumer] 写入文件 output_{file_index}.mkv，大小：{data_count} 字")
-            print(f"[consumer] 写入文件 output_{file_index}.mkv，大小：{data_count} 字")
+                    # print(f"[consumer] 鍐欏叆鏂囦欢 output_{file_index}.mkv锛屽ぇ灏忥細{data_count} 瀛?)
+            print(f"[consumer] 鍐欏叆鏂囦欢 output_{file_index}.mkv锛屽ぇ灏忥細{data_count} 瀛?)
 
             if data_count < 100:
-                print(f"[consumer] 无效文件，删除 output_{file_index}.mkv")
+                print(f"[consumer] 鏃犳晥鏂囦欢锛屽垹闄?output_{file_index}.mkv")
                 os.remove(f"output_{file_index}.mkv")
                 slicer.stop_event.set()
                 break
 
-            pad_file_to_size(f"output_{file_index}.mkv", 100 * 1024 * 1024)  # 补齐文件大小
+            pad_file_to_size(f"output_{file_index}.mkv", 100 * 1024 * 1024)  # 琛ラ綈鏂囦欢澶у皬
             file_index += 1
             # if slicer.stop_event.is_set():
             # break
-            # 在这里可以对 data 做进一步处理，比如再推到别的地方
+            # 鍦ㄨ繖閲屽彲浠ュ data 鍋氳繘涓€姝ュ鐞嗭紝姣斿鍐嶆帹鍒板埆鐨勫湴鏂?
 
-    # 启动消费者线程
+    # 鍚姩娑堣垂鑰呯嚎绋?
     t = threading.Thread(target=consumer, daemon=True)
     t.start()
 
-    # 启动下载录制主逻辑
+    # 鍚姩涓嬭浇褰曞埗涓婚€昏緫
     slicer.run()
 
-    # 停止消费者（如录制完毕后可执行）
+    # 鍋滄娑堣垂鑰咃紙濡傚綍鍒跺畬姣曞悗鍙墽琛岋級
     # slicer.video_queue.put(None)
 
     # t.join()

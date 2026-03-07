@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # filename: __adapterproxymanager.py_compiler
 
@@ -19,7 +19,7 @@
 
 '''
 @version: 0.01
-@brief: 将rpc部分中的adapterproxymanager抽离出来，实现不同的负载均衡
+@brief: 灏唕pc閮ㄥ垎涓殑adapterproxymanager鎶界鍑烘潵锛屽疄鐜颁笉鍚岀殑璐熻浇鍧囪　
 '''
 
 import os
@@ -30,7 +30,7 @@ import time
 from enum import Enum
 
 from . import exception
-# 因为循环import的问题只能放这里，不能放文件开始处
+# 鍥犱负寰幆import鐨勯棶棰樺彧鑳芥斁杩欓噷锛屼笉鑳芥斁鏂囦欢寮€濮嬪
 from .QueryF import QueryFProxy
 from .QueryF import QueryFPrxCallback
 from .__TimeoutQueue import ReqMessage
@@ -43,7 +43,7 @@ from .exception import TarsException
 
 class AdapterProxy:
     '''
-    @brief: 每一个Adapter管理一个服务端端口的连接，数据收发
+    @brief: 姣忎竴涓狝dapter绠＄悊涓€涓湇鍔＄绔彛鐨勮繛鎺ワ紝鏁版嵁鏀跺彂
     '''
 
     def __init__(self):
@@ -69,8 +69,8 @@ class AdapterProxy:
 
     def initialize(self, endPointInfo, objectProxy, reactor, asyncProc):
         '''
-        @brief: 初始化
-        @param endPointInfo: 连接对端信息
+        @brief: 鍒濆鍖?
+        @param endPointInfo: 杩炴帴瀵圭淇℃伅
         @type endPointInfo: EndPointInfo
         @type objectProxy: ObjectProxy
         @type reactor: FDReactor
@@ -87,25 +87,25 @@ class AdapterProxy:
 
     def terminate(self):
         '''
-        @brief: 关闭
+        @brief: 鍏抽棴
         '''
         tarsLogger.debug('AdapterProxy:terminate')
         self.setCloseTrans(True)
 
     def trans(self):
         '''
-        @brief: 获取传输类
-        @return: 负责网络传输的trans
+        @brief: 鑾峰彇浼犺緭绫?
+        @return: 璐熻矗缃戠粶浼犺緭鐨則rans
         @rtype: Transceiver
         '''
         return self.__trans
 
     def invoke(self, reqmsg):
         '''
-        @brief: 远程过程调用处理方法
-        @param reqmsg: 请求响应报文
+        @brief: 杩滅▼杩囩▼璋冪敤澶勭悊鏂规硶
+        @param reqmsg: 璇锋眰鍝嶅簲鎶ユ枃
         @type reqmsg: ReqMessage
-        @return: 错误码：0表示成功，-1表示连接失败
+        @return: 閿欒鐮侊細0琛ㄧず鎴愬姛锛?1琛ㄧず杩炴帴澶辫触
         @rtype: int
         '''
         tarsLogger.debug('AdapterProxy:invoke')
@@ -113,7 +113,7 @@ class AdapterProxy:
 
         if (not self.__trans.hasConnected() and
                 not self.__trans.isConnecting):
-            # -1表示连接失败
+            # -1琛ㄧず杩炴帴澶辫触
             return -1
 
         reqmsg.request.iRequestId = self.__object.getTimeoutQueue().generateId()
@@ -125,10 +125,10 @@ class AdapterProxy:
 
     def finished(self, rsp):
         '''
-        @brief: 远程过程调用返回处理
-        @param rsp: 响应报文
+        @brief: 杩滅▼杩囩▼璋冪敤杩斿洖澶勭悊
+        @param rsp: 鍝嶅簲鎶ユ枃
         @type rsp: ResponsePacket
-        @return: 函数是否执行成功
+        @return: 鍑芥暟鏄惁鎵ц鎴愬姛
         @rtype: bool
         '''
         tarsLogger.debug('AdapterProxy:finished')
@@ -150,13 +150,13 @@ class AdapterProxy:
                          rsp.iRequestId, rsp.iRet)
         return False
 
-    # 检测连接是否失败，失效时重连
+    # 妫€娴嬭繛鎺ユ槸鍚﹀け璐ワ紝澶辨晥鏃堕噸杩?
     def checkActive(self, forceConnect=False):
         '''
-        @brief: 检测连接是否失效
-        @param forceConnect: 是否强制发起连接，为true时不对状态进行判断就发起连接
+        @brief: 妫€娴嬭繛鎺ユ槸鍚﹀け鏁?
+        @param forceConnect: 鏄惁寮哄埗鍙戣捣杩炴帴锛屼负true鏃朵笉瀵圭姸鎬佽繘琛屽垽鏂氨鍙戣捣杩炴帴
         @type forceConnect: bool
-        @return: 连接是否有效
+        @return: 杩炴帴鏄惁鏈夋晥
         @rtype: bool
         '''
         tarsLogger.debug('AdapterProxy:checkActive')
@@ -173,7 +173,7 @@ class AdapterProxy:
 
     def doReconnect(self):
         '''
-        @brief: 重新发起连接
+        @brief: 閲嶆柊鍙戣捣杩炴帴
         @return: None
         @rtype: None
         '''
@@ -189,8 +189,8 @@ class AdapterProxy:
 
     def sendRequest(self):
         '''
-        @brief: 把队列中的请求放到Transceiver的发送缓存里
-        @return: 放入缓存的数据长度
+        @brief: 鎶婇槦鍒椾腑鐨勮姹傛斁鍒癟ransceiver鐨勫彂閫佺紦瀛橀噷
+        @return: 鏀惧叆缂撳瓨鐨勬暟鎹暱搴?
         @rtype: int
         '''
         tarsLogger.debug('AdapterProxy:sendRequest')
@@ -206,7 +206,7 @@ class AdapterProxy:
             tarsLogger.info('sendRequest, id: %d, len: %d',
                             reqmsg.request.iRequestId, len(buf))
             blen += len(buf)
-            # 合并一次发送的包 最大合并至8k 提高异步时客户端效率?
+            # 鍚堝苟涓€娆″彂閫佺殑鍖?鏈€澶у悎骞惰嚦8k 鎻愰珮寮傛鏃跺鎴风鏁堢巼?
             if (self.__trans.getEndPointInfo().getConnType() == EndPointInfo.SOCK_UDP
                     or blen > 8192):
                 break
@@ -216,9 +216,9 @@ class AdapterProxy:
 
     def finishConnect(self):
         '''
-        @brief: 使用的非阻塞socket连接不能立刻判断是否连接成功，
-                在epoll响应后调用此函数处理connect结束后的操作
-        @return: 是否连接成功
+        @brief: 浣跨敤鐨勯潪闃诲socket杩炴帴涓嶈兘绔嬪埢鍒ゆ柇鏄惁杩炴帴鎴愬姛锛?
+                鍦╡poll鍝嶅簲鍚庤皟鐢ㄦ鍑芥暟澶勭悊connect缁撴潫鍚庣殑鎿嶄綔
+        @return: 鏄惁杩炴帴鎴愬姛
         @rtype: bool
         '''
         tarsLogger.debug('AdapterProxy:finishConnect')
@@ -252,22 +252,22 @@ class AdapterProxy:
     def finishInvoke(self, isTimeout):
         pass
 
-    # 弹出请求报文
+    # 寮瑰嚭璇锋眰鎶ユ枃
     def popRequest(self):
         pass
 
     def shouldCloseTrans(self):
         '''
-        @brief: 是否设置关闭连接
-        @return: 关闭连接的flag的值
+        @brief: 鏄惁璁剧疆鍏抽棴杩炴帴
+        @return: 鍏抽棴杩炴帴鐨刦lag鐨勫€?
         @rtype: bool
         '''
         return self.__closeTrans
 
     def setCloseTrans(self, closeTrans):
         '''
-        @brief: 设置关闭连接flag的值
-        @param closeTrans: 是否关闭连接
+        @brief: 璁剧疆鍏抽棴杩炴帴flag鐨勫€?
+        @param closeTrans: 鏄惁鍏抽棴杩炴帴
         @type closeTrans: bool
         @return: None
         @rtype: None
@@ -299,15 +299,15 @@ class EndpointWeightType(Enum):
 
 class AdapterProxyManager:
     '''
-    @brief: 管理Adapter
+    @brief: 绠＄悊Adapter
     '''
 
     def __init__(self):
         tarsLogger.debug('AdapterProxyManager:__init__')
         self.__comm = None
         self.__object = None
-        # __adps的key=str(EndPointInfo) value=[EndPointInfo, AdapterProxy, cnt]
-        # cnt是访问次数
+        # __adps鐨刱ey=str(EndPointInfo) value=[EndPointInfo, AdapterProxy, cnt]
+        # cnt鏄闂鏁?
         self.__adps = {}
         self.__iadps = {}
         self.__newLock = None
@@ -323,7 +323,7 @@ class AdapterProxyManager:
 
     def initialize(self, comm, objectProxy, eplist):
         '''
-        @brief: 初始化
+        @brief: 鍒濆鍖?
         '''
         tarsLogger.debug('AdapterProxyManager:initialize')
         self.__comm = comm
@@ -338,7 +338,7 @@ class AdapterProxyManager:
 
     def terminate(self):
         '''
-        @brief: 释放资源
+        @brief: 閲婃斁璧勬簮
         '''
         tarsLogger.debug('AdapterProxyManager:terminate')
         # self.__lock.acquire()
@@ -350,9 +350,9 @@ class AdapterProxyManager:
 
     def refreshEndpoints(self):
         '''
-        @brief: 刷新服务器列表
-        @return: 新的服务列表
-        @rtype: EndPointInfo列表
+        @brief: 鍒锋柊鏈嶅姟鍣ㄥ垪琛?
+        @return: 鏂扮殑鏈嶅姟鍒楄〃
+        @rtype: EndPointInfo鍒楄〃
         '''
         tarsLogger.debug('AdapterProxyManager:refreshEndpoints')
         if self.__isDirectProxy:
@@ -371,11 +371,11 @@ class AdapterProxyManager:
         epSize = len(self.__adps)
         if last + interval < now or (epSize <= 0 and last + 2 < now):
             queryFPrx = self.__comm.stringToProxy(QueryFProxy, locator)
-            # 首次访问是同步调用，之后访问是异步调用
+            # 棣栨璁块棶鏄悓姝ヨ皟鐢紝涔嬪悗璁块棶鏄紓姝ヨ皟鐢?
             if epSize == 0 or last == 0:
                 ret, activeEps, inactiveEps = (
                     queryFPrx.findObjectById4All(self.__object.name()))
-                # 目前只支持TCP
+                # 鐩墠鍙敮鎸乀CP
                 eplist = [EndPointInfo(x.host, x.port, x.timeout, x.weight, x.weightType)
                           for x in activeEps if ret == 0 and x.istcp]
                 ieplist = [EndPointInfo(x.host, x.port, x.timeout, x.weight, x.weightType)
@@ -388,9 +388,9 @@ class AdapterProxyManager:
 
     def getEndpoints(self):
         '''
-        @brief: 获取可用服务列表 如果启用分组,只返回同分组的服务端ip
-        @return: 获取节点列表
-        @rtype: EndPointInfo列表
+        @brief: 鑾峰彇鍙敤鏈嶅姟鍒楄〃 濡傛灉鍚敤鍒嗙粍,鍙繑鍥炲悓鍒嗙粍鐨勬湇鍔＄ip
+        @return: 鑾峰彇鑺傜偣鍒楄〃
+        @rtype: EndPointInfo鍒楄〃
         '''
         tarsLogger.debug('AdapterProxyManager:getEndpoints')
         # self.__lock.acquire()
@@ -402,9 +402,9 @@ class AdapterProxyManager:
 
     def setEndpoints(self, eplist, ieplist):
         '''
-        @brief: 设置服务端信息
-        @para eplist: 活跃的被调节点列表
-        @para ieplist: 不活跃的被调节点列表
+        @brief: 璁剧疆鏈嶅姟绔俊鎭?
+        @para eplist: 娲昏穬鐨勮璋冭妭鐐瑰垪琛?
+        @para ieplist: 涓嶆椿璺冪殑琚皟鑺傜偣鍒楄〃
         '''
         tarsLogger.debug('AdapterProxyManager:setEndpoints')
         adps = {}
@@ -452,7 +452,7 @@ class AdapterProxyManager:
         # self.__lock.release()
         if isNeedNotify:
             self.__notifyEndpoints(self.__adps, self.__iadps)
-        # 关闭已经失效的连接
+        # 鍏抽棴宸茬粡澶辨晥鐨勮繛鎺?
         for ep in adps:
             if ep not in self.__adps:
                 adps[ep][1].terminate()
@@ -467,10 +467,10 @@ class AdapterProxyManager:
 
     def __getNextValidProxy(self):
         '''
-        @brief: 刷新本地缓存列表，如果服务下线了，要求删除本地缓存
+        @brief: 鍒锋柊鏈湴缂撳瓨鍒楄〃锛屽鏋滄湇鍔′笅绾夸簡锛岃姹傚垹闄ゆ湰鍦扮紦瀛?
         @return:
-        @rtype: EndPointInfo列表
-        @todo: 优化负载均衡算法
+        @rtype: EndPointInfo鍒楄〃
+        @todo: 浼樺寲璐熻浇鍧囪　绠楁硶
         '''
         tarsLogger.debug('AdapterProxyManager:getNextValidProxy')
         lock = LockGuard(self.__newLock)
@@ -486,11 +486,11 @@ class AdapterProxyManager:
         while sortedActivateAdpSize != 0:
             if sortedActivateAdp[0][1][1].checkActive():
                 self.__adps[sortedActivateAdp[0][0]][2] += 1
-                # 返回的是 adapterProxy
+                # 杩斿洖鐨勬槸 adapterProxy
                 return self.__adps[sortedActivateAdp[0][0]][1]
             sortedActivateAdp.pop(0)
             sortedActivateAdpSize -= 1
-        # 随机重连一个可用节点
+        # 闅忔満閲嶈繛涓€涓彲鐢ㄨ妭鐐?
         adpPrx = list(self.__adps.items())[random.randint(
             0, len(self.__adps))][1][1]
         adpPrx.checkActive()
@@ -541,7 +541,7 @@ class AdapterProxyManager:
                     return self.__adps[activeProxyList[hashNum][0]][1]
                 activeProxyList.pop(hashNum)
                 actPrxSize -= 1
-            # 随机重连一个可用节点
+            # 闅忔満閲嶈繛涓€涓彲鐢ㄨ妭鐐?
             adpPrx = list(self.__adps.items())[random.randint(
                 0, len(self.__adps))][1][1]
             adpPrx.checkActive()
@@ -576,7 +576,7 @@ class AdapterProxyManager:
                         return self.__adps[activeProxyList[hashNum][0]][1]
                     activeProxyList.pop(hashNum)
                     actPrxSize -= 1
-                # 随机重连一个可用节点
+                # 闅忔満閲嶈繛涓€涓彲鐢ㄨ妭鐐?
                 adpPrx = list(self.__adps.items())[random.randint(
                     0, len(self.__adps))][1][1]
                 adpPrx.checkActive()
@@ -673,8 +673,8 @@ class AdapterProxyManager:
                     else:
                         weightedProxyData.pop(item[0])
                         break
-        # 没有一个活跃的节点
-        # 随机重连一个可用节点
+        # 娌℃湁涓€涓椿璺冪殑鑺傜偣
+        # 闅忔満閲嶈繛涓€涓彲鐢ㄨ妭鐐?
         adpPrx = list(self.__adps.items())[random.randint(
             0, len(self.__adps))][1][1]
         adpPrx.checkActive()
@@ -682,12 +682,12 @@ class AdapterProxyManager:
 
     def selectAdapterProxy(self, reqmsg):
         '''
-        @brief: 刷新本地缓存列表，如果服务下线了，要求删除本地缓存，通过一定算法返回AdapterProxy
-        @param: reqmsg:请求响应报文
+        @brief: 鍒锋柊鏈湴缂撳瓨鍒楄〃锛屽鏋滄湇鍔′笅绾夸簡锛岃姹傚垹闄ゆ湰鍦扮紦瀛橈紝閫氳繃涓€瀹氱畻娉曡繑鍥濧dapterProxy
+        @param: reqmsg:璇锋眰鍝嶅簲鎶ユ枃
         @type reqmsg: ReqMessage
         @return:
-        @rtype: EndPointInfo列表
-        @todo: 优化负载均衡算法
+        @rtype: EndPointInfo鍒楄〃
+        @todo: 浼樺寲璐熻浇鍧囪　绠楁硶
         '''
         tarsLogger.debug('AdapterProxyManager:selectAdapterProxy')
         self.refreshEndpoints()

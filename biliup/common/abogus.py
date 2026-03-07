@@ -1,4 +1,4 @@
-# path: f2/utils/abogus.py
+﻿# path: f2/utils/abogus.py
 
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
@@ -28,52 +28,52 @@ from typing import Union, Callable, List, Dict
 
 class StringProcessor:
     """
-    StringProcessor 类用于计算ABogus算法中所需的字符串处理方法。
-    包括字符串和 ASCII 码之间的转换、无符号右移运算等。
+    StringProcessor 绫荤敤浜庤绠桝Bogus绠楁硶涓墍闇€鐨勫瓧绗︿覆澶勭悊鏂规硶銆?
+    鍖呮嫭瀛楃涓插拰 ASCII 鐮佷箣闂寸殑杞崲銆佹棤绗﹀彿鍙崇Щ杩愮畻绛夈€?
 
-    类方法:
+    绫绘柟娉?
 
         to_ord_str(s: str) -> str:
-            将字符串转换为 ASCII 码字符串。
+            灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸瓧绗︿覆銆?
 
         to_ord_array(s: str) -> List[int]:
-            将字符串转换为 ASCII 码列表。
+            灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸垪琛ㄣ€?
 
         to_char_str(s: List[int]) -> str:
-            将 ASCII 码列表转换为字符串。
+            灏?ASCII 鐮佸垪琛ㄨ浆鎹负瀛楃涓层€?
 
         to_char_array(s: str) -> List[int]:
-            将字符串转换为 ASCII 码列表。
+            灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸垪琛ㄣ€?
 
         js_shift_right(val: int, n: int) -> int:
-            实现 JavaScript 中的无符号右移运算。
+            瀹炵幇 JavaScript 涓殑鏃犵鍙峰彸绉昏繍绠椼€?
 
         generate_random_bytes(length: int = 3) -> str:
-            生成一组伪随机字节字符串，用于混淆数据。
+            鐢熸垚涓€缁勪吉闅忔満瀛楄妭瀛楃涓诧紝鐢ㄤ簬娣锋穯鏁版嵁銆?
 
-    使用示例:
+    浣跨敤绀轰緥:
     ```python
-        # 将字符串转换为 ASCII 码字符串
+        # 灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸瓧绗︿覆
         ord_str = StringProcessor.to_ord_str("Hello, World!")
         print(ord_str)
 
-        # 将字符串转换为 ASCII 码列表
+        # 灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸垪琛?
         ord_array = StringProcessor.to_ord_array("Hello, World!")
         print(ord_array)
 
-        # 将 ASCII 码列表转换为字符串
+        # 灏?ASCII 鐮佸垪琛ㄨ浆鎹负瀛楃涓?
         char_str = StringProcessor.to_char_str(ord_array)
         print(char_str)
 
-        # 将字符串转换为 ASCII 码列表
+        # 灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸垪琛?
         char_array = StringProcessor.to_char_array("Hello, World!")
         print(char_array)
 
-        # 实现 JavaScript 中的无符号右移运算
+        # 瀹炵幇 JavaScript 涓殑鏃犵鍙峰彸绉昏繍绠?
         shifted_val = StringProcessor.js_shift_right(10, 2)
         print(shifted_val)
 
-        # 生成一组伪随机字节字符串
+        # 鐢熸垚涓€缁勪吉闅忔満瀛楄妭瀛楃涓?
         random_bytes = StringProcessor.generate_random_bytes(3)
         print(random_bytes)
     ```
@@ -82,79 +82,79 @@ class StringProcessor:
     @staticmethod
     def to_ord_str(s: str) -> str:
         """
-        将字符串转换为 ASCII 码字符串 (Convert a string to an ASCII code string).
+        灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸瓧绗︿覆 (Convert a string to an ASCII code string).
 
         Args:
-            s (str): 输入字符串 (Input string).
+            s (str): 杈撳叆瀛楃涓?(Input string).
 
         Returns:
-            str: 转换后的 ASCII 码字符串 (Converted ASCII code string).
+            str: 杞崲鍚庣殑 ASCII 鐮佸瓧绗︿覆 (Converted ASCII code string).
         """
         return "".join([chr(i) for i in s])
 
     @staticmethod
     def to_ord_array(s: str) -> List[int]:
         """
-        将字符串转换为 ASCII 码列表 (Convert a string to a list of ASCII codes).
+        灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸垪琛?(Convert a string to a list of ASCII codes).
 
         Args:
-            s (str): 输入字符串 (Input string).
+            s (str): 杈撳叆瀛楃涓?(Input string).
 
         Returns:
-            List[int]: 转换后的 ASCII 码列表 (Converted list of ASCII codes).
+            List[int]: 杞崲鍚庣殑 ASCII 鐮佸垪琛?(Converted list of ASCII codes).
         """
         return [ord(char) for char in s]
 
     @staticmethod
     def to_char_str(s: List[int]) -> str:
         """
-        将 ASCII 码列表转换为字符串 (Convert a list of ASCII codes to a string).
+        灏?ASCII 鐮佸垪琛ㄨ浆鎹负瀛楃涓?(Convert a list of ASCII codes to a string).
 
         Args:
-            s (str): ASCII 码列表 (List of ASCII codes).
+            s (str): ASCII 鐮佸垪琛?(List of ASCII codes).
 
         Returns:
-            str: 转换后的字符串 (Converted string).
+            str: 杞崲鍚庣殑瀛楃涓?(Converted string).
         """
         return "".join([chr(i) for i in s])
 
     @staticmethod
     def to_char_array(s: str) -> List[int]:
         """
-        将字符串转换为 ASCII 码列表 (Convert a string to a list of ASCII codes).
+        灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸垪琛?(Convert a string to a list of ASCII codes).
 
         Args:
-            s (str): 输入字符串 (Input string).
+            s (str): 杈撳叆瀛楃涓?(Input string).
 
         Returns:
-            List[int]: 转换后的 ASCII 码列表 (Converted list of ASCII codes).
+            List[int]: 杞崲鍚庣殑 ASCII 鐮佸垪琛?(Converted list of ASCII codes).
         """
         return [ord(char) for char in s]
 
     @staticmethod
     def js_shift_right(val: int, n: int) -> int:
         """
-        实现 JavaScript 中的无符号右移运算 (Implement the unsigned right shift operation in JavaScript).
+        瀹炵幇 JavaScript 涓殑鏃犵鍙峰彸绉昏繍绠?(Implement the unsigned right shift operation in JavaScript).
 
         Args:
-            val (int): 输入值 (Input value).
-            n (int): 右移位数 (Number of bits to shift right).
+            val (int): 杈撳叆鍊?(Input value).
+            n (int): 鍙崇Щ浣嶆暟 (Number of bits to shift right).
 
         Returns:
-            int: 右移后的值 (Value after right shift).
+            int: 鍙崇Щ鍚庣殑鍊?(Value after right shift).
         """
         return (val % 0x100000000) >> n
 
     @staticmethod
     def generate_random_bytes(length: int = 3) -> str:
         """
-        生成一组伪随机字节字符串，用于混淆数据 (Generate a pseudo-random byte string to obfuscate the data).
+        鐢熸垚涓€缁勪吉闅忔満瀛楄妭瀛楃涓诧紝鐢ㄤ簬娣锋穯鏁版嵁 (Generate a pseudo-random byte string to obfuscate the data).
 
         Args:
-            length (int): 生成的字节序列长度 (Length of the byte sequence to generate).
+            length (int): 鐢熸垚鐨勫瓧鑺傚簭鍒楅暱搴?(Length of the byte sequence to generate).
 
         Returns:
-            str: 生成的伪随机字节字符串 (Generated pseudo-random byte string).
+            str: 鐢熸垚鐨勪吉闅忔満瀛楄妭瀛楃涓?(Generated pseudo-random byte string).
         """
 
         def generate_byte_sequence() -> List[str]:
@@ -175,64 +175,64 @@ class StringProcessor:
 
 class CryptoUtility:
     """
-    CryptoUtility 类用于提供加密和编码的工具方法，包括 SM3 哈希、添加盐值、Base64 编码和 RC4 加密等。
+    CryptoUtility 绫荤敤浜庢彁渚涘姞瀵嗗拰缂栫爜鐨勫伐鍏锋柟娉曪紝鍖呮嫭 SM3 鍝堝笇銆佹坊鍔犵洂鍊笺€丅ase64 缂栫爜鍜?RC4 鍔犲瘑绛夈€?
 
-    类属性:
-        salt (str): 加密盐值 (Encryption salt).
-        base64_alphabet (List[str]): 自定义 Base64 字符表 (Custom Base64 alphabet).
+    绫诲睘鎬?
+        salt (str): 鍔犲瘑鐩愬€?(Encryption salt).
+        base64_alphabet (List[str]): 鑷畾涔?Base64 瀛楃琛?(Custom Base64 alphabet).
 
-    类方法:
+    绫绘柟娉?
         sm3_to_array(input_data: Union[str, List[int]]) -> List[int]:
-            计算请求体的 SM3 哈希值，并将结果转换为整数数组。
+            璁＄畻璇锋眰浣撶殑 SM3 鍝堝笇鍊硷紝骞跺皢缁撴灉杞崲涓烘暣鏁版暟缁勩€?
 
         add_salt(param: str) -> str:
-            为字符串参数添加盐值。
+            涓哄瓧绗︿覆鍙傛暟娣诲姞鐩愬€笺€?
 
         process_param(param: Union[str, List[int]], add_salt: bool) -> Union[str, List[int]]:
-            处理输入参数，根据需要添加盐值。
+            澶勭悊杈撳叆鍙傛暟锛屾牴鎹渶瑕佹坊鍔犵洂鍊笺€?
 
         params_to_array(param: Union[str, List[int]], add_salt: bool = True) -> List[int]:
-            获取输入参数的哈希数组。
+            鑾峰彇杈撳叆鍙傛暟鐨勫搱甯屾暟缁勩€?
 
         transform_bytes(bytes_list: List[int]) -> str:
-            对输入的字节列表进行加密/解密操作，返回处理后的字符串。
+            瀵硅緭鍏ョ殑瀛楄妭鍒楄〃杩涜鍔犲瘑/瑙ｅ瘑鎿嶄綔锛岃繑鍥炲鐞嗗悗鐨勫瓧绗︿覆銆?
 
         base64_encode(input_string: str, selected_alphabet: int = 0) -> str:
-            使用自定义字符表对输入字符串进行 Base64 编码。
+            浣跨敤鑷畾涔夊瓧绗﹁〃瀵硅緭鍏ュ瓧绗︿覆杩涜 Base64 缂栫爜銆?
 
         abogus_encode(abogus_bytes_str: str, selected_alphabet: int) -> str:
-            对输入的字节字符串进行自定义 Base64 编码，并添加位移和填充。
+            瀵硅緭鍏ョ殑瀛楄妭瀛楃涓茶繘琛岃嚜瀹氫箟 Base64 缂栫爜锛屽苟娣诲姞浣嶇Щ鍜屽～鍏呫€?
 
         rc4_encrypt(key: bytes, plaintext: str) -> bytes:
-            使用 RC4 算法加密数据。
+            浣跨敤 RC4 绠楁硶鍔犲瘑鏁版嵁銆?
 
-    使用示例:
+    浣跨敤绀轰緥:
     ```python
-        # 计算请求体的 SM3 哈希值
+        # 璁＄畻璇锋眰浣撶殑 SM3 鍝堝笇鍊?
         sm3_hash = CryptoUtility.sm3_to_array("Hello, World!")
         print(sm3_hash)
 
-        # 为字符串参数添加盐值
+        # 涓哄瓧绗︿覆鍙傛暟娣诲姞鐩愬€?
         salted_param = CryptoUtility.add_salt("Hello, World!")
         print(salted_param)
 
-        # 获取输入参数的哈希数组
+        # 鑾峰彇杈撳叆鍙傛暟鐨勫搱甯屾暟缁?
         hash_array = CryptoUtility.params_to_array("Hello, World!")
         print(hash_array)
 
-        # 对输入的字节列表进行加密/解密操作
+        # 瀵硅緭鍏ョ殑瀛楄妭鍒楄〃杩涜鍔犲瘑/瑙ｅ瘑鎿嶄綔
         encrypted_str = CryptoUtility.transform_bytes([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33])
         print(encrypted_str)
 
-        # 使用自定义字符表对输入字符串进行 Base64 编码
+        # 浣跨敤鑷畾涔夊瓧绗﹁〃瀵硅緭鍏ュ瓧绗︿覆杩涜 Base64 缂栫爜
         base64_str = CryptoUtility.base64_encode("Hello, World!")
         print(base64_str)
 
-        # 对输入的字节字符串进行自定义 Base64 编码，并添加位移和填充
+        # 瀵硅緭鍏ョ殑瀛楄妭瀛楃涓茶繘琛岃嚜瀹氫箟 Base64 缂栫爜锛屽苟娣诲姞浣嶇Щ鍜屽～鍏?
         abogus_str = CryptoUtility.abogus_encode("Hello, World!", 0)
         print(abogus_str)
 
-        # 使用 RC4 算法加密数据
+        # 浣跨敤 RC4 绠楁硶鍔犲瘑鏁版嵁
         key = b"key"
         plaintext = "Hello, World!"
         ciphertext = CryptoUtility.rc4_encrypt(key, plaintext)
@@ -242,12 +242,12 @@ class CryptoUtility:
 
     def __init__(self, salt: str, custom_base64_alphabet: List[str]):
         """
-        初始化 CryptoUtility 类
+        鍒濆鍖?CryptoUtility 绫?
         Initialize the CryptoUtility class.
 
         Args:
-            salt (str): 加密盐值 (Encryption salt).
-            custom_base64_alphabet (List[str]): 自定义 Base64 字符表 (Custom Base64 alphabet).
+            salt (str): 鍔犲瘑鐩愬€?(Encryption salt).
+            custom_base64_alphabet (List[str]): 鑷畾涔?Base64 瀛楃琛?(Custom Base64 alphabet).
         """
         self.salt = salt
         self.base64_alphabet = custom_base64_alphabet
@@ -273,35 +273,35 @@ class CryptoUtility:
     @staticmethod
     def sm3_to_array(input_data: Union[str, List[int]]) -> List[int]:
         """
-        计算请求体的 SM3 哈希值，并将结果转换为整数数组 (Calculate the SM3 hash value of the request body and convert the result to an array of integers).
+        璁＄畻璇锋眰浣撶殑 SM3 鍝堝笇鍊硷紝骞跺皢缁撴灉杞崲涓烘暣鏁版暟缁?(Calculate the SM3 hash value of the request body and convert the result to an array of integers).
 
         Args:
-            input_data (Union[str, List[int]]): 输入数据 (Input data).
+            input_data (Union[str, List[int]]): 杈撳叆鏁版嵁 (Input data).
 
         Returns:
-            List[int]: 哈希值的整数数组 (Array of integers representing the hash value).
+            List[int]: 鍝堝笇鍊肩殑鏁存暟鏁扮粍 (Array of integers representing the hash value).
         """
-        # 如果输入是字符串，则将其编码为字节数组
+        # 濡傛灉杈撳叆鏄瓧绗︿覆锛屽垯灏嗗叾缂栫爜涓哄瓧鑺傛暟缁?
         if isinstance(input_data, str):
             input_data_bytes = input_data.encode("utf-8")
         else:
-            input_data_bytes = bytes(input_data)  # 将 List[int] 转换为字节数组
+            input_data_bytes = bytes(input_data)  # 灏?List[int] 杞崲涓哄瓧鑺傛暟缁?
 
-        # 将字节数组转换为适合 sm3.sm3_hash 函数处理的列表格式
+        # 灏嗗瓧鑺傛暟缁勮浆鎹负閫傚悎 sm3.sm3_hash 鍑芥暟澶勭悊鐨勫垪琛ㄦ牸寮?
         hex_result = sm3.sm3_hash(func.bytes_to_list(input_data_bytes))
 
-        # 将十六进制字符串结果转换为十进制整数列表
+        # 灏嗗崄鍏繘鍒跺瓧绗︿覆缁撴灉杞崲涓哄崄杩涘埗鏁存暟鍒楄〃
         return [int(hex_result[i : i + 2], 16) for i in range(0, len(hex_result), 2)]
 
     def add_salt(self, param: str) -> str:
         """
-        为字符串参数添加盐值 (Add salt to the string parameter).
+        涓哄瓧绗︿覆鍙傛暟娣诲姞鐩愬€?(Add salt to the string parameter).
 
         Args:
-            param (str): 输入字符串 (Input string).
+            param (str): 杈撳叆瀛楃涓?(Input string).
 
         Returns:
-            str: 添加盐值后的字符串 (String with added salt).
+            str: 娣诲姞鐩愬€煎悗鐨勫瓧绗︿覆 (String with added salt).
         """
         return param + self.salt
 
@@ -309,14 +309,14 @@ class CryptoUtility:
         self, param: Union[str, List[int]], add_salt: bool
     ) -> Union[str, List[int]]:
         """
-        处理输入参数，根据需要添加盐值 (Process input parameter and add salt if needed).
+        澶勭悊杈撳叆鍙傛暟锛屾牴鎹渶瑕佹坊鍔犵洂鍊?(Process input parameter and add salt if needed).
 
         Args:
-            param (Union[str, List[int]]): 输入参数 (Input parameter).
-            add_salt (bool): 是否添加盐值 (Whether to add salt).
+            param (Union[str, List[int]]): 杈撳叆鍙傛暟 (Input parameter).
+            add_salt (bool): 鏄惁娣诲姞鐩愬€?(Whether to add salt).
 
         Returns:
-            Union[str, List[int]]: 处理后的参数 (Processed parameter).
+            Union[str, List[int]]: 澶勭悊鍚庣殑鍙傛暟 (Processed parameter).
         """
         if isinstance(param, str) and add_salt:
             param = self.add_salt(param)
@@ -326,29 +326,29 @@ class CryptoUtility:
         self, param: Union[str, List[int]], add_salt: bool = True
     ) -> List[int]:
         """
-        获取输入参数的哈希数组 (Get the hash array of the input parameter).
+        鑾峰彇杈撳叆鍙傛暟鐨勫搱甯屾暟缁?(Get the hash array of the input parameter).
 
         Args:
-            param (Union[str, List[int]]): 输入参数 (Input parameter).
-            add_salt (bool): 是否添加盐值 (Whether to add salt).
+            param (Union[str, List[int]]): 杈撳叆鍙傛暟 (Input parameter).
+            add_salt (bool): 鏄惁娣诲姞鐩愬€?(Whether to add salt).
 
         Returns:
-            List[int]: 哈希数组 (Hash array).
+            List[int]: 鍝堝笇鏁扮粍 (Hash array).
         """
         processed_param = self.process_param(param, add_salt)
         return self.sm3_to_array(processed_param)
 
     def transform_bytes(self, bytes_list: List[int]) -> str:
         """
-        对输入的字节列表进行加密/解密操作，返回处理后的字符串 (Encrypt/decrypt the input byte list and return the processed string).
+        瀵硅緭鍏ョ殑瀛楄妭鍒楄〃杩涜鍔犲瘑/瑙ｅ瘑鎿嶄綔锛岃繑鍥炲鐞嗗悗鐨勫瓧绗︿覆 (Encrypt/decrypt the input byte list and return the processed string).
 
         Args:
-            bytes_list (List[int]): 输入的字节列表 (Input byte list).
+            bytes_list (List[int]): 杈撳叆鐨勫瓧鑺傚垪琛?(Input byte list).
 
         Returns:
-            str: 处理后的字符串 (Processed string).
+            str: 澶勭悊鍚庣殑瀛楃涓?(Processed string).
         """
-        # 将字节列表转换为字符字符串
+        # 灏嗗瓧鑺傚垪琛ㄨ浆鎹负瀛楃瀛楃涓?
         bytes_str = StringProcessor.to_char_str(bytes_list)
         result_str = []
         index_b = self.big_array[1]
@@ -370,7 +370,7 @@ class CryptoUtility:
             encrypted_char = char_value ^ value_f
             result_str.append(chr(encrypted_char))
 
-            # 交换数组元素
+            # 浜ゆ崲鏁扮粍鍏冪礌
             value_e = self.big_array[(index + 2) % len(self.big_array)]
             sum_initial = (index_b + value_e) % len(self.big_array)
             initial_value = self.big_array[sum_initial]
@@ -384,48 +384,48 @@ class CryptoUtility:
 
     def base64_encode(self, input_string: str, selected_alphabet: int = 0) -> str:
         """
-        使用自定义字符表对输入字符串进行 Base64 编码 (Encode the input string using a custom Base64 alphabet).
+        浣跨敤鑷畾涔夊瓧绗﹁〃瀵硅緭鍏ュ瓧绗︿覆杩涜 Base64 缂栫爜 (Encode the input string using a custom Base64 alphabet).
 
         Args:
-            input_string (str): 输入字符串 (Input string).
-            selected_alphabet (int): 选择的自定义 Base64 字符表索引 (Selected custom Base64 alphabet index).
+            input_string (str): 杈撳叆瀛楃涓?(Input string).
+            selected_alphabet (int): 閫夋嫨鐨勮嚜瀹氫箟 Base64 瀛楃琛ㄧ储寮?(Selected custom Base64 alphabet index).
 
         Returns:
-            str: 编码后的字符串 (Encoded string).
+            str: 缂栫爜鍚庣殑瀛楃涓?(Encoded string).
         """
 
-        # 将输入字符串转换为ASCII码的二进制形式
+        # 灏嗚緭鍏ュ瓧绗︿覆杞崲涓篈SCII鐮佺殑浜岃繘鍒跺舰寮?
         binary_string = "".join(["{:08b}".format(ord(char)) for char in input_string])
 
-        # 补全二进制字符串使其长度为6的倍数
+        # 琛ュ叏浜岃繘鍒跺瓧绗︿覆浣垮叾闀垮害涓?鐨勫€嶆暟
         padding_length = (6 - len(binary_string) % 6) % 6
         binary_string += "0" * padding_length
 
-        # 将二进制字符串分割为6位一组
+        # 灏嗕簩杩涘埗瀛楃涓插垎鍓蹭负6浣嶄竴缁?
         base64_indices = [
             int(binary_string[i : i + 6], 2) for i in range(0, len(binary_string), 6)
         ]
 
-        # 根据自定义字符表生成输出字符串
+        # 鏍规嵁鑷畾涔夊瓧绗﹁〃鐢熸垚杈撳嚭瀛楃涓?
         output_string = "".join(
             [self.base64_alphabet[selected_alphabet][index] for index in base64_indices]
         )
 
-        # 添加等号填充，使符合 Base64 编码规范
+        # 娣诲姞绛夊彿濉厖锛屼娇绗﹀悎 Base64 缂栫爜瑙勮寖
         output_string += "=" * (padding_length // 2)
 
         return output_string
 
     def abogus_encode(self, abogus_bytes_str: str, selected_alphabet: int) -> str:
         """
-        对输入的字节字符串进行自定义 Base64 编码，并添加位移和填充 (Encode the input byte string using a custom Base64 alphabet, and add shifts and padding).
+        瀵硅緭鍏ョ殑瀛楄妭瀛楃涓茶繘琛岃嚜瀹氫箟 Base64 缂栫爜锛屽苟娣诲姞浣嶇Щ鍜屽～鍏?(Encode the input byte string using a custom Base64 alphabet, and add shifts and padding).
 
         Args:
-            abogus_bytes_str (str): 输入的字节字符串 (Input byte string).
-            selected_alphabet (int): 选择的自定义 Base64 字符表索引 (Selected custom Base64 alphabet index).
+            abogus_bytes_str (str): 杈撳叆鐨勫瓧鑺傚瓧绗︿覆 (Input byte string).
+            selected_alphabet (int): 閫夋嫨鐨勮嚜瀹氫箟 Base64 瀛楃琛ㄧ储寮?(Selected custom Base64 alphabet index).
 
         Returns:
-            str: 编码后的字符串 (Encoded string).
+            str: 缂栫爜鍚庣殑瀛楃涓?(Encoded string).
         """
         abogus = []
 
@@ -456,14 +456,14 @@ class CryptoUtility:
     @staticmethod
     def rc4_encrypt(key: bytes, plaintext: str) -> bytes:
         """
-        使用 RC4 算法加密数据 (Encrypt data using the RC4 algorithm).
+        浣跨敤 RC4 绠楁硶鍔犲瘑鏁版嵁 (Encrypt data using the RC4 algorithm).
 
         Args:
-            key (bytes): 加密密钥 (Encryption key).
-            plaintext (str): 明文数据 (Plaintext data).
+            key (bytes): 鍔犲瘑瀵嗛挜 (Encryption key).
+            plaintext (str): 鏄庢枃鏁版嵁 (Plaintext data).
 
         Returns:
-            bytes: 加密后的数据 (Encrypted data).
+            bytes: 鍔犲瘑鍚庣殑鏁版嵁 (Encrypted data).
         """
         S = list(range(256))
         j = 0
@@ -485,31 +485,31 @@ class CryptoUtility:
 
 class BrowserFingerprintGenerator:
     """
-    BrowserFingerprintGenerator 用于生成模拟的浏览器指纹信息，用于在不同浏览器环境中进行测试和数据采集。
+    BrowserFingerprintGenerator 鐢ㄤ簬鐢熸垚妯℃嫙鐨勬祻瑙堝櫒鎸囩汗淇℃伅锛岀敤浜庡湪涓嶅悓娴忚鍣ㄧ幆澧冧腑杩涜娴嬭瘯鍜屾暟鎹噰闆嗐€?
 
-    类属性:
-        browsers (Dict[str, Callable[[], str]]): 浏览器类型和生成浏览器指纹的映射关系。
+    绫诲睘鎬?
+        browsers (Dict[str, Callable[[], str]]): 娴忚鍣ㄧ被鍨嬪拰鐢熸垚娴忚鍣ㄦ寚绾圭殑鏄犲皠鍏崇郴銆?
 
-    方法:
+    鏂规硶:
         generate_fingerprint(browser_type="Edge"):
-            根据指定的浏览器类型生成浏览器指纹。
+            鏍规嵁鎸囧畾鐨勬祻瑙堝櫒绫诲瀷鐢熸垚娴忚鍣ㄦ寚绾广€?
 
         generate_chrome_fingerprint():
-            生成 Chrome 浏览器指纹。
+            鐢熸垚 Chrome 娴忚鍣ㄦ寚绾广€?
 
         generate_firefox_fingerprint():
-            生成 Firefox 浏览器指纹。
+            鐢熸垚 Firefox 娴忚鍣ㄦ寚绾广€?
 
         generate_safari_fingerprint():
-            生成 Safari 浏览器指纹。
+            鐢熸垚 Safari 娴忚鍣ㄦ寚绾广€?
 
         generate_edge_fingerprint():
-            生成 Edge 浏览器指纹。
+            鐢熸垚 Edge 娴忚鍣ㄦ寚绾广€?
 
         _generate_fingerprint(platform="Win32"):
-            根据给定的参数生成浏览器指纹字符串。
+            鏍规嵁缁欏畾鐨勫弬鏁扮敓鎴愭祻瑙堝櫒鎸囩汗瀛楃涓层€?
 
-    使用示例:
+    浣跨敤绀轰緥:
     ```python
         chrome_fp = BrowserFingerprintGenerator.generate_fingerprint("Chrome")
         print(chrome_fp)
@@ -519,13 +519,13 @@ class BrowserFingerprintGenerator:
     @classmethod
     def generate_fingerprint(cls, browser_type: str = "Edge") -> str:
         """
-        根据指定的浏览器类型生成浏览器指纹。 (Generate a browser fingerprint based on the specified browser type.)
+        鏍规嵁鎸囧畾鐨勬祻瑙堝櫒绫诲瀷鐢熸垚娴忚鍣ㄦ寚绾广€?(Generate a browser fingerprint based on the specified browser type.)
 
         Args:
-            browser_type (str): 浏览器类型 (Browser type).
+            browser_type (str): 娴忚鍣ㄧ被鍨?(Browser type).
 
         Returns:
-            str: 生成的浏览器指纹字符串 (Generated browser fingerprint string).
+            str: 鐢熸垚鐨勬祻瑙堝櫒鎸囩汗瀛楃涓?(Generated browser fingerprint string).
         """
         cls.browsers: Dict[str, Callable[[], str]] = {
             "Chrome": cls.generate_chrome_fingerprint,
@@ -554,13 +554,13 @@ class BrowserFingerprintGenerator:
     @staticmethod
     def _generate_fingerprint(platform: str) -> str:
         """
-        根据给定的参数生成浏览器指纹字符串。 (Generate a browser fingerprint string based on the given parameters.)
+        鏍规嵁缁欏畾鐨勫弬鏁扮敓鎴愭祻瑙堝櫒鎸囩汗瀛楃涓层€?(Generate a browser fingerprint string based on the given parameters.)
 
         Args:
-            platform (str): 操作系统平台 (Operating system platform).
+            platform (str): 鎿嶄綔绯荤粺骞冲彴 (Operating system platform).
 
         Returns:
-            str: 生成的浏览器指纹字符串 (Generated browser fingerprint string).
+            str: 鐢熸垚鐨勬祻瑙堝櫒鎸囩汗瀛楃涓?(Generated browser fingerprint string).
         """
         inner_width = random.randint(1024, 1920)
         inner_height = random.randint(768, 1080)
@@ -583,42 +583,42 @@ class BrowserFingerprintGenerator:
 
 class ABogus:
     """
-    ABogus 类用于生成 ABogus 参数。
+    ABogus 绫荤敤浜庣敓鎴?ABogus 鍙傛暟銆?
 
-    类属性:
-        array1 (List[int]): 加密请求体 (Encrypted request body).
-        array2 (List[int]): 加密请求头 (Encrypted request header).
-        array3 (List[int]): 加密 UA (Encrypted User-Agent).
-        aid (int): AID 值 (AID value).
-        pageId (int): 页面 ID (Page ID).
-        salt (str): 加密盐值 (Encryption salt).
-        options (List[int]): 请求选项 (Request options).
-        ua_key (bytes): UA 加密密钥 (UA encryption key).
-        character (str): 自定义 Base64 字符表 (Custom Base64 alphabet).
-        character2 (str): 自定义 Base64 字符表 (Custom Base64 alphabet).
-        character_list (List[str]): 自定义 Base64 字符表列表 (List of custom Base64 alphabets).
-        crypto_utility (CryptoUtility): 加密工具类 (Encryption utility).
-        user_agent (str): 自定义 UA (Custom User-Agent).
-        browser_fp (str): 浏览器指纹 (Browser fingerprint).
-        sort_index (List[int]): 排序索引 (Sort index).
-        sort_index_2 (List[int]): 排序索引 (Sort index).
+    绫诲睘鎬?
+        array1 (List[int]): 鍔犲瘑璇锋眰浣?(Encrypted request body).
+        array2 (List[int]): 鍔犲瘑璇锋眰澶?(Encrypted request header).
+        array3 (List[int]): 鍔犲瘑 UA (Encrypted User-Agent).
+        aid (int): AID 鍊?(AID value).
+        pageId (int): 椤甸潰 ID (Page ID).
+        salt (str): 鍔犲瘑鐩愬€?(Encryption salt).
+        options (List[int]): 璇锋眰閫夐」 (Request options).
+        ua_key (bytes): UA 鍔犲瘑瀵嗛挜 (UA encryption key).
+        character (str): 鑷畾涔?Base64 瀛楃琛?(Custom Base64 alphabet).
+        character2 (str): 鑷畾涔?Base64 瀛楃琛?(Custom Base64 alphabet).
+        character_list (List[str]): 鑷畾涔?Base64 瀛楃琛ㄥ垪琛?(List of custom Base64 alphabets).
+        crypto_utility (CryptoUtility): 鍔犲瘑宸ュ叿绫?(Encryption utility).
+        user_agent (str): 鑷畾涔?UA (Custom User-Agent).
+        browser_fp (str): 娴忚鍣ㄦ寚绾?(Browser fingerprint).
+        sort_index (List[int]): 鎺掑簭绱㈠紩 (Sort index).
+        sort_index_2 (List[int]): 鎺掑簭绱㈠紩 (Sort index).
 
-    说明：
-        options 参数用于指定请求的类型，GET 请求使用 [0, 1, 8]，POST 请求使用 [0, 1, 14]。14兼容8，POST同样可以编码params，故写死。
+    璇存槑锛?
+        options 鍙傛暟鐢ㄤ簬鎸囧畾璇锋眰鐨勭被鍨嬶紝GET 璇锋眰浣跨敤 [0, 1, 8]锛孭OST 璇锋眰浣跨敤 [0, 1, 14]銆?4鍏煎8锛孭OST鍚屾牱鍙互缂栫爜params锛屾晠鍐欐銆?
         (The options parameter is used to specify the type of request. GET requests use [0, 1, 8], and POST requests use [0, 1, 14]. 14 is compatible with 8, and POST can also encode params, so it is hardcoded.)
 
-    方法:
+    鏂规硶:
         encode_data(data: str, alphabet_index: int = 0) -> str:
-            使用指定的字符表对数据进行 Base64 编码 (Encode the data using the specified Base64 alphabet).
+            浣跨敤鎸囧畾鐨勫瓧绗﹁〃瀵规暟鎹繘琛?Base64 缂栫爜 (Encode the data using the specified Base64 alphabet).
 
         generate_abogus(params: str, request: str = "") -> str:
-            生成 ABogus 参数 (Generate the ABogus parameter).
+            鐢熸垚 ABogus 鍙傛暟 (Generate the ABogus parameter).
 
-    使用示例:
+    浣跨敤绀轰緥:
     ```python
-        # 生成 ABogus 参数，置空使用默认 UA 和浏览器指纹
+        # 鐢熸垚 ABogus 鍙傛暟锛岀疆绌轰娇鐢ㄩ粯璁?UA 鍜屾祻瑙堝櫒鎸囩汗
         abogus = ABogus(user_agent="xxx", fp="xxx")
-        abogus_param = abogus.generate_abogus("device_platform=webapp&aid=6383&channel=channel_pc_web&aweme_id=7380308675841297704……省略……")
+        abogus_param = abogus.generate_abogus("device_platform=webapp&aid=6383&channel=channel_pc_web&aweme_id=7380308675841297704鈥︹€︾渷鐣モ€︹€?)
         print(abogus_param[1])
     ```
     """
@@ -631,7 +631,7 @@ class ABogus:
     ):
         self.aid = 6383
         self.pageId = 0  # 1.0.1.19 ->  6241
-        self.salt = "cus"  # 1.0.1.19 -> 加密盐 # dhzx
+        self.salt = "cus"  # 1.0.1.19 -> 鍔犲瘑鐩?# dhzx
         self.boe = False
         self.ddrt = 8.5
         self.ic = 8.5
@@ -644,11 +644,11 @@ class ABogus:
             "^/captcha/",
             "^/ecom/",
         ]
-        self.array1 = []  # 加密请求体
-        self.array2 = []  # 加密请求头 为空
-        self.array3 = []  # 加密UA
+        self.array1 = []  # 鍔犲瘑璇锋眰浣?
+        self.array2 = []  # 鍔犲瘑璇锋眰澶?涓虹┖
+        self.array3 = []  # 鍔犲瘑UA
         self.options = options  # GET [0, 1, 8] POST [0, 1, 14]
-        self.ua_key = b"\x00\x01\x0E"  # ua加密key
+        self.ua_key = b"\x00\x01\x0E"  # ua鍔犲瘑key
 
         self.character = (
             "Dkdpgh2ZmsQB80/MfvV36XI1R45-WUAlEixNLwoqYTOPuzKFjJnry79HbGcaStCe"
@@ -656,23 +656,23 @@ class ABogus:
         self.character2 = (
             "ckdp1h4ZKsUB80/Mfvw36XIgR25+WQAlEi7NLboqYTOPuzmFjJnryx9HVGDaStCe"
         )
-        self.character_list = [self.character, self.character2]  # 自定义base64字符表
+        self.character_list = [self.character, self.character2]  # 鑷畾涔塨ase64瀛楃琛?
 
         self.crypto_utility = CryptoUtility(
             self.salt, self.character_list
-        )  # 加密工具类
+        )  # 鍔犲瘑宸ュ叿绫?
 
         self.user_agent = (
             user_agent
             if user_agent is not None and user_agent != ""
             else "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0"
-        )  # 自定义ua，为空则设置一个默认ua
+        )  # 鑷畾涔塽a锛屼负绌哄垯璁剧疆涓€涓粯璁a
 
         self.browser_fp = (
             fp
             if fp is not None and fp != ""
             else BrowserFingerprintGenerator.generate_fingerprint("Edge")
-        )  # 自定义浏览器指纹，为空则生成Edge指纹
+        )  # 鑷畾涔夋祻瑙堝櫒鎸囩汗锛屼负绌哄垯鐢熸垚Edge鎸囩汗
 
         # fmt: off
         self.sort_index = [
@@ -687,30 +687,30 @@ class ABogus:
 
     def encode_data(self, data: str, alphabet_index: int = 0) -> str:
         """
-        使用指定的字符表对数据进行 Base64 编码 (Encode the data using the specified Base64 alphabet).
+        浣跨敤鎸囧畾鐨勫瓧绗﹁〃瀵规暟鎹繘琛?Base64 缂栫爜 (Encode the data using the specified Base64 alphabet).
 
         Args:
-            data (str): 输入数据 (Input data).
-            alphabet_index (int): 自定义字符表索引 (Custom alphabet index).
+            data (str): 杈撳叆鏁版嵁 (Input data).
+            alphabet_index (int): 鑷畾涔夊瓧绗﹁〃绱㈠紩 (Custom alphabet index).
 
         Returns:
-            str: 编码后的数据 (Encoded data).
+            str: 缂栫爜鍚庣殑鏁版嵁 (Encoded data).
         """
         return self.crypto_utility.abogus_encode(data, alphabet_index)
 
     def generate_abogus(self, params: str, body: str = "") -> tuple:
         """
-        生成 abogus 参数 (Generate the ABogus parameter).
+        鐢熸垚 abogus 鍙傛暟 (Generate the ABogus parameter).
 
         Args:
-            params (str): 请求参数 (Request parameters).
-            body (str): 请求体，GET接口则为空 (Request body, empty for GET interfaces).
+            params (str): 璇锋眰鍙傛暟 (Request parameters).
+            body (str): 璇锋眰浣擄紝GET鎺ュ彛鍒欎负绌?(Request body, empty for GET interfaces).
 
         Returns:
-            tuple: params 生成的 abogus 参数 和 ua (ABogus parameter generated by params and ua).
+            tuple: params 鐢熸垚鐨?abogus 鍙傛暟 鍜?ua (ABogus parameter generated by params and ua).
         """
         ab_dir = {
-            8: 3,  # 固定
+            8: 3,  # 鍥哄畾
             15: {
                 "aid": self.aid,
                 "pageId": self.pageId,
@@ -723,16 +723,16 @@ class ABogus:
             },
             18: 44,
             19: [1, 0, 1, 0, 1],
-            66: 0,  # 固定
-            69: 0,  # 固定
-            70: 0,  # 固定
-            71: 0,  # 固定
+            66: 0,  # 鍥哄畾
+            69: 0,  # 鍥哄畾
+            70: 0,  # 鍥哄畾
+            71: 0,  # 鍥哄畾
         }
 
-        # 开始加密时间
+        # 寮€濮嬪姞瀵嗘椂闂?
         start_encryption = int(time.time() * 1000)
 
-        # params参数加盐加密
+        # params鍙傛暟鍔犵洂鍔犲瘑
         array1 = self.crypto_utility.params_to_array(
             self.crypto_utility.params_to_array(params)
         )
@@ -749,10 +749,10 @@ class ABogus:
             add_salt=False,
         )
 
-        # 结束加密时间
+        # 缁撴潫鍔犲瘑鏃堕棿
         end_encryption = int(time.time() * 1000)
 
-        # 插入加密开始时间
+        # 鎻掑叆鍔犲瘑寮€濮嬫椂闂?
         ab_dir[20] = (start_encryption >> 24) & 255
         ab_dir[21] = (start_encryption >> 16) & 255
         ab_dir[22] = (start_encryption >> 8) & 255
@@ -760,35 +760,35 @@ class ABogus:
         ab_dir[24] = int(start_encryption / 256 / 256 / 256 / 256) >> 0
         ab_dir[25] = int(start_encryption / 256 / 256 / 256 / 256 / 256) >> 0
 
-        # 插入请求头配置
+        # 鎻掑叆璇锋眰澶撮厤缃?
         ab_dir[26] = (self.options[0] >> 24) & 255
         ab_dir[27] = (self.options[0] >> 16) & 255
         ab_dir[28] = (self.options[0] >> 8) & 255
         ab_dir[29] = self.options[0] & 255
 
-        # 插入请求方法
+        # 鎻掑叆璇锋眰鏂规硶
         ab_dir[30] = int(self.options[1] / 256) & 255
         ab_dir[31] = (self.options[1] % 256) & 255
         ab_dir[32] = (self.options[1] >> 24) & 255
         ab_dir[33] = (self.options[1] >> 16) & 255
 
-        # 插入请求头加密
+        # 鎻掑叆璇锋眰澶村姞瀵?
         ab_dir[34] = (self.options[2] >> 24) & 255
         ab_dir[35] = (self.options[2] >> 16) & 255
         ab_dir[36] = (self.options[2] >> 8) & 255
         ab_dir[37] = self.options[2] & 255
 
-        # 插入请求体加密
+        # 鎻掑叆璇锋眰浣撳姞瀵?
         ab_dir[38] = array1[21]
         ab_dir[39] = array1[22]
-        # 插入body加密
+        # 鎻掑叆body鍔犲瘑
         ab_dir[40] = array2[21]
         ab_dir[41] = array2[22]
-        # 插入ua加密
+        # 鎻掑叆ua鍔犲瘑
         ab_dir[42] = array3[23]
         ab_dir[43] = array3[24]
 
-        # 插入加密结束时间
+        # 鎻掑叆鍔犲瘑缁撴潫鏃堕棿
         ab_dir[44] = (end_encryption >> 24) & 255
         ab_dir[45] = (end_encryption >> 16) & 255
         ab_dir[46] = (end_encryption >> 8) & 255
@@ -797,7 +797,7 @@ class ABogus:
         ab_dir[49] = int(end_encryption / 256 / 256 / 256 / 256) >> 0
         ab_dir[50] = int(end_encryption / 256 / 256 / 256 / 256 / 256) >> 0
 
-        # 插入固定值
+        # 鎻掑叆鍥哄畾鍊?
         ab_dir[51] = (self.pageId >> 24) & 255
         ab_dir[52] = (self.pageId >> 16) & 255
         ab_dir[53] = (self.pageId >> 8) & 255
@@ -809,20 +809,20 @@ class ABogus:
         ab_dir[59] = (self.aid >> 16) & 255
         ab_dir[60] = (self.aid >> 24) & 255
 
-        # 插入浏览器指纹
+        # 鎻掑叆娴忚鍣ㄦ寚绾?
         ab_dir[64] = len(self.browser_fp)
         ab_dir[65] = len(self.browser_fp)
 
-        # 获取 ab_dir 中 sort_index 的值
+        # 鑾峰彇 ab_dir 涓?sort_index 鐨勫€?
         sorted_values = [ab_dir.get(i, 0) for i in self.sort_index]
 
-        # 将浏览器指纹转换为 ASCII 码列表
+        # 灏嗘祻瑙堝櫒鎸囩汗杞崲涓?ASCII 鐮佸垪琛?
         edge_fp_array = StringProcessor.to_char_array(self.browser_fp)
 
-        # 将浏览器指纹长度的低 8 位作为异或值
+        # 灏嗘祻瑙堝櫒鎸囩汗闀垮害鐨勪綆 8 浣嶄綔涓哄紓鎴栧€?
         ab_xor = (len(self.browser_fp) & 255) >> 8 & 255
 
-        # 进行异或计算
+        # 杩涜寮傛垨璁＄畻
         for index in range(len(self.sort_index_2) - 1):
             if index == 0:
                 ab_xor = ab_dir.get(self.sort_index_2[index], 0)
@@ -842,10 +842,10 @@ class ABogus:
 
 
 if __name__ == "__main__":
-    # 24/06/16 晚点开源自定义ua
-    # 24/07/08 支持自定义ua和浏览器指纹
-    # 24/11/15 完成1.0.1.19版本abogus算法，择日开源
-    # 25/03/05 修复POST请求参数加密错误，修补环境
+    # 24/06/16 鏅氱偣寮€婧愯嚜瀹氫箟ua
+    # 24/07/08 鏀寔鑷畾涔塽a鍜屾祻瑙堝櫒鎸囩汗
+    # 24/11/15 瀹屾垚1.0.1.19鐗堟湰abogus绠楁硶锛屾嫨鏃ュ紑婧?
+    # 25/03/05 淇POST璇锋眰鍙傛暟鍔犲瘑閿欒锛屼慨琛ョ幆澧?
 
     user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0"
     chrome_fp = BrowserFingerprintGenerator.generate_fingerprint("Edge")
@@ -863,15 +863,15 @@ if __name__ == "__main__":
     body = "aweme_type=0&item_id=7467485482314763572&play_delta=1&source=0"
     print(url + abogus.generate_abogus(params=params, body=body)[0])
 
-    # # 测试生成100个abogus参数 和 100个指纹所需时间
+    # # 娴嬭瘯鐢熸垚100涓猘bogus鍙傛暟 鍜?100涓寚绾规墍闇€鏃堕棿
     # start = time.time()
     # for _ in range(100):
     #     abogus.generate_abogus(params=params, body=body)
     # end = time.time()
-    # print("生成100个abogus参数和指纹所需时间:", end - start)  # 生成100个abogus参数和指纹所需时间: 2.203000783920288
+    # print("鐢熸垚100涓猘bogus鍙傛暟鍜屾寚绾规墍闇€鏃堕棿:", end - start)  # 鐢熸垚100涓猘bogus鍙傛暟鍜屾寚绾规墍闇€鏃堕棿: 2.203000783920288
 
     # start = time.time()
     # for _ in range(100):
     #     BrowserFingerprintGenerator.generate_fingerprint("Chrome")
     # end = time.time()
-    # print("生成100个指纹所需时间:", end - start)  # 生成100个指纹所需时间: 0.00400090217590332
+    # print("鐢熸垚100涓寚绾规墍闇€鏃堕棿:", end - start)  # 鐢熸垚100涓寚绾规墍闇€鏃堕棿: 0.00400090217590332

@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import json
 import os
 
@@ -26,12 +26,12 @@ DEFAULT_MAX_RETRIES = 2
 DEFAULT_CONNECTION_LIMITS = httpx.Limits(max_connections=100, max_keepalive_connections=100)
 
 def _get_proxy_config():
-    """从环境变量或配置中获取代理设置"""
-    # 优先使用环境变量
+    """浠庣幆澧冨彉閲忔垨閰嶇疆涓幏鍙栦唬鐞嗚缃?""
+    # 浼樺厛浣跨敤鐜鍙橀噺
     http_proxy = os.environ.get('HTTP_PROXY') or os.environ.get('http_proxy')
     https_proxy = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
     
-    # 如果环境变量未设置，尝试从配置文件中读取
+    # 濡傛灉鐜鍙橀噺鏈缃紝灏濊瘯浠庨厤缃枃浠朵腑璇诲彇
     if not http_proxy or not https_proxy:
         try:
             from biliup.config import config
@@ -61,7 +61,7 @@ logger = logging.getLogger('biliup')
 
 
 def update_client_proxy():
-    """更新HTTP客户端的代理配置（在配置变更后调用）"""
+    """鏇存柊HTTP瀹㈡埛绔殑浠ｇ悊閰嶇疆锛堝湪閰嶇疆鍙樻洿鍚庤皟鐢級"""
     global client
     mounts = _get_proxy_config()
     if mounts:
@@ -73,7 +73,7 @@ def update_client_proxy():
             verify=_ssl_context,
             mounts=mounts
         )
-        logger.info(f"HTTP客户端代理配置已更新: {mounts}")
+        logger.info(f"HTTP瀹㈡埛绔唬鐞嗛厤缃凡鏇存柊: {mounts}")
 
 
 def check_timerange(name):
@@ -95,9 +95,9 @@ def check_timerange(name):
 
     now = datetime.now(timezone.utc).time()
 
-    # Normal interval (e.g. 16:00 → 20:00)
+    # Normal interval (e.g. 16:00 鈫?20:00)
     if start <= end:
         return start <= now <= end
 
-    # Cross‑midnight (e.g. 23:00 → 04:00)
+    # Cross鈥憁idnight (e.g. 23:00 鈫?04:00)
     return now >= start or now <= end

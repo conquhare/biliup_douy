@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 import re
 from struct import pack
 
@@ -74,5 +74,5 @@ class Douyu:
                         'color': Douyu.msg_col.get(msg.get('col')),
                     })
             except:
-                logger.warning(f"{Douyu.__name__}: 弹幕接收异常", exc_info=True)
+                logger.warning(f"{Douyu.__name__}: 寮瑰箷鎺ユ敹寮傚父", exc_info=True)
         return msgs

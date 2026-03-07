@@ -1,4 +1,4 @@
-import hashlib
+﻿import hashlib
 import time
 import httpx
 import asyncio
@@ -29,14 +29,14 @@ class Douyu(DownloadBase):
         self.douyu_disable_interactive_game = config.get('douyu_disable_interactive_game', False)
         self.douyu_cdn = config.get('douyu_cdn', 'hw-h5')
         self.douyu_rate = config.get('douyu_rate', 0)
-        # 新增：是否强制构建 hs-h5 链接（即使 play_info 返回的 rtmp_cdn 已经是 hs-h5）
+        # 鏂板锛氭槸鍚﹀己鍒舵瀯寤?hs-h5 閾炬帴锛堝嵆浣?play_info 杩斿洖鐨?rtmp_cdn 宸茬粡鏄?hs-h5锛?
         self.douyu_force_hs = config.get('douyu_force_hs', False)
         self.__js_runable = test_jsengine()
 
 
     async def acheck_stream(self, is_check=False):
         if len(self.url.split("douyu.com/")) < 2:
-            logger.error(f"{self.plugin_msg}: 直播间地址错误")
+            logger.error(f"{self.plugin_msg}: 鐩存挱闂村湴鍧€閿欒")
             return False
 
         self.fake_headers['referer'] = f"https://{DOUYU_WEB_DOMAIN}"
@@ -46,10 +46,10 @@ class Douyu(DownloadBase):
             if not self.room_id.isdigit():
                 self.room_id = await get_real_rid(self.url)
         except:
-            logger.exception(f"{self.plugin_msg}: 获取房间号错误")
+            logger.exception(f"{self.plugin_msg}: 鑾峰彇鎴块棿鍙烽敊璇?)
             return False
 
-        for _ in range(3): # 缓解 #1376 海外请求失败问题
+        for _ in range(3): # 缂撹В #1376 娴峰璇锋眰澶辫触闂
             try:
                 room_info = await client.get(
                     f"https://{DOUYU_WEB_DOMAIN}/betard/{self.room_id}",
@@ -60,20 +60,20 @@ class Douyu(DownloadBase):
                 logger.debug(f"{self.plugin_msg}: {e}", exc_info=True)
                 continue
             except:
-                logger.exception(f"{self.plugin_msg}: 获取直播间信息错误")
+                logger.exception(f"{self.plugin_msg}: 鑾峰彇鐩存挱闂翠俊鎭敊璇?)
                 return False
             else:
                 break
         else:
-            logger.error(f"{self.plugin_msg}: 获取直播间信息失败")
+            logger.error(f"{self.plugin_msg}: 鑾峰彇鐩存挱闂翠俊鎭け璐?)
             return False
         room_info = json_loads(room_info.text)['room']
 
         if room_info['show_status'] != 1:
-            logger.debug(f"{self.plugin_msg}: 未开播")
+            logger.debug(f"{self.plugin_msg}: 鏈紑鎾?)
             return False
         if room_info['videoLoop'] != 0:
-            logger.debug(f"{self.plugin_msg}: 正在放录播")
+            logger.debug(f"{self.plugin_msg}: 姝ｅ湪鏀惧綍鎾?)
             return False
         if self.douyu_disable_interactive_game:
             gift_info = (
@@ -82,7 +82,7 @@ class Douyu(DownloadBase):
                     headers=self.fake_headers
             )).json().get('data', {})
             if gift_info:
-                logger.debug(f"{self.plugin_msg}: 正在运行互动游戏")
+                logger.debug(f"{self.plugin_msg}: 姝ｅ湪杩愯浜掑姩娓告垙")
                 return False
         self.room_title = room_info['room_name']
         if room_info['isVip'] == 1:
@@ -93,26 +93,26 @@ class Douyu(DownloadBase):
         if is_check:
             return True
 
-        # 提到 self 以供 hack 功能使用
+        # 鎻愬埌 self 浠ヤ緵 hack 鍔熻兘浣跨敤
         self.__req_query = {
             'cdn': self.douyu_cdn,
             'rate': str(self.douyu_rate),
             'ver': 'Douyu_new',
-            'iar': '0', # ispreload? 1: 忽略 rate 参数，使用默认画质
-            'ive': '0', # rate? 0~19 时、19~24 时请求数 >=3 为真
+            'iar': '0', # ispreload? 1: 蹇界暐 rate 鍙傛暟锛屼娇鐢ㄩ粯璁ょ敾璐?
+            'ive': '0', # rate? 0~19 鏃躲€?9~24 鏃惰姹傛暟 >=3 涓虹湡
             'rid': self.room_id,
             'hevc': '0',
             'fa': '0', # isaudio
             'sov': '0', # use wasm?
         }
 
-        for _ in range(2): # 允许多重试一次以剔除 scdn
+        for _ in range(2): # 鍏佽澶氶噸璇曚竴娆′互鍓旈櫎 scdn
             # self.__js_runable = False
             try:
                 play_info = await self.aget_web_play_info(self.room_id, self.__req_query)
                 if play_info['rtmp_cdn'].startswith('scdn'):
                     new_cdn = play_info['cdnsWithName'][-1]['cdn']
-                    logger.debug(f"{self.plugin_msg}: 回避 scdn 为 {new_cdn}")
+                    logger.debug(f"{self.plugin_msg}: 鍥為伩 scdn 涓?{new_cdn}")
                     self.__req_query['cdn'] = new_cdn
                     continue
             except (RuntimeError, ValueError) as e:
@@ -120,12 +120,12 @@ class Douyu(DownloadBase):
             except httpx.RequestError as e:
                 logger.debug(f"{self.plugin_msg}: {e}", exc_info=True)
             except Exception as e:
-                logger.exception(f"{self.plugin_msg}: 未处理的错误 {e}，自动重试")
+                logger.exception(f"{self.plugin_msg}: 鏈鐞嗙殑閿欒 {e}锛岃嚜鍔ㄩ噸璇?)
             else:
                 break
         else:
             # Unknown Error
-            logger.error(f"{self.plugin_msg}: 获取播放信息失败")
+            logger.error(f"{self.plugin_msg}: 鑾峰彇鎾斁淇℃伅澶辫触")
             return False
 
         self.raw_stream_url = f"{play_info['rtmp_url']}/{play_info['rtmp_live']}"
@@ -143,7 +143,7 @@ class Douyu(DownloadBase):
 
     async def aclac_sign(self, rid: Union[str, int]) -> dict[str, Any]:
         '''
-        :param rid: 房间号
+        :param rid: 鎴块棿鍙?
         :return: sign dict
         '''
         if not self.__js_runable:
@@ -168,7 +168,7 @@ class Douyu(DownloadBase):
             params = parse_qs(ctx.eval(sign_fun))
 
         except Exception as e:
-            logger.exception(f"{self.plugin_msg}: 获取签名参数异常")
+            logger.exception(f"{self.plugin_msg}: 鑾峰彇绛惧悕鍙傛暟寮傚父")
             raise e
         return params
 
@@ -180,8 +180,8 @@ class Douyu(DownloadBase):
         did: str = DOUYU_DEFAULT_DID,
     ) -> dict[str, Any]:
         '''
-        :param room_id: 房间号
-        :param req_query: 请求参数
+        :param room_id: 鎴块棿鍙?
+        :param req_query: 璇锋眰鍙傛暟
         :param did: douyuid
         :return: PlayInfo
         '''
@@ -190,7 +190,7 @@ class Douyu(DownloadBase):
 
         if self.__js_runable and room_id in DouyuUtils.VipRoom:
             s = await self.aclac_sign(room_id)
-            logger.debug(f"{self.plugin_msg}: JSEngine 签名参数 {s}")
+            logger.debug(f"{self.plugin_msg}: JSEngine 绛惧悕鍙傛暟 {s}")
             req_query = {
                 **req_query,
                 **s
@@ -203,7 +203,7 @@ class Douyu(DownloadBase):
             )
         else:
             s = await DouyuUtils.sign(sign_type="stream", ts=int(time.time()), did=did, rid=room_id)
-            logger.debug(f"{self.plugin_msg}: 免 JSEngine 签名参数 {s}")
+            logger.debug(f"{self.plugin_msg}: 鍏?JSEngine 绛惧悕鍙傛暟 {s}")
             auth_param = {
                 "enc_data": s['key']['enc_data'],
                 "tt": s['ts'],
@@ -218,37 +218,37 @@ class Douyu(DownloadBase):
             rsp = await client.post(
                 url,
                 headers={**self.fake_headers, 'user-agent': DouyuUtils.UserAgent},
-                # params=req_query, # V1 接口需使用查询参数
-                data=req_query # 原接口需使用请求体
+                # params=req_query, # V1 鎺ュ彛闇€浣跨敤鏌ヨ鍙傛暟
+                data=req_query # 鍘熸帴鍙ｉ渶浣跨敤璇锋眰浣?
             )
 
         rsp.raise_for_status()
         play_data = json_loads(rsp.text)
         if not play_data:
-            raise RuntimeError(f"获取播放信息失败 {rsp}")
+            raise RuntimeError(f"鑾峰彇鎾斁淇℃伅澶辫触 {rsp}")
         if (err := play_data['error']) != 0 or not play_data.get('data', {}):
             msg = play_data.get('msg', '')
             if err == -5:
-                raise RuntimeError("[closeRoom] 主播未开播")
+                raise RuntimeError("[closeRoom] 涓绘挱鏈紑鎾?)
             elif err == -9:
-                raise RuntimeError("[room_bus_checksevertime] 用户本机时间戳不对")
+                raise RuntimeError("[room_bus_checksevertime] 鐢ㄦ埛鏈満鏃堕棿鎴充笉瀵?)
             elif err == 126:
-                raise RuntimeError(f"版权原因，该地域不允许播放：{msg}")
+                raise RuntimeError(f"鐗堟潈鍘熷洜锛岃鍦板煙涓嶅厑璁告挱鏀撅細{msg}")
             else:
-                raise RuntimeError(f"获取播放信息错误: code={err}, msg={msg}, raw_obj={play_data}")
+                raise RuntimeError(f"鑾峰彇鎾斁淇℃伅閿欒: code={err}, msg={msg}, raw_obj={play_data}")
         return play_data['data']
 
 
 class DouyuUtils:
     '''
-    逆向实现 //shark2.douyucdn.cn/front-publish/live-master/js/player_first_preload_stream/player_first_preload_stream_6cd7aab.js
-    更新    //shark2.douyucdn.cn/front-publish/douyu-web-first-stream-master/web-encrypt-57bbddd0.js
+    閫嗗悜瀹炵幇 //shark2.douyucdn.cn/front-publish/live-master/js/player_first_preload_stream/player_first_preload_stream_6cd7aab.js
+    鏇存柊    //shark2.douyucdn.cn/front-publish/douyu-web-first-stream-master/web-encrypt-57bbddd0.js
     '''
     WhiteEncryptKey: dict = dict()
     VipRoom: set = set()
-    # enc_data 会校验 UA
+    # enc_data 浼氭牎楠?UA
     UserAgent: str = ""
-    # 防止并发访问
+    # 闃叉骞跺彂璁块棶
     _lock: asyncio.Lock = asyncio.Lock()
     _update_key_event: Optional[asyncio.Event] = None
 
@@ -281,7 +281,7 @@ class DouyuUtils:
             return DouyuUtils.is_key_valid()
 
         try:
-            DouyuUtils.UserAgent = random_user_agent() # 防风控，每次更新随机 UA
+            DouyuUtils.UserAgent = random_user_agent() # 闃查鎺э紝姣忔鏇存柊闅忔満 UA
             rsp = await client.get(
                 f"https://{domain}/wgapi/livenc/liveweb/websec/getEncryption",
                 params={"did": did},
@@ -299,7 +299,7 @@ class DouyuUtils:
                 DouyuUtils.WhiteEncryptKey = data['data']
             return True
         except Exception:
-            logger.exception(f"{DouyuUtils.__name__}: 获取加密密钥失败")
+            logger.exception(f"{DouyuUtils.__name__}: 鑾峰彇鍔犲瘑瀵嗛挜澶辫触")
             return False
         finally:
             async with DouyuUtils._lock:
@@ -315,10 +315,10 @@ class DouyuUtils:
         rid: Union[str, int],
     ) -> dict[str, Any]:
         '''
-        :param sign_type: 签名类型，可选 stream / login / heartbeat
-        :param ts: 10位Unix时间戳
+        :param sign_type: 绛惧悕绫诲瀷锛屽彲閫?stream / login / heartbeat
+        :param ts: 10浣峌nix鏃堕棿鎴?
         :param did: douyuid
-        :param rid: 房间号
+        :param rid: 鎴块棿鍙?
         '''
         if not rid:
             raise ValueError("rid is None")
@@ -329,12 +329,12 @@ class DouyuUtils:
         if not did:
             did = DOUYU_DEFAULT_DID
 
-        # 确保密钥有效
+        # 纭繚瀵嗛挜鏈夋晥
         for _ in range(2):
             if DouyuUtils.is_key_valid(sign_type) or await DouyuUtils.update_key():
                 break
         else:
-            raise RuntimeError("获取加密密钥失败")
+            raise RuntimeError("鑾峰彇鍔犲瘑瀵嗛挜澶辫触")
 
         rand_str = DouyuUtils.WhiteEncryptKey['rand_str']
         enc_time = DouyuUtils.WhiteEncryptKey['enc_time']

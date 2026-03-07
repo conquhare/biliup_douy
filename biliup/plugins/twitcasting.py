@@ -1,4 +1,4 @@
-import hashlib
+﻿import hashlib
 
 import biliup.common.util
 from biliup.Danmaku import DanmakuClient
@@ -19,7 +19,7 @@ class Twitcasting(DownloadBase):
         self.twitcasting_cookie = config.get('user', {}).get('twitcasting_cookie')
         self.fake_headers['referer'] = "https://twitcasting.tv/"
 
-        # TODO 传递过于繁琐
+        # TODO 浼犻€掕繃浜庣箒鐞?
         self._movie_id = None
 
     async def acheck_stream(self, is_check=False):
@@ -33,10 +33,10 @@ class Twitcasting(DownloadBase):
 
         room_html = (await biliup.common.util.client.get(self.url, headers=self.fake_headers)).text
         if 'Enter the secret word to access' in room_html:
-            logger.warning(f"{Twitcasting.__name__}: {self.url}: 直播间需要密码")
+            logger.warning(f"{Twitcasting.__name__}: {self.url}: 鐩存挱闂撮渶瑕佸瘑鐮?)
             return False
 
-        # 尺寸不合适
+        # 灏哄涓嶅悎閫?
         # self.live_cover_url = match1(room_html, r'<meta property="og:image" content="([^"]*)"')
         self.room_title = match1(room_html, r'<meta name="twitter:title" content="([^"]*)"')
         uploader_id = match1(room_html, r'<meta name="twitter:creator" content="([^"]*)"')
@@ -45,20 +45,20 @@ class Twitcasting(DownloadBase):
             f'https://twitcasting.tv/streamserver.php?target={uploader_id}&mode=client&player=pc_web',
             headers=self.fake_headers)
         if response.status_code != 200:
-            logger.warning(f"{Twitcasting.__name__}: {self.url}: 获取错误，本次跳过")
+            logger.warning(f"{Twitcasting.__name__}: {self.url}: 鑾峰彇閿欒锛屾湰娆¤烦杩?)
             return False
         stream_info = response.json()
         if not stream_info:
-            logger.warning(f"{Twitcasting.__name__}: {self.url}: 直播间地址错误")
+            logger.warning(f"{Twitcasting.__name__}: {self.url}: 鐩存挱闂村湴鍧€閿欒")
             return False
         if not stream_info['movie']['live']:
-            logger.debug(f"{Twitcasting.__name__}: {self.url}: 未开播")
+            logger.debug(f"{Twitcasting.__name__}: {self.url}: 鏈紑鎾?)
             return False
 
         self._movie_id = stream_info['movie']['id']
 
         if not stream_info.get("tc-hls", {}).get("streams"):
-            logger.error(f"{Twitcasting.__name__}: {self.url}: 未获取到到直播流 => {stream_info}")
+            logger.error(f"{Twitcasting.__name__}: {self.url}: 鏈幏鍙栧埌鍒扮洿鎾祦 => {stream_info}")
             return False
 
         stream_url = None
@@ -79,7 +79,7 @@ class Twitcasting(DownloadBase):
             stream_url = next(iter(streams.values()))
 
         if not stream_url:
-            logger.error(f"{Twitcasting.__name__}: {self.url}: 未查找到直播流 => {stream_info}")
+            logger.error(f"{Twitcasting.__name__}: {self.url}: 鏈煡鎵惧埌鐩存挱娴?=> {stream_info}")
             return False
 
         self.raw_stream_url = stream_url
@@ -127,10 +127,10 @@ class Twitcasting(DownloadBase):
 #         _hash_str = salt + timestamp + method + pathname + search + sessionid
 #         return str(timestamp + "." + TwitcastingUtils.hashlib.sha256(_hash_str.encode()).hexdigest())
 # '''
-# X-Web-Authorizekey 可在 PlayerPage2.js 文件中
-# 通过 return ""[u(413)](m, ".")[u(413)](f) 所在的方法计算而出
-# 由 salt + 10位 timestamp + 接口Method大写 + 接口pathname + 接口search + web-authorize-session-id 拼接后
-# 再经过 SHA-256 处理，最后在字符串前面拼接上 10位 timestamp 和 dot 得到
+# X-Web-Authorizekey 鍙湪 PlayerPage2.js 鏂囦欢涓?
+# 閫氳繃 return ""[u(413)](m, ".")[u(413)](f) 鎵€鍦ㄧ殑鏂规硶璁＄畻鑰屽嚭
+# 鐢?salt + 10浣?timestamp + 鎺ュ彛Method澶у啓 + 鎺ュ彛pathname + 鎺ュ彛search + web-authorize-session-id 鎷兼帴鍚?
+# 鍐嶇粡杩?SHA-256 澶勭悊锛屾渶鍚庡湪瀛楃涓插墠闈㈡嫾鎺ヤ笂 10浣?timestamp 鍜?dot 寰楀埌
 # '''
 # __n = int(time.time() * 1000)
 # _salt = "d6g97jormun44naq"

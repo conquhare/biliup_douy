@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 import random
 import re
 
@@ -32,7 +32,7 @@ class Twitch:
                 try:
                     msgt["content"] = re.search(r"PRIVMSG [^:]+:(.+)", d).group(1)
                     msgt["name"] = re.search(r"display-name=([^;]+);", d).group(1)
-                    # if msgt["content"][0] == '@': continue # 丢掉表情符号
+                    # if msgt["content"][0] == '@': continue # 涓㈡帀琛ㄦ儏绗﹀彿
                     c = re.search(r"color=#([a-zA-Z0-9]{6});", d).group(1)
                     msgt["color"] = int(c, 16)
                     msgt["msg_type"] = "danmaku"

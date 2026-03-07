@@ -1,4 +1,4 @@
-from typing import Optional
+﻿from typing import Optional
 from urllib.parse import unquote, urlparse, parse_qs, urlencode, urlunparse
 
 import requests
@@ -21,10 +21,10 @@ class Douyin(DownloadBase):
         self.douyin_protocol = config.get('douyin_protocol', 'flv')
         self.douyin_double_screen = config.get('douyin_double_screen', False)
         self.douyin_true_origin = config.get('douyin_true_origin', False)
-        self.douyin_danmaku_types = config.get('douyin_danmaku_types', None)  # 弹幕类型筛选
+        self.douyin_danmaku_types = config.get('douyin_danmaku_types', None)  # 寮瑰箷绫诲瀷绛涢€?
         self.fake_headers['cookie'] = config.get('user', {}).get('douyin_cookie', '')
-        self.__web_rid = None # 网页端房间号 或 抖音号
-        self.__room_id = None # 单场直播的直播房间
+        self.__web_rid = None # 缃戦〉绔埧闂村彿 鎴?鎶栭煶鍙?
+        self.__room_id = None # 鍗曞満鐩存挱鐨勭洿鎾埧闂?
         self.__sec_uid = None
 
     async def acheck_stream(self, is_check=False):
@@ -59,7 +59,7 @@ class Douyin(DownloadBase):
                 else:
                     raise
             except:
-                logger.error(f"{self.plugin_msg}: 不支持的链接")
+                logger.error(f"{self.plugin_msg}: 涓嶆敮鎸佺殑閾炬帴")
                 return False
         elif "/user/" in self.url:
             sec_uid = self.url.split("user/")[1].split("?")[0]
@@ -72,14 +72,14 @@ class Douyin(DownloadBase):
                         user_page.split('<script id="RENDER_DATA" type="application/json">')[1].split('</script>')[0])
                     web_rid = match1(user_page_data, r'"web_rid":"([^"]+)"')
                     if not web_rid:
-                        logger.debug(f"{self.plugin_msg}: 未开播")
+                        logger.debug(f"{self.plugin_msg}: 鏈紑鎾?)
                         return False
                     self.__web_rid = web_rid
                 except (KeyError, IndexError):
-                    logger.error(f"{self.plugin_msg}: 房间号获取失败，请检查Cookie设置")
+                    logger.error(f"{self.plugin_msg}: 鎴块棿鍙疯幏鍙栧け璐ワ紝璇锋鏌ookie璁剧疆")
                     return False
                 except:
-                    logger.exception(f"{self.plugin_msg}: 房间号获取失败")
+                    logger.exception(f"{self.plugin_msg}: 鎴块棿鍙疯幏鍙栧け璐?)
                     return False
         else:
             web_rid = self.url.split('douyin.com/')[1].split('/')[0].split('?')[0]
@@ -93,38 +93,38 @@ class Douyin(DownloadBase):
                 _room_info = await self.get_web_room_info(self.__web_rid)
                 if _room_info:
                     if not _room_info['data'].get('user'):
-                        if _room_info['data'].get('prompts', '') == '直播已结束':
+                        if _room_info['data'].get('prompts', '') == '鐩存挱宸茬粨鏉?:
                             return False
-                        # 可能是用户被封禁
+                        # 鍙兘鏄敤鎴疯灏佺
                         raise Exception(f"{str(_room_info)}")
                     self.__sec_uid = _room_info['data']['user']['sec_uid']
-            # PCWeb 端无流 或 没有提供 web_rid
+            # PCWeb 绔棤娴?鎴?娌℃湁鎻愪緵 web_rid
             if not _room_info.get('data', {}).get('data'):
                 _room_info = await self.get_h5_room_info(self.__sec_uid, self.__room_id)
                 if _room_info['data'].get('room', {}).get('owner'):
                     self.__web_rid = _room_info['data']['room']['owner']['web_rid']
             try:
-                # 出现异常不用提示，直接到 移动网页 端获取
+                # 鍑虹幇寮傚父涓嶇敤鎻愮ず锛岀洿鎺ュ埌 绉诲姩缃戦〉 绔幏鍙?
                 room_info = _room_info['data']['data'][0]
             except (KeyError, IndexError):
-                # 如果 移动网页 端也没有数据，当做未开播处理
+                # 濡傛灉 绉诲姩缃戦〉 绔篃娌℃湁鏁版嵁锛屽綋鍋氭湭寮€鎾鐞?
                 room_info = _room_info['data'].get('room', {})
-                # 当做未开播处理
+                # 褰撳仛鏈紑鎾鐞?
                 # if not room_info:
-                #     logger.info(f"{self.plugin_msg}: 获取直播间信息失败 {_room_info}")
+                #     logger.info(f"{self.plugin_msg}: 鑾峰彇鐩存挱闂翠俊鎭け璐?{_room_info}")
             if room_info.get('status') != 2:
-                logger.debug(f"{self.plugin_msg}: 未开播")
+                logger.debug(f"{self.plugin_msg}: 鏈紑鎾?)
                 return False
             self.__room_id = room_info['id_str']
             self.room_title = room_info['title']
         except:
-            logger.exception(f"{self.plugin_msg}: 获取直播间信息失败")
+            logger.exception(f"{self.plugin_msg}: 鑾峰彇鐩存挱闂翠俊鎭け璐?)
             return False
 
         if is_check:
             return True
         else:
-            # 清理上一次获取的直播流
+            # 娓呯悊涓婁竴娆¤幏鍙栫殑鐩存挱娴?
             self.raw_stream_url = ""
 
         try:
@@ -133,43 +133,43 @@ class Douyin(DownloadBase):
                 pull_data = next(iter(room_info['stream_url']['pull_datas'].values()))
             stream_data = json_loads(pull_data['stream_data'])['data']
         except:
-            logger.exception(f"{self.plugin_msg}: 加载直播流失败")
+            logger.exception(f"{self.plugin_msg}: 鍔犺浇鐩存挱娴佸け璐?)
             logger.debug(f"{self.plugin_msg}: room_info {room_info}")
             return False
 
-        # 抖音FLV真原画
+        # 鎶栭煶FLV鐪熷師鐢?
         if (
-            self.douyin_true_origin  # 开启真原画
+            self.douyin_true_origin  # 寮€鍚湡鍘熺敾
             and
-            self.douyin_quality == 'origin' # 请求原画
+            self.douyin_quality == 'origin' # 璇锋眰鍘熺敾
             and
-            self.douyin_protocol == 'flv' # 请求FLV
+            self.douyin_protocol == 'flv' # 璇锋眰FLV
             # and
             # self.raw_stream_url.find('_or4.flv') != -1 # or4(origin)
         ):
             try:
                 self.raw_stream_url = stream_data['ao']['main']['flv'].replace('&only_audio=1', '')
             except KeyError:
-                logger.debug(f"{self.plugin_msg}: 未找到 ao 流 {stream_data}")
+                logger.debug(f"{self.plugin_msg}: 鏈壘鍒?ao 娴?{stream_data}")
 
         if not self.raw_stream_url:
-            # 原画origin 蓝光uhd 超清hd 高清sd 标清ld 流畅md 仅音频ao
+            # 鍘熺敾origin 钃濆厜uhd 瓒呮竻hd 楂樻竻sd 鏍囨竻ld 娴佺晠md 浠呴煶棰慳o
             quality_items = ['origin', 'uhd', 'hd', 'sd', 'ld', 'md']
             quality = self.douyin_quality
             if quality not in quality_items:
                 quality = quality_items[0]
             try:
-                # 如果没有这个画质则取相近的 优先低清晰度
+                # 濡傛灉娌℃湁杩欎釜鐢昏川鍒欏彇鐩歌繎鐨?浼樺厛浣庢竻鏅板害
                 if quality not in stream_data:
-                    # 可选的清晰度 含自身
+                    # 鍙€夌殑娓呮櫚搴?鍚嚜韬?
                     optional_quality_items = [x for x in quality_items if x in stream_data.keys() or x == quality]
-                    # 自身在可选清晰度的位置
+                    # 鑷韩鍦ㄥ彲閫夋竻鏅板害鐨勪綅缃?
                     optional_quality_index = optional_quality_items.index(quality)
-                    # 自身在所有清晰度的位置
+                    # 鑷韩鍦ㄦ墍鏈夋竻鏅板害鐨勪綅缃?
                     quality_index = quality_items.index(quality)
-                    # 高清晰度偏移
+                    # 楂樻竻鏅板害鍋忕Щ
                     quality_left_offset = None
-                    # 低清晰度偏移
+                    # 浣庢竻鏅板害鍋忕Щ
                     quality_right_offset = None
 
                     if optional_quality_index + 1 < len(optional_quality_items):
@@ -180,7 +180,7 @@ class Douyin(DownloadBase):
                         quality_left_offset = quality_index - quality_items.index(
                             optional_quality_items[optional_quality_index - 1])
 
-                    # 取相邻的清晰度
+                    # 鍙栫浉閭荤殑娓呮櫚搴?
                     if quality_right_offset <= quality_left_offset:
                         quality = optional_quality_items[optional_quality_index + 1]
                     else:
@@ -189,7 +189,7 @@ class Douyin(DownloadBase):
                 protocol = 'hls' if self.douyin_protocol == 'hls' else 'flv'
                 self.raw_stream_url = stream_data[quality]['main'][protocol]
             except:
-                logger.exception(f"{self.plugin_msg}: 寻找清晰度失败")
+                logger.exception(f"{self.plugin_msg}: 瀵绘壘娓呮櫚搴﹀け璐?)
                 return False
 
         self.raw_stream_url = self.raw_stream_url.replace('http://', 'https://')
@@ -203,11 +203,11 @@ class Douyin(DownloadBase):
                     'sec_uid': self.__sec_uid,
                     'room_id': self.__room_id,
                     'config': self.config,
-                    'danmaku_types': self.douyin_danmaku_types  # 传递弹幕类型筛选配置
+                    'danmaku_types': self.douyin_danmaku_types  # 浼犻€掑脊骞曠被鍨嬬瓫閫夐厤缃?
                 }
                 self.danmaku = DanmakuClient(self.url, self.gen_download_filename(), content)
             else:
-                logger.error(f"如需录制抖音弹幕，请至少安装一个 Javascript 解释器。如 pip install quickjs")
+                logger.error(f"濡傞渶褰曞埗鎶栭煶寮瑰箷锛岃鑷冲皯瀹夎涓€涓?Javascript 瑙ｉ噴鍣ㄣ€傚 pip install quickjs")
 
     async def get_web_room_info(self, web_rid: str) -> dict:
         query = {
@@ -227,7 +227,7 @@ class Douyin(DownloadBase):
 
     async def get_h5_room_info(self, sec_user_id: str, room_id: str) -> dict:
         '''
-        Mobile web 的 API 信息，海外可能不允许使用
+        Mobile web 鐨?API 淇℃伅锛屾捣澶栧彲鑳戒笉鍏佽浣跨敤
         '''
         if not sec_user_id:
             raise ValueError("sec_user_id is None")
@@ -236,7 +236,7 @@ class Douyin(DownloadBase):
             'live_id': 1,
             'version_code': '99.99.99',
             'app_id': 1128,
-            'room_id': room_id if room_id else 2, # 必要但不校验
+            'room_id': room_id if room_id else 2, # 蹇呰浣嗕笉鏍￠獙
             'sec_user_id': sec_user_id
         }
         abogus = ABogus(user_agent=DouyinUtils.DOUYIN_USER_AGENT)
@@ -253,7 +253,7 @@ class Douyin(DownloadBase):
 
 
 class DouyinUtils:
-    # 抖音ttwid
+    # 鎶栭煶ttwid
     _douyin_ttwid: Optional[str] = None
     # DOUYIN_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36'
     DOUYIN_USER_AGENT = random_user_agent()
@@ -273,25 +273,25 @@ class DouyinUtils:
 
     @staticmethod
     def generate_ms_token() -> str:
-        '''生成随机 msToken'''
+        '''鐢熸垚闅忔満 msToken'''
         return ''.join(random.choice(DouyinUtils.LONG_CHATSET) for _ in range(184))
 
 
     @staticmethod
     def generate_nonce() -> str:
-        """生成 21 位随机十六进制小写 nonce"""
+        """鐢熸垚 21 浣嶉殢鏈哄崄鍏繘鍒跺皬鍐?nonce"""
         return ''.join(random.choice(DouyinUtils.CHARSET) for _ in range(21))
 
 
     @staticmethod
     def generate_odin_ttid() -> str:
-        """生成 160 位随机十六进制小写 odin_ttid"""
+        """鐢熸垚 160 浣嶉殢鏈哄崄鍏繘鍒跺皬鍐?odin_ttid"""
         return ''.join(random.choice(DouyinUtils.CHARSET) for _ in range(160))
 
 
     @staticmethod
     def build_request_url(url: str, query: Optional[dict] = None) -> str:
-        # NOTE: 不能在类级别初始化，否则非首次生成的 abogus 有问题，原因未知
+        # NOTE: 涓嶈兘鍦ㄧ被绾у埆鍒濆鍖栵紝鍚﹀垯闈為娆＄敓鎴愮殑 abogus 鏈夐棶棰橈紝鍘熷洜鏈煡
         abogus = ABogus(user_agent=DouyinUtils.DOUYIN_USER_AGENT)
         parsed_url = urlparse(url)
         existing_params = query or parse_qs(parsed_url.query)

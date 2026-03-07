@@ -1,6 +1,6 @@
-# 抖音的弹幕录制参考了 https://github.com/LyzenX/DouyinLiveRecorder 和 https://github.com/YunzhiYike/live-tool
-# 2023.07.14：KNaiFen：这部分代码参考了https://github.com/SmallPeaches/DanmakuRender
-# 2024.06.22: 添加来自 https://github.com/hua0512/stream-rec 修改后的 webmssdk.js，以计算 signature
+﻿# 鎶栭煶鐨勫脊骞曞綍鍒跺弬鑰冧簡 https://github.com/LyzenX/DouyinLiveRecorder 鍜?https://github.com/YunzhiYike/live-tool
+# 2023.07.14锛欿NaiFen锛氳繖閮ㄥ垎浠ｇ爜鍙傝€冧簡https://github.com/SmallPeaches/DanmakuRender
+# 2024.06.22: 娣诲姞鏉ヨ嚜 https://github.com/hua0512/stream-rec 淇敼鍚庣殑 webmssdk.js锛屼互璁＄畻 signature
 
 import gzip
 import logging

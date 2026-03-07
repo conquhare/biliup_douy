@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+﻿#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 
@@ -84,4 +84,4 @@ class tarscore:
     def printHex(buff): util.printHex(buff)
 
 
-# 被用户引用
+# 琚敤鎴峰紩鐢?

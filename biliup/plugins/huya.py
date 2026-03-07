@@ -1,4 +1,4 @@
-import base64
+﻿import base64
 import hashlib
 import random
 import time
@@ -40,7 +40,7 @@ class Huya(DownloadBase):
         self.__room_id = url.split('huya.com/')[1].split('?')[0]
         self.huya_danmaku = config.get('huya_danmaku', False)
         self.huya_max_ratio = config.get('huya_max_ratio', 0)
-        self.huya_cdn = config.get('huya_cdn', "").upper()  # 不填写时使用主播的CDN优先级
+        self.huya_cdn = config.get('huya_cdn', "").upper()  # 涓嶅～鍐欐椂浣跨敤涓绘挱鐨凜DN浼樺厛绾?
         self.huya_protocol = 'Hls' if config.get('huya_protocol') == 'Hls' else 'Flv'
         self.huya_imgplus = config.get('huya_imgplus', True)
         self.huya_cdn_fallback = config.get('huya_cdn_fallback', False)
@@ -66,11 +66,11 @@ class Huya(DownloadBase):
             self.raw_stream_url = None
             return False
 
-        # 兼容 biliup/biliup#1200
+        # 鍏煎 biliup/biliup#1200
         self.room_title = room_profile['room_title']
-        # 过滤回放
-        for key in ["回放", "重播"]:
-            # 前三或后三
+        # 杩囨护鍥炴斁
+        for key in ["鍥炴斁", "閲嶆挱"]:
+            # 鍓嶄笁鎴栧悗涓?
             if key in self.room_title[:3] or key in self.room_title[-3:]:
                 logger.debug(f"{self.plugin_msg}: {self.room_title}")
                 return False
@@ -94,11 +94,11 @@ class Huya(DownloadBase):
             logger.error(f"{self.plugin_msg}: {e}", exc_info=True)
             return False
 
-        # HTTPS的直播流只允许连接一次
+        # HTTPS鐨勭洿鎾祦鍙厑璁歌繛鎺ヤ竴娆?
         if self.huya_cdn_fallback:
             _url = await self.acheck_url_healthy(self.raw_stream_url)
             if _url is None:
-                logger.info(f"{self.plugin_msg}: cdn_fallback 顺序尝试 {cdn_list}")
+                logger.info(f"{self.plugin_msg}: cdn_fallback 椤哄簭灏濊瘯 {cdn_list}")
                 for cdn in cdn_list:
                     if cdn == self.huya_cdn:
                         continue
@@ -106,10 +106,10 @@ class Huya(DownloadBase):
                     if (await self.acheck_url_healthy(stream_urls[cdn])) is None:
                         continue
                     self.huya_cdn = cdn
-                    logger.info(f"{self.plugin_msg}: cdn_fallback 回退到 {self.huya_cdn}")
+                    logger.info(f"{self.plugin_msg}: cdn_fallback 鍥為€€鍒?{self.huya_cdn}")
                     break
                 else:
-                    logger.error(f"{self.plugin_msg}: cdn_fallback 所有链接无法使用")
+                    logger.error(f"{self.plugin_msg}: cdn_fallback 鎵€鏈夐摼鎺ユ棤娉曚娇鐢?)
                     return False
             room_profile = await self.get_room_profile(self.huya_mobile_api)
             if not room_profile['live']:
@@ -133,11 +133,11 @@ class Huya(DownloadBase):
 
     def add_ratio(self, url: str, bitrate_info: Dict[str, Any], max_bitrate: int) -> str:
         '''
-        添加码率
-        :param url: 流地址
-        :param bitrate_info: 可选择的码率信息
-        :param max_bitrate: 最大码率(不含hdr)
-        :return: 添加码率后的流地址
+        娣诲姞鐮佺巼
+        :param url: 娴佸湴鍧€
+        :param bitrate_info: 鍙€夋嫨鐨勭爜鐜囦俊鎭?
+        :param max_bitrate: 鏈€澶х爜鐜?涓嶅惈hdr)
+        :return: 娣诲姞鐮佺巼鍚庣殑娴佸湴鍧€
         '''
         if self.huya_max_ratio and "&ratio" not in url:
             def __get_ratio(info: Dict[str, Any]) -> int:
@@ -145,19 +145,19 @@ class Huya(DownloadBase):
             try:
                 selected_ratio = 0
                 self.huya_max_ratio = int(self.huya_max_ratio)
-                # 符合条件的码率
+                # 绗﹀悎鏉′欢鐨勭爜鐜?
                 allowed_ratio_list = [
                     __get_ratio(x) \
                     for x in bitrate_info \
                     if __get_ratio(x) <= self.huya_max_ratio
                 ]
-                # 录制码率
+                # 褰曞埗鐮佺巼
                 if allowed_ratio_list:
                     selected_ratio = max(allowed_ratio_list)
                 if selected_ratio:
                     return f"{url}&ratio={selected_ratio}"
             except KeyError as e:
-                raise KeyError(f"确定码率时发生错误") from e
+                raise KeyError(f"纭畾鐮佺巼鏃跺彂鐢熼敊璇?) from e
         return url
 
 
@@ -172,16 +172,16 @@ class Huya(DownloadBase):
             streams_info: List[Dict[str, Any]]
         ) -> List[Dict[str, Any]]:
         '''
-        构建流地址
-        :param streams_info: 流信息
-        :return: 流地址
+        鏋勫缓娴佸湴鍧€
+        :param streams_info: 娴佷俊鎭?
+        :return: 娴佸湴鍧€
         '''
         proto = self.huya_protocol
         streams = {}
         weights = {} # https://cdnweb.huya.com/getUidsDomainList?anchor_uid={anchor_uid}
         cached_anticode = ""
         for stream in streams_info:
-            # 优先级<0代表不可用
+            # 浼樺厛绾?0浠ｈ〃涓嶅彲鐢?
             priority = stream['iWebPriorityRate']
             if priority < 0:
                 continue
@@ -189,7 +189,7 @@ class Huya(DownloadBase):
             cdn = stream['sCdnType']
             suffix = stream[f's{proto}UrlSuffix']
             if not cached_anticode:
-                # 小程序API不修改
+                # 灏忕▼搴廇PI涓嶄慨鏀?
                 if self.huya_mobile_api and self.huya_imgplus:
                     cached_anticode = stream[f's{proto}AntiCode']
                 else:
@@ -199,7 +199,7 @@ class Huya(DownloadBase):
                         stream['lPresenterUid']
                     )
                 cached_anticode += f"&codec={self.huya_codec}"
-            base_url = stream[f's{proto}Url'].replace('http://', 'https://') # 强制https
+            base_url = stream[f's{proto}Url'].replace('http://', 'https://') # 寮哄埗https
             streams[cdn] = f"{base_url}/{stream_name}.{suffix}?{cached_anticode}"
             weights[cdn] = priority
         return self.__weight_sorting(streams, weights)
@@ -207,9 +207,9 @@ class Huya(DownloadBase):
 
     def extract_room_profile(self, data: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
         '''
-        ON: 直播
-        REPLAY: 重播
-        OFF: 未开播
+        ON: 鐩存挱
+        REPLAY: 閲嶆挱
+        OFF: 鏈紑鎾?
         '''
         # PC web
         if isinstance(data, str):
@@ -220,17 +220,17 @@ class Huya(DownloadBase):
             if room_data['state'] != 'ON' or not bitrate_info:
                 return {
                     'live': False,
-                    'message': '未开播' if room_data['state'] != 'ON' else '未推流',
+                    'message': '鏈紑鎾? if room_data['state'] != 'ON' else '鏈帹娴?,
                 }
             live_info = s_json['data'][0]['gameLiveInfo']
             streams_info = s_json['data'][0]['gameStreamInfoList']
-        # Mobile API（微信小程序？）
+        # Mobile API锛堝井淇″皬绋嬪簭锛燂級
         elif isinstance(data, dict):
             data = data['data']
             if data['liveStatus'] != 'ON' or not data.get('liveData', {}).get('bitRateInfo'):
                 return {
                     'live': False,
-                    'message': '未开播' if data['liveStatus'] != 'ON' else '未推流',
+                    'message': '鏈紑鎾? if data['liveStatus'] != 'ON' else '鏈帹娴?,
                 }
             live_info = data['liveData']
             bitrate_info = json_loads(live_info['bitRateInfo'])
@@ -251,9 +251,9 @@ class Huya(DownloadBase):
 
     async def get_room_profile(self, use_api=False) -> dict:
         '''
-        获取房间信息
-        :param use_api: 是否使用API
-        :return: 房间信息
+        鑾峰彇鎴块棿淇℃伅
+        :param use_api: 鏄惁浣跨敤API
+        :return: 鎴块棿淇℃伅
         '''
         if use_api:
             params = {
@@ -283,7 +283,7 @@ class Huya(DownloadBase):
         '''
         getCdnTokenInfoEx
         :param stream_name: stream_name
-        :param presenter_uid: 主播uid
+        :param presenter_uid: 涓绘挱uid
         :return: sFlvToken
         '''
         servant = "liveui"
@@ -298,7 +298,7 @@ class Huya(DownloadBase):
         wup_req.func = func
         getCdnTokenInfoExReq = HuyaGetCdnTokenExReq()
         getCdnTokenInfoExReq.sStreamName = stream_name
-        # getCdnTokenInfoExReq.iLoopTime = 15 * 60    # 防盗链过期时间
+        # getCdnTokenInfoExReq.iLoopTime = 15 * 60    # 闃茬洍閾捐繃鏈熸椂闂?
         getCdnTokenInfoExReq.tId = tid
         wup_req.put(
             vtype=HuyaGetCdnTokenExReq,
@@ -331,10 +331,10 @@ class Huya(DownloadBase):
             random_platform: bool = False
         ) -> str:
         '''
-        构建anticode
+        鏋勫缓anticode
         :param stream_name: streamname
         :param anti_code: anticode
-        :param uid: 用户uid
+        :param uid: 鐢ㄦ埛uid
         :return: Parsed anticode
         '''
         url_query = parse_qs(anti_code)
@@ -369,9 +369,9 @@ class Huya(DownloadBase):
         secret_prefix = base64.b64decode(fm.encode()).decode().split('_')[0]
 
         ws_time = url_query['wsTime'][0]
-        # 修复 hls m3u8 链接过期时间
+        # 淇 hls m3u8 閾炬帴杩囨湡鏃堕棿
         if int(ws_time, 16) - int(clac_start_time) < (20 * 60):
-            # 如果过期时间小于 20 分钟，调整过期时间为 1 天
+            # 濡傛灉杩囨湡鏃堕棿灏忎簬 20 鍒嗛挓锛岃皟鏁磋繃鏈熸椂闂翠负 1 澶?
             ws_time = hex(24 * 60 * 60 + int(clac_start_time))[2:]
         secret_str = f'{secret_prefix}_{clac_uid}_{stream_name}_{secret_hash}_{ws_time}'
         ws_secret = hashlib.md5(secret_str.encode()).hexdigest()
@@ -466,7 +466,7 @@ class PLATFORM(Enum):
 
     @property
     def short_name(self) -> str:
-        """获取平台短名称"""
+        """鑾峰彇骞冲彴鐭悕绉?""
         name = self.name.lower()
         idx = name.find('_')
         return name[idx + 1:] if idx != -1 else name
@@ -487,7 +487,7 @@ class UAGenerator:
         PLATFORM.HUYA_PC_EXE: {
             'version': '7000000',
         },
-        # PLATFORM.HUYA_WEBH5: {       # 星秀区不可用
+        # PLATFORM.HUYA_WEBH5: {       # 鏄熺鍖轰笉鍙敤
         #     'version': '%y%m%d%H%M', # 2410101630
         #     'channel': 'websocket'
         # }
@@ -508,7 +508,7 @@ class UAGenerator:
             config = UAGenerator.HYAPP_CONFIGS[platform]
 
         hyapp_platform = platform.short_name
-        hyapp_version = config.get("version", "0.0.0")   # TODO: 日期格式化
+        hyapp_version = config.get("version", "0.0.0")   # TODO: 鏃ユ湡鏍煎紡鍖?
         hyapp_channel = config.get("channel", "official")
 
         # Add random build number for version
@@ -536,7 +536,7 @@ class UAGenerator:
 
 
 def _raise_for_room_block(text: str):
-    for err_key in ("找不到这个主播", "该主播涉嫌违规，正在整改中"):
+    for err_key in ("鎵句笉鍒拌繖涓富鎾?, "璇ヤ富鎾秹瀚岃繚瑙勶紝姝ｅ湪鏁存敼涓?):
         if err_key in text:
             raise Exception(err_key)
 
@@ -549,5 +549,5 @@ async def _get_real_rid(url) -> str:
     room_data = match1(resp.text, HUYA_WEB_ROOM_DATA_REGEX)
     room_data = json_loads(room_data)
     if not room_data.get('profileRoom'):
-        raise Exception("找不到这个主播")
+        raise Exception("鎵句笉鍒拌繖涓富鎾?)
     return str(room_data['profileRoom'])

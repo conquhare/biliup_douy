@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # filename: __rpc.py
 
@@ -19,7 +19,7 @@
 
 '''
 @version: 0.01
-@brief: 异步rpc实现
+@brief: 寮傛rpc瀹炵幇
 '''
 
 import queue
@@ -32,7 +32,7 @@ from biliup.Danmaku.tars.__servantproxy import ServantProxy
 
 class AsyncProcThread:
     '''
-    @brief: 异步调用线程管理类
+    @brief: 寮傛璋冪敤绾跨▼绠＄悊绫?
     '''
 
     def __init__(self):
@@ -48,8 +48,8 @@ class AsyncProcThread:
 
     def initialize(self, nrunner=3):
         '''
-        @brief: 使用AsyncProcThread前必须先调用此函数
-        @param nrunner: 异步线程个数
+        @brief: 浣跨敤AsyncProcThread鍓嶅繀椤诲厛璋冪敤姝ゅ嚱鏁?
+        @param nrunner: 寮傛绾跨▼涓暟
         @type nrunner: int
         @return: None
         @rtype: None
@@ -63,7 +63,7 @@ class AsyncProcThread:
 
     def terminate(self):
         '''
-        @brief: 关闭所有异步线程
+        @brief: 鍏抽棴鎵€鏈夊紓姝ョ嚎绋?
         @return: None
         @rtype: None
         '''
@@ -78,14 +78,14 @@ class AsyncProcThread:
 
     def put(self, reqmsg):
         '''
-        @brief: 处理数据入队列
-        @param reqmsg: 待处理数据
+        @brief: 澶勭悊鏁版嵁鍏ラ槦鍒?
+        @param reqmsg: 寰呭鐞嗘暟鎹?
         @type reqmsg: ReqMessage
         @return: None
         @rtype: None
         '''
         tarsLogger.debug('AsyncProcThread:put')
-        # 异步请求超时
+        # 寮傛璇锋眰瓒呮椂
         if not reqmsg.response:
             reqmsg.response = ResponsePacket()
             reqmsg.response.iVerson = reqmsg.request.iVerson
@@ -97,7 +97,7 @@ class AsyncProcThread:
 
     def pop(self):
         '''
-        @brief: 处理数据出队列
+        @brief: 澶勭悊鏁版嵁鍑洪槦鍒?
         @return: ReqMessage
         @rtype: ReqMessage
         '''
@@ -111,7 +111,7 @@ class AsyncProcThread:
 
     def start(self):
         '''
-        @brief: 启动异步线程
+        @brief: 鍚姩寮傛绾跨▼
         @return: None
         @rtype: None
         '''
@@ -125,7 +125,7 @@ class AsyncProcThread:
 
 class AsyncProcThreadRunner(threading.Thread):
     '''
-    @brief: 异步调用线程
+    @brief: 寮傛璋冪敤绾跨▼
     '''
 
     def __init__(self):
@@ -141,8 +141,8 @@ class AsyncProcThreadRunner(threading.Thread):
 
     def initialize(self, queue):
         '''
-        @brief: 使用AsyncProcThreadRunner前必须调用此函数
-        @param queue: 有pop()的类，用于提取待处理数据
+        @brief: 浣跨敤AsyncProcThreadRunner鍓嶅繀椤昏皟鐢ㄦ鍑芥暟
+        @param queue: 鏈塸op()鐨勭被锛岀敤浜庢彁鍙栧緟澶勭悊鏁版嵁
         @type queue: AsyncProcThread
         @return: None
         @rtype: None
@@ -152,7 +152,7 @@ class AsyncProcThreadRunner(threading.Thread):
 
     def terminate(self):
         '''
-        @brief: 关闭线程
+        @brief: 鍏抽棴绾跨▼
         @return: None
         @rtype: None
         '''
@@ -161,7 +161,7 @@ class AsyncProcThreadRunner(threading.Thread):
 
     def run(self):
         '''
-        @brief: 线程启动函数，执行异步调用
+        @brief: 绾跨▼鍚姩鍑芥暟锛屾墽琛屽紓姝ヨ皟鐢?
         '''
         tarsLogger.debug('AsyncProcThreadRunner:run')
         while not self.__terminate:
@@ -185,7 +185,7 @@ class AsyncProcThreadRunner(threading.Thread):
 
 class ServantProxyCallback(object):
     '''
-    @brief: 异步回调对象基类
+    @brief: 寮傛鍥炶皟瀵硅薄鍩虹被
     '''
 
     def __init__(self):
@@ -193,8 +193,8 @@ class ServantProxyCallback(object):
 
     def onDispatch(reqmsg):
         '''
-        @brief: 分配响应报文到对应的回调函数
-        @param queue: 有pop()的类，用于提取待处理数据
+        @brief: 鍒嗛厤鍝嶅簲鎶ユ枃鍒板搴旂殑鍥炶皟鍑芥暟
+        @param queue: 鏈塸op()鐨勭被锛岀敤浜庢彁鍙栧緟澶勭悊鏁版嵁
         @type queue: AsyncProcThread
         @return: None
         @rtype: None

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # filename: __servantproxy.py
 
@@ -20,7 +20,7 @@
 
 '''
 @version: 0.01
-@brief: rpc抽离出servantproxy
+@brief: rpc鎶界鍑簊ervantproxy
 '''
 import threading
 import time
@@ -36,22 +36,22 @@ from biliup.Danmaku.tars.exception import TarsException
 
 class ServantProxy(object):
     '''
-    @brief: 1、远程对象的本地代理
-            2、同名servant在一个通信器中最多只有一个实例
-            3、防止和用户在Tars中定义的函数名冲突，接口以tars_开头
+    @brief: 1銆佽繙绋嬪璞＄殑鏈湴浠ｇ悊
+            2銆佸悓鍚峴ervant鍦ㄤ竴涓€氫俊鍣ㄤ腑鏈€澶氬彧鏈変竴涓疄渚?
+            3銆侀槻姝㈠拰鐢ㄦ埛鍦═ars涓畾涔夌殑鍑芥暟鍚嶅啿绐侊紝鎺ュ彛浠ars_寮€澶?
     '''
 
-    # 服务器响应的错误码
-    TARSSERVERSUCCESS = 0  # 服务器端处理成功
-    TARSSERVERDECODEERR = -1  # 服务器端解码异常
-    TARSSERVERENCODEERR = -2  # 服务器端编码异常
-    TARSSERVERNOFUNCERR = -3  # 服务器端没有该函数
-    TARSSERVERNOSERVANTERR = -4  # 服务器端五该Servant对象
-    TARSSERVERRESETGRID = -5  # 服务器端灰度状态不一致
-    TARSSERVERQUEUETIMEOUT = -6  # 服务器队列超过限制
-    TARSASYNCCALLTIMEOUT = -7  # 异步调用超时
-    TARSPROXYCONNECTERR = -8  # proxy链接异常
-    TARSSERVERUNKNOWNERR = -99  # 服务器端未知异常
+    # 鏈嶅姟鍣ㄥ搷搴旂殑閿欒鐮?
+    TARSSERVERSUCCESS = 0  # 鏈嶅姟鍣ㄧ澶勭悊鎴愬姛
+    TARSSERVERDECODEERR = -1  # 鏈嶅姟鍣ㄧ瑙ｇ爜寮傚父
+    TARSSERVERENCODEERR = -2  # 鏈嶅姟鍣ㄧ缂栫爜寮傚父
+    TARSSERVERNOFUNCERR = -3  # 鏈嶅姟鍣ㄧ娌℃湁璇ュ嚱鏁?
+    TARSSERVERNOSERVANTERR = -4  # 鏈嶅姟鍣ㄧ浜旇Servant瀵硅薄
+    TARSSERVERRESETGRID = -5  # 鏈嶅姟鍣ㄧ鐏板害鐘舵€佷笉涓€鑷?
+    TARSSERVERQUEUETIMEOUT = -6  # 鏈嶅姟鍣ㄩ槦鍒楄秴杩囬檺鍒?
+    TARSASYNCCALLTIMEOUT = -7  # 寮傛璋冪敤瓒呮椂
+    TARSPROXYCONNECTERR = -8  # proxy閾炬帴寮傚父
+    TARSSERVERUNKNOWNERR = -99  # 鏈嶅姟鍣ㄧ鏈煡寮傚父
 
     TARSVERSION = 1
     TUPVERSION = 2
@@ -80,8 +80,8 @@ class ServantProxy(object):
 
     def _initialize(self, reactor, obj):
         '''
-        @brief: 初始化函数，需要调用才能使用ServantProxy
-        @param reactor: 网络管理的reactor实例
+        @brief: 鍒濆鍖栧嚱鏁帮紝闇€瑕佽皟鐢ㄦ墠鑳戒娇鐢⊿ervantProxy
+        @param reactor: 缃戠粶绠＄悊鐨剅eactor瀹炰緥
         @type reactor: FDReactor
         @return: None
         @rtype: None
@@ -97,7 +97,7 @@ class ServantProxy(object):
 
     def _terminate(self):
         '''
-        @brief: 不再使用ServantProxy时调用，会释放相应资源
+        @brief: 涓嶅啀浣跨敤ServantProxy鏃惰皟鐢紝浼氶噴鏀剧浉搴旇祫婧?
         @return: None
         @rtype: None
         '''
@@ -108,19 +108,19 @@ class ServantProxy(object):
 
     def tars_name(self):
         '''
-        @brief: 获取ServantProxy的名字
-        @return: ServantProxy的名字
+        @brief: 鑾峰彇ServantProxy鐨勫悕瀛?
+        @return: ServantProxy鐨勫悕瀛?
         @rtype: str
         '''
         return self.__object.name()
 
     def tars_timeout(self):
         '''
-        @brief: 获取超时时间，单位是ms
-        @return: 超时时间
+        @brief: 鑾峰彇瓒呮椂鏃堕棿锛屽崟浣嶆槸ms
+        @return: 瓒呮椂鏃堕棿
         @rtype: int
         '''
-        # 默认的为3S = ObjectProxy.DEFAULT_TIMEOUT
+        # 榛樿鐨勪负3S = ObjectProxy.DEFAULT_TIMEOUT
         return int(self.__timeout() * 1000)
 
     def tars_ping(self):
@@ -134,18 +134,18 @@ class ServantProxy(object):
 
     def tars_invoke(self, cPacketType, sFuncName, sBuffer, context, status):
         '''
-        @brief: TARS协议同步方法调用
-        @param cPacketType: 请求包类型
+        @brief: TARS鍗忚鍚屾鏂规硶璋冪敤
+        @param cPacketType: 璇锋眰鍖呯被鍨?
         @type cPacketType: int
-        @param sFuncName: 调用函数名
+        @param sFuncName: 璋冪敤鍑芥暟鍚?
         @type sFuncName: str
-        @param sBuffer: 序列化后的发送参数
+        @param sBuffer: 搴忓垪鍖栧悗鐨勫彂閫佸弬鏁?
         @type sBuffer: str
-        @param context: 上下文件信息
+        @param context: 涓婁笅鏂囦欢淇℃伅
         @type context: ServantProxy.mapcls_context
-        @param status: 状态信息
+        @param status: 鐘舵€佷俊鎭?
         @type status:
-        @return: 响应报文
+        @return: 鍝嶅簲鎶ユ枃
         @rtype: ResponsePacket
         '''
         tarsLogger.debug('ServantProxy:tars_invoke, func: %s', sFuncName)
@@ -190,20 +190,20 @@ class ServantProxy(object):
     def tars_invoke_async(self, cPacketType, sFuncName, sBuffer,
                           context, status, callback):
         '''
-        @brief: TARS协议同步方法调用
-        @param cPacketType: 请求包类型
+        @brief: TARS鍗忚鍚屾鏂规硶璋冪敤
+        @param cPacketType: 璇锋眰鍖呯被鍨?
         @type cPacketType: int
-        @param sFuncName: 调用函数名
+        @param sFuncName: 璋冪敤鍑芥暟鍚?
         @type sFuncName: str
-        @param sBuffer: 序列化后的发送参数
+        @param sBuffer: 搴忓垪鍖栧悗鐨勫彂閫佸弬鏁?
         @type sBuffer: str
-        @param context: 上下文件信息
+        @param context: 涓婁笅鏂囦欢淇℃伅
         @type context: ServantProxy.mapcls_context
-        @param status: 状态信息
+        @param status: 鐘舵€佷俊鎭?
         @type status:
-        @param callback: 异步调用回调对象
-        @type callback: ServantProxyCallback的子类
-        @return: 响应报文
+        @param callback: 寮傛璋冪敤鍥炶皟瀵硅薄
+        @type callback: ServantProxyCallback鐨勫瓙绫?
+        @return: 鍝嶅簲鎶ユ枃
         @rtype: ResponsePacket
         '''
         tarsLogger.debug('ServantProxy:tars_invoke')
@@ -239,18 +239,18 @@ class ServantProxy(object):
 
     def __timeout(self):
         '''
-        @brief: 获取超时时间，单位是s
-        @return: 超时时间
+        @brief: 鑾峰彇瓒呮椂鏃堕棿锛屽崟浣嶆槸s
+        @return: 瓒呮椂鏃堕棿
         @rtype: float
         '''
         return self.__object.timeout()
 
     def __invoke(self, reqmsg):
         '''
-        @brief: 远程过程调用
-        @param reqmsg: 请求数据
+        @brief: 杩滅▼杩囩▼璋冪敤
+        @param reqmsg: 璇锋眰鏁版嵁
         @type reqmsg: ReqMessage
-        @return: 调用成功或失败
+        @return: 璋冪敤鎴愬姛鎴栧け璐?
         @rtype: bool
         '''
         tarsLogger.debug('ServantProxy:invoke, func: %s',
@@ -298,10 +298,10 @@ class ServantProxy(object):
 
     def _finished(self, reqmsg):
         '''
-        @brief: 通知远程过程调用线程响应报文到了
-        @param reqmsg: 请求响应报文
+        @brief: 閫氱煡杩滅▼杩囩▼璋冪敤绾跨▼鍝嶅簲鎶ユ枃鍒颁簡
+        @param reqmsg: 璇锋眰鍝嶅簲鎶ユ枃
         @type reqmsg: ReqMessage
-        @return: 函数执行成功或失败
+        @return: 鍑芥暟鎵ц鎴愬姛鎴栧け璐?
         @rtype: bool
         '''
         tarsLogger.debug('ServantProxy:finished')
@@ -314,12 +314,12 @@ class ServantProxy(object):
 
     def tarsRaiseException(self, errno, desc):
         '''
-        @brief: 服务器调用失败，根据服务端给的错误码抛出异常
-        @param errno: 错误码
+        @brief: 鏈嶅姟鍣ㄨ皟鐢ㄥけ璐ワ紝鏍规嵁鏈嶅姟绔粰鐨勯敊璇爜鎶涘嚭寮傚父
+        @param errno: 閿欒鐮?
         @type errno: int
-        @param desc: 错误描述
+        @param desc: 閿欒鎻忚堪
         @type desc: str
-        @return: 没有返回值，函数会抛出异常
+        @return: 娌℃湁杩斿洖鍊硷紝鍑芥暟浼氭姏鍑哄紓甯?
         @rtype:
         '''
         if errno == ServantProxy.TARSSERVERSUCCESS:

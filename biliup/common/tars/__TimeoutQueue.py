@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # filename: __timeQueue.py
 
@@ -19,7 +19,7 @@
 
 '''
 @version: 0.01
-@brief: 请求响应报文和超时队列
+@brief: 璇锋眰鍝嶅簲鎶ユ枃鍜岃秴鏃堕槦鍒?
 '''
 
 import struct
@@ -36,7 +36,7 @@ from .__util import (NewLock, LockGuard)
 
 class ReqMessage:
     '''
-    @brief: 请求响应报文，保存一个请求响应所需要的数据
+    @brief: 璇锋眰鍝嶅簲鎶ユ枃锛屼繚瀛樹竴涓姹傚搷搴旀墍闇€瑕佺殑鏁版嵁
     '''
     SYNC_CALL = 1
     ASYNC_CALL = 2
@@ -58,8 +58,8 @@ class ReqMessage:
 
     def packReq(self):
         '''
-        @brief: 序列化请求报文
-        @return: 序列化后的请求报文
+        @brief: 搴忓垪鍖栬姹傛姤鏂?
+        @return: 搴忓垪鍖栧悗鐨勮姹傛姤鏂?
         @rtype: str
         '''
         if not self.request:
@@ -74,11 +74,11 @@ class ReqMessage:
     @staticmethod
     def unpackRspList(buf):
         '''
-        @brief: 解码响应报文
-        @param buf: 多个序列化后的响应报文数据
+        @brief: 瑙ｇ爜鍝嶅簲鎶ユ枃
+        @param buf: 澶氫釜搴忓垪鍖栧悗鐨勫搷搴旀姤鏂囨暟鎹?
         @type buf: str
-        @return: 解码出来的响应报文和解码的buffer长度
-        @rtype: rsplist: 装有ResponsePacket的list
+        @return: 瑙ｇ爜鍑烘潵鐨勫搷搴旀姤鏂囧拰瑙ｇ爜鐨刡uffer闀垮害
+        @rtype: rsplist: 瑁呮湁ResponsePacket鐨刲ist
                 unpacklen: int
         '''
         rsplist = []
@@ -102,14 +102,14 @@ class ReqMessage:
 
         return rsplist, unpacklen
 
-# 超时队列，加锁，线程安全
+# 瓒呮椂闃熷垪锛屽姞閿侊紝绾跨▼瀹夊叏
 
 
 class TimeoutQueue:
     '''
-    @brief: 超时队列，加锁，线程安全
-            可以像队列一样FIFO，也可以像字典一样按key取item
-    @todo: 限制队列长度
+    @brief: 瓒呮椂闃熷垪锛屽姞閿侊紝绾跨▼瀹夊叏
+            鍙互鍍忛槦鍒椾竴鏍稦IFO锛屼篃鍙互鍍忓瓧鍏镐竴鏍锋寜key鍙杋tem
+    @todo: 闄愬埗闃熷垪闀垮害
     '''
 
     def __init__(self, timeout=3):
@@ -122,16 +122,16 @@ class TimeoutQueue:
 
     def getTimeout(self):
         '''
-        @brief: 获取超时时间，单位为s
-        @return: 超时时间
+        @brief: 鑾峰彇瓒呮椂鏃堕棿锛屽崟浣嶄负s
+        @return: 瓒呮椂鏃堕棿
         @rtype: float
         '''
         return self.__timeout
 
     def setTimeout(self, timeout):
         '''
-        @brief: 设置超时时间，单位为s
-        @param timeout: 超时时间
+        @brief: 璁剧疆瓒呮椂鏃堕棿锛屽崟浣嶄负s
+        @param timeout: 瓒呮椂鏃堕棿
         @type timeout: float
         @return: None
         @rtype: None
@@ -140,8 +140,8 @@ class TimeoutQueue:
 
     def size(self):
         '''
-        @brief: 获取队列长度
-        @return: 队列长度
+        @brief: 鑾峰彇闃熷垪闀垮害
+        @return: 闃熷垪闀垮害
         @rtype: int
         '''
         # self.__lock.acquire()
@@ -152,7 +152,7 @@ class TimeoutQueue:
 
     def generateId(self):
         '''
-        @brief: 生成唯一id，0 < id < 2 ** 32
+        @brief: 鐢熸垚鍞竴id锛? < id < 2 ** 32
         @return: id
         @rtype: int
         '''
@@ -168,10 +168,10 @@ class TimeoutQueue:
 
     def pop(self, uniqId=0, erase=True):
         '''
-        @brief: 弹出item
-        @param uniqId: item的id，如果为0，按FIFO弹出
+        @brief: 寮瑰嚭item
+        @param uniqId: item鐨刬d锛屽鏋滀负0锛屾寜FIFO寮瑰嚭
         @type uniqId: int
-        @param erase: 弹出后是否从字典里删除item
+        @param erase: 寮瑰嚭鍚庢槸鍚︿粠瀛楀吀閲屽垹闄tem
         @type erase: bool
         @return: item
         @rtype: any type
@@ -196,10 +196,10 @@ class TimeoutQueue:
 
     def push(self, item, uniqId):
         '''
-        @brief: 数据入队列，如果队列已经有了uniqId，插入失败
-        @param item: 插入的数据
+        @brief: 鏁版嵁鍏ラ槦鍒楋紝濡傛灉闃熷垪宸茬粡鏈変簡uniqId锛屾彃鍏ュけ璐?
+        @param item: 鎻掑叆鐨勬暟鎹?
         @type item: any type
-        @return: 插入是否成功
+        @return: 鎻掑叆鏄惁鎴愬姛
         @rtype: bool
         '''
         begtime = time.time()
@@ -217,8 +217,8 @@ class TimeoutQueue:
 
     def peek(self, uniqId):
         '''
-        @brief: 根据uniqId获取item，不会删除item
-        @param uniqId: item的id
+        @brief: 鏍规嵁uniqId鑾峰彇item锛屼笉浼氬垹闄tem
+        @param uniqId: item鐨刬d
         @type uniqId: int
         @return: item
         @rtype: any type
@@ -234,7 +234,7 @@ class TimeoutQueue:
 
     def timeout(self):
         '''
-        @brief: 检测是否有item超时，如果有就删除
+        @brief: 妫€娴嬫槸鍚︽湁item瓒呮椂锛屽鏋滄湁灏卞垹闄?
         @return: None
         @rtype: None
         '''
@@ -242,7 +242,7 @@ class TimeoutQueue:
         # self.__lock.acquire()
         lock = LockGuard(self.__lock)
 
-        # 处理异常情况，防止死锁
+        # 澶勭悊寮傚父鎯呭喌锛岄槻姝㈡閿?
         try:
             new_data = {}
             for uniqId, item in self.__data.items():
@@ -259,7 +259,7 @@ class TimeoutQueue:
 
 class QueueTimeout(threading.Thread):
     """
-    超时线程，定时触发超时事件
+    瓒呮椂绾跨▼锛屽畾鏃惰Е鍙戣秴鏃朵簨浠?
     """
 
     def __init__(self, timeout=0.1):

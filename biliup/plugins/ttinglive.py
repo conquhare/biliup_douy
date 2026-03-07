@@ -1,4 +1,4 @@
-import biliup.common.util
+﻿import biliup.common.util
 from ..engine.decorators import Plugin
 from ..engine.download import DownloadBase
 from ..plugins import logger, match1
@@ -12,16 +12,16 @@ class TTingLive(DownloadBase):
     async def acheck_stream(self, is_check=False):
         room_id = match1(self.url, r"/channels/(\d+)/live")
         if not room_id:
-            logger.warning(f"{TTingLive.__name__}: {self.url}: 直播间地址错误")
+            logger.warning(f"{TTingLive.__name__}: {self.url}: 鐩存挱闂村湴鍧€閿欒")
         response = await biliup.common.util.client.get(f"https://api.ttinglive.com/api/channels/{room_id}/stream?option=all",
                                                        timeout=5,
                                                        headers=self.fake_headers)
         if response.status_code != 200:
             if response.status_code == 400:
-                logger.debug(f"{TTingLive.__name__}: {self.url}: 未开播或直播间不存在")
+                logger.debug(f"{TTingLive.__name__}: {self.url}: 鏈紑鎾垨鐩存挱闂翠笉瀛樺湪")
                 return False
             else:
-                logger.warning(f"{TTingLive.__name__}: {self.url}: 获取错误，本次跳过")
+                logger.warning(f"{TTingLive.__name__}: {self.url}: 鑾峰彇閿欒锛屾湰娆¤烦杩?)
                 return False
 
         room_info = response.json()
@@ -34,11 +34,11 @@ class TTingLive(DownloadBase):
         import m3u8
         m3u8_obj = m3u8.loads(m3u8_content)
         if m3u8_obj.is_variant:
-            # 取码率最大的流
+            # 鍙栫爜鐜囨渶澶х殑娴?
             max_ratio_stream = max(m3u8_obj.playlists, key=lambda x: x.stream_info.bandwidth)
             self.raw_stream_url = max_ratio_stream.uri
         else:
-            logger.warning(f"{TTingLive.__name__}: {self.url}: 解析错误")
+            logger.warning(f"{TTingLive.__name__}: {self.url}: 瑙ｆ瀽閿欒")
             return False
 
         return True

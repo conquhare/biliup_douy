@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # filename: __logger.py
@@ -20,10 +20,10 @@
 
 '''
 @version: 0.01
-@brief: 日志模块
+@brief: 鏃ュ織妯″潡
 '''
 
-# 仅用于调试
+# 浠呯敤浜庤皟璇?
 
 import logging
 import os

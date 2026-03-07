@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+﻿#!/usr/bin/python3
 # coding:utf8
 import argparse
 import asyncio
@@ -26,7 +26,7 @@ async def main():
 
     # event_manager.start()
 
-    # 启动时删除临时文件夹
+    # 鍚姩鏃跺垹闄や复鏃舵枃浠跺す
     shutil.rmtree('./cache/temp', ignore_errors=True)
     from biliup.common.util import loop
 

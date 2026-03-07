@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # Tencent is pleased to support the open source community by making Tars available.
@@ -111,12 +111,12 @@ class util:
 
 def xml2dict(node, dic={}):
     '''
-    @brief: 将xml解析树转成字典
-    @param node: 树的根节点
+    @brief: 灏唜ml瑙ｆ瀽鏍戣浆鎴愬瓧鍏?
+    @param node: 鏍戠殑鏍硅妭鐐?
     @type node: cElementTree.Element
-    @param dic: 存储信息的字典
+    @param dic: 瀛樺偍淇℃伅鐨勫瓧鍏?
     @type dic: dict
-    @return: 转换好的字典
+    @return: 杞崲濂界殑瀛楀吀
     @rtype: dict
     '''
     dic[node.tag] = ndic = {}
@@ -128,10 +128,10 @@ def xml2dict(node, dic={}):
 
 def configParse(filename):
     '''
-    @brief: 解析tars配置文件
-    @param filename: 文件名
+    @brief: 瑙ｆ瀽tars閰嶇疆鏂囦欢
+    @param filename: 鏂囦欢鍚?
     @type filename: str
-    @return: 解析出来的配置信息
+    @return: 瑙ｆ瀽鍑烘潵鐨勯厤缃俊鎭?
     @rtype: dict
     '''
     tree = ET.parse(filename)
@@ -173,14 +173,14 @@ class LockGuard(object):
 class ConsistentHashNew(object):
     def __init__(self, nodes=None, nodeNumber=3):
         """
-        :param nodes:           服务器的节点的epstr列表
-        :param n_number:        一个节点对应的虚拟节点数量
+        :param nodes:           鏈嶅姟鍣ㄧ殑鑺傜偣鐨別pstr鍒楄〃
+        :param n_number:        涓€涓妭鐐瑰搴旂殑铏氭嫙鑺傜偣鏁伴噺
         :return:
         """
         self.__nodes = nodes
-        self.__nodeNumber = nodeNumber  # 每一个节点对应多少个虚拟节点，这里默认是3个
-        self.__nodeDict = dict()  # 用于记录虚拟节点的hash值与服务器epstr的对应关系
-        self.__sortListForKey = []  # 用于存放所有的虚拟节点的hash值，这里需要保持排序，以找出对应的服务器
+        self.__nodeNumber = nodeNumber  # 姣忎竴涓妭鐐瑰搴斿灏戜釜铏氭嫙鑺傜偣锛岃繖閲岄粯璁ゆ槸3涓?
+        self.__nodeDict = dict()  # 鐢ㄤ簬璁板綍铏氭嫙鑺傜偣鐨刪ash鍊间笌鏈嶅姟鍣╡pstr鐨勫搴斿叧绯?
+        self.__sortListForKey = []  # 鐢ㄤ簬瀛樻斁鎵€鏈夌殑铏氭嫙鑺傜偣鐨刪ash鍊硷紝杩欓噷闇€瑕佷繚鎸佹帓搴忥紝浠ユ壘鍑哄搴旂殑鏈嶅姟鍣?
         if nodes:
             for node in nodes:
                 self.addNode(node)
@@ -195,9 +195,9 @@ class ConsistentHashNew(object):
 
     def addNode(self, node):
         """
-        添加node，首先要根据虚拟节点的数目，创建所有的虚拟节点，并将其与对应的node对应起来
-        当然还需要将虚拟节点的hash值放到排序的里面
-        这里在添加了节点之后，需要保持虚拟节点hash值的顺序
+        娣诲姞node锛岄鍏堣鏍规嵁铏氭嫙鑺傜偣鐨勬暟鐩紝鍒涘缓鎵€鏈夌殑铏氭嫙鑺傜偣锛屽苟灏嗗叾涓庡搴旂殑node瀵瑰簲璧锋潵
+        褰撶劧杩橀渶瑕佸皢铏氭嫙鑺傜偣鐨刪ash鍊兼斁鍒版帓搴忕殑閲岄潰
+        杩欓噷鍦ㄦ坊鍔犱簡鑺傜偣涔嬪悗锛岄渶瑕佷繚鎸佽櫄鎷熻妭鐐筯ash鍊肩殑椤哄簭
         :param node:
         :return:
         """
@@ -210,7 +210,7 @@ class ConsistentHashNew(object):
 
     def removeNode(self, node):
         """
-        这里一个节点的退出，需要将这个节点的所有的虚拟节点都删除
+        杩欓噷涓€涓妭鐐圭殑閫€鍑猴紝闇€瑕佸皢杩欎釜鑺傜偣鐨勬墍鏈夌殑铏氭嫙鑺傜偣閮藉垹闄?
         :param node:
         :return:
         """
@@ -222,8 +222,8 @@ class ConsistentHashNew(object):
 
     def getNode(self, key):
         """
-        返回这个字符串应该对应的node，这里先求出字符串的hash值，然后找到第一个小于等于的虚拟节点，然后返回node
-        如果hash值大于所有的节点，那么用第一个虚拟节点
+        杩斿洖杩欎釜瀛楃涓插簲璇ュ搴旂殑node锛岃繖閲屽厛姹傚嚭瀛楃涓茬殑hash鍊硷紝鐒跺悗鎵惧埌绗竴涓皬浜庣瓑浜庣殑铏氭嫙鑺傜偣锛岀劧鍚庤繑鍥瀗ode
+        濡傛灉hash鍊煎ぇ浜庢墍鏈夌殑鑺傜偣锛岄偅涔堢敤绗竴涓櫄鎷熻妭鐐?
         :param : hashNum or keyStr
         :return:
         """
@@ -245,7 +245,7 @@ class ConsistentHashNew(object):
 
     def __genKey(self, keyStr):
         """
-        通过key，返回当前key的hash值，这里采用md5
+        閫氳繃key锛岃繑鍥炲綋鍓峩ey鐨刪ash鍊硷紝杩欓噷閲囩敤md5
         :param key:
         :return:
         """

@@ -1,4 +1,4 @@
-import re
+﻿import re
 from typing import AsyncGenerator, List
 
 from . import logger
@@ -27,7 +27,7 @@ class Picarto(DownloadBase, BatchCheck):
         loadbalancer = channel_detail.get("getLoadBalancerUrl", {})
         multistreams = channel_detail.get("getMultiStreams", {})
 
-        # 檢查response
+        # 妾㈡煡response
         if not channel or not multistreams or not loadbalancer:
             return False
         elif channel.get("private"):

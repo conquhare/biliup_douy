@@ -1,4 +1,4 @@
-import copy
+﻿import copy
 import os
 import shutil
 import subprocess
@@ -41,19 +41,19 @@ class YoutubeLive(DownloadBase):
                 info = ydl.extract_info(self.url, download=False)
             # if is_check:
                 if not isinstance(info, dict):
-                    logger.debug(f"{self.plugin_msg}: 获取错误")
+                    logger.debug(f"{self.plugin_msg}: 鑾峰彇閿欒")
                     return False
                 if info.get('live_status') != 'is_live':
-                    logger.debug(f"{self.plugin_msg}: 直播未开启或已结束")
+                    logger.debug(f"{self.plugin_msg}: 鐩存挱鏈紑鍚垨宸茬粨鏉?)
                     return False
-                # # 没有 video_id 则表示视频信息未缓存
+                # # 娌℃湁 video_id 鍒欒〃绀鸿棰戜俊鎭湭缂撳瓨
                 # if not video_id:
-                #     # 主动存储，防止下载进程再次提取
+                #     # 涓诲姩瀛樺偍锛岄槻姝笅杞借繘绋嬪啀娆℃彁鍙?
                 #     archive_id = ydl._make_archive_id(info)
                 #     with open(f"{self.cache_dir}/archive.txt", 'a', encoding='utf-8') as f:
                 #         f.write(f'{archive_id}\n')
                 #     video_id = info['id']
-                #     # 存储提取之信息
+                #     # 瀛樺偍鎻愬彇涔嬩俊鎭?
                 #     with open(f"{self.cache_dir}/{video_id}.json", 'w', encoding='utf-8') as f:
                 #         json.dump(info, f, ensure_ascii=False, indent=4)
                 # return True
@@ -64,18 +64,18 @@ class YoutubeLive(DownloadBase):
                 self.__webpage_url = info['webpage_url']
                 self.raw_stream_url = info['manifest_url']
         except KeyError:
-            logger.error(f"{self.plugin_msg}: 提取错误 -> {info}")
+            logger.error(f"{self.plugin_msg}: 鎻愬彇閿欒 -> {info}")
             return False
         except Exception as e:
-            logger.error(f"{self.plugin_msg}: 提取错误 -> {e}")
+            logger.error(f"{self.plugin_msg}: 鎻愬彇閿欒 -> {e}")
             return False
         return True
 
     def download(self):
-        # 归档后封面不允许下载，需提前下载
+        # 褰掓。鍚庡皝闈笉鍏佽涓嬭浇锛岄渶鎻愬墠涓嬭浇
         # self.use_live_cover = True
         if self.use_live_cover:
-            # 后台下载封面
+            # 鍚庡彴涓嬭浇灏侀潰
             cover_thread = threading.Thread(
                 target=self.download_cover,
                 args=(self.fname,),
@@ -83,19 +83,19 @@ class YoutubeLive(DownloadBase):
             )
             cover_thread.start()
 
-        # 清理缓存
+        # 娓呯悊缂撳瓨
         # os.remove(f"{self.cache_dir}/archive.txt")
 
         # self.downloader = 'ytarchive'
 
-        # 检查 cache_dir 属性是否存在，如果不存在则创建
+        # 妫€鏌?cache_dir 灞炴€ф槸鍚﹀瓨鍦紝濡傛灉涓嶅瓨鍦ㄥ垯鍒涘缓
         if not hasattr(self, 'cache_dir'):
             self.cache_dir = f"./cache/{self.__class__.__name__}/{self.fname}"
 
-        # stream-gears 和 streamlink(sync-downloader) 交给父类下载器来支持分段
+        # stream-gears 鍜?streamlink(sync-downloader) 浜ょ粰鐖剁被涓嬭浇鍣ㄦ潵鏀寔鍒嗘
         if self.downloader in ['stream-gears', 'streamlink', 'sync-downloader']:
             if self.downloader != 'stream-gears' and self.__webpage_url:
-                # 让 streamlink 自行提取
+                # 璁?streamlink 鑷鎻愬彇
                 self.raw_stream_url = self.__webpage_url
                 # pass
             return super().download()
@@ -153,23 +153,23 @@ class YoutubeLive(DownloadBase):
             try:
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([self.__webpage_url])
-                    # 下载成功的情况下移动到运行目录
+                    # 涓嬭浇鎴愬姛鐨勬儏鍐典笅绉诲姩鍒拌繍琛岀洰褰?
                     if os.path.exists(self.cache_dir):
                         for file in os.listdir(self.cache_dir):
                             shutil.move(f'{self.cache_dir}/{file}', '.')
             except DownloadError as e:
                 if 'ffmpeg is not installed' in e.msg:
-                    logger.error(f"{self.plugin_msg}: ffmpeg未安装，无法下载")
+                    logger.error(f"{self.plugin_msg}: ffmpeg鏈畨瑁咃紝鏃犳硶涓嬭浇")
                 else:
                     logger.error(f"{self.plugin_msg}: {e.msg}")
                 return False
             finally:
-                # 清理意外退出可能产生的多余文件
+                # 娓呯悊鎰忓閫€鍑哄彲鑳戒骇鐢熺殑澶氫綑鏂囦欢
                 try:
                     if os.path.exists(self.cache_dir):
                         shutil.rmtree(self.cache_dir)
                 except:
-                    logger.error(f"{self.plugin_msg}: 清理残留文件失败 -> {self.cache_dir}")
+                    logger.error(f"{self.plugin_msg}: 娓呯悊娈嬬暀鏂囦欢澶辫触 -> {self.cache_dir}")
 
         if self.use_live_cover and cover_thread.is_alive():
             cover_thread.join(timeout=20)
@@ -201,7 +201,7 @@ class Youtube(DownloadBase):
         self.youtube_enable_download_live = config.get('youtube_enable_download_live', True)
         self.youtube_enable_download_playback = config.get('youtube_enable_download_playback', True)
         self.is_live = False
-        # 需要下载的 url
+        # 闇€瑕佷笅杞界殑 url
         self.download_url = None
 
     async def acheck_stream(self, is_check=False):
@@ -212,16 +212,16 @@ class Youtube(DownloadBase):
             'extractor_retries': 0,
             'proxy': proxy,
         }) as ydl:
-            # 获取信息的时候不要过滤
+            # 鑾峰彇淇℃伅鐨勬椂鍊欎笉瑕佽繃婊?
             ydl_archive = copy.deepcopy(ydl.archive)
             ydl.archive = set()
             if self.download_url is not None:
-                # 直播在重试的时候特别处理
+                # 鐩存挱鍦ㄩ噸璇曠殑鏃跺€欑壒鍒鐞?
                 info = ydl.extract_info(self.download_url, download=False)
             else:
                 info = ydl.extract_info(self.url, download=False, process=False)
             if type(info) is not dict:
-                logger.warning(f"{Youtube.__name__}: {self.url}: 获取错误")
+                logger.warning(f"{Youtube.__name__}: {self.url}: 鑾峰彇閿欒")
                 return False
 
             cache = KVFileStore(f"./cache/youtube/{self.fname}.txt")
@@ -230,7 +230,7 @@ class Youtube(DownloadBase):
                 if type(entrie) is not dict:
                     return None
                 elif entrie.get('_type') == 'playlist':
-                    # 播放列表递归
+                    # 鎾斁鍒楄〃閫掑綊
                     for e in entrie.get('entries'):
                         le = loop_entries(e)
                         if type(le) is dict:
@@ -238,21 +238,21 @@ class Youtube(DownloadBase):
                         elif le == "stop":
                             return None
                 elif type(entrie) is dict:
-                    # is_upcoming 等待开播 is_live 直播中 was_live结束直播(回放)
+                    # is_upcoming 绛夊緟寮€鎾?is_live 鐩存挱涓?was_live缁撴潫鐩存挱(鍥炴斁)
                     if entrie.get('live_status') == 'is_upcoming':
                         return None
                     elif entrie.get('live_status') == 'is_live':
-                        # 未开启直播下载忽略
+                        # 鏈紑鍚洿鎾笅杞藉拷鐣?
                         if not self.youtube_enable_download_live:
                             return None
                     elif entrie.get('live_status') == 'was_live':
-                        # 未开启回放下载忽略
+                        # 鏈紑鍚洖鏀句笅杞藉拷鐣?
                         if not self.youtube_enable_download_playback:
                             return None
 
-                    # 检测是否已下载
+                    # 妫€娴嬫槸鍚﹀凡涓嬭浇
                     if ydl._make_archive_id(entrie) in ydl_archive:
-                        # 如果已下载但是还在直播则不算下载
+                        # 濡傛灉宸蹭笅杞戒絾鏄繕鍦ㄧ洿鎾垯涓嶇畻涓嬭浇
                         if entrie.get('live_status') != 'is_live':
                             return None
 
@@ -265,7 +265,7 @@ class Youtube(DownloadBase):
                             if type(entrie) is dict and entrie.get('upload_date') is not None:
                                 upload_date = entrie['upload_date']
 
-                        # 时间是必然存在的如果不存在说明出了问题 暂时跳过
+                        # 鏃堕棿鏄繀鐒跺瓨鍦ㄧ殑濡傛灉涓嶅瓨鍦ㄨ鏄庡嚭浜嗛棶棰?鏆傛椂璺宠繃
                         if upload_date is None:
                             return None
                         else:
@@ -274,7 +274,7 @@ class Youtube(DownloadBase):
                     if self.youtube_after_date is not None and upload_date < self.youtube_after_date:
                         return 'stop'
 
-                    # 检测时间范围
+                    # 妫€娴嬫椂闂磋寖鍥?
                     if upload_date not in DateRange(self.youtube_after_date, self.youtube_before_date):
                         return None
 
@@ -301,8 +301,8 @@ class Youtube(DownloadBase):
 
     def download(self):
         filename = self.gen_download_filename(is_fmt=True)
-        # ydl下载的文件在下载失败时不可控
-        # 临时存储在其他地方
+        # ydl涓嬭浇鐨勬枃浠跺湪涓嬭浇澶辫触鏃朵笉鍙帶
+        # 涓存椂瀛樺偍鍦ㄥ叾浠栧湴鏂?
         download_dir = f'./cache/temp/youtube/{filename}'
         try:
             ydl_opts = {
@@ -317,39 +317,39 @@ class Youtube(DownloadBase):
             if self.youtube_prefer_vcodec is not None:
                 ydl_opts['format'] += f"[vcodec~='^({self.youtube_prefer_vcodec})']"
             if self.youtube_max_videosize is not None and self.is_download:
-                # 直播时无需限制文件大小
+                # 鐩存挱鏃舵棤闇€闄愬埗鏂囦欢澶у皬
                 ydl_opts['format'] += f"[filesize<{self.youtube_max_videosize}]"
             if self.youtube_max_resolution is not None:
                 ydl_opts['format'] += f"[height<={self.youtube_max_resolution}]"
             ydl_opts['format'] += "+bestaudio"
             if self.youtube_prefer_acodec is not None:
                 ydl_opts['format'] += f"[acodec~='^({self.youtube_prefer_acodec})']"
-            # 不能由yt_dlp创建会占用文件夹
+            # 涓嶈兘鐢眣t_dlp鍒涘缓浼氬崰鐢ㄦ枃浠跺す
             if not os.path.exists(download_dir):
                 os.makedirs(download_dir)
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 if not self.is_download:
-                    # 直播模式不过滤但是能写入过滤
+                    # 鐩存挱妯″紡涓嶈繃婊や絾鏄兘鍐欏叆杩囨护
                     ydl.archive = set()
                 ydl.download([self.download_url])
-            # 下载成功的情况下移动到运行目录
+            # 涓嬭浇鎴愬姛鐨勬儏鍐典笅绉诲姩鍒拌繍琛岀洰褰?
             for file in os.listdir(download_dir):
                 shutil.move(f'{download_dir}/{file}', '.')
         except DownloadError as e:
             if 'Requested format is not available' in e.msg:
-                logger.error(f"{Youtube.__name__}: {self.url}: 无法获取到流，请检查vcodec,acodec,height,filesize设置")
+                logger.error(f"{Youtube.__name__}: {self.url}: 鏃犳硶鑾峰彇鍒版祦锛岃妫€鏌codec,acodec,height,filesize璁剧疆")
             elif 'ffmpeg is not installed' in e.msg:
-                logger.error(f"{Youtube.__name__}: {self.url}: ffmpeg未安装，无法下载")
+                logger.error(f"{Youtube.__name__}: {self.url}: ffmpeg鏈畨瑁咃紝鏃犳硶涓嬭浇")
             else:
                 logger.error(f"{Youtube.__name__}: {self.url}: {e.msg}")
             return False
         finally:
-            # 清理意外退出可能产生的多余文件
+            # 娓呯悊鎰忓閫€鍑哄彲鑳戒骇鐢熺殑澶氫綑鏂囦欢
             try:
                 del ydl
                 shutil.rmtree(download_dir)
             except:
-                logger.error(f"{Youtube.__name__}: {self.url}: 清理残留文件失败，请手动删除{download_dir}")
+                logger.error(f"{Youtube.__name__}: {self.url}: 娓呯悊娈嬬暀鏂囦欢澶辫触锛岃鎵嬪姩鍒犻櫎{download_dir}")
         return True
 
 
@@ -361,10 +361,10 @@ class KVFileStore:
 
     def _ensure_file_and_folder_exists(self):
         folder_path = os.path.dirname(self.file_path)
-        # 如果文件夹不存在，则创建文件夹
+        # 濡傛灉鏂囦欢澶逛笉瀛樺湪锛屽垯鍒涘缓鏂囦欢澶?
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-        # 如果文件不存在，则创建空文件
+        # 濡傛灉鏂囦欢涓嶅瓨鍦紝鍒欏垱寤虹┖鏂囦欢
         if not os.path.exists(self.file_path):
             open(self.file_path, "w").close()
 
@@ -378,7 +378,7 @@ class KVFileStore:
     def add(self, key, value):
         with open(self.file_path, "a", encoding="utf-8") as f:
             f.write(f"{key}={value}\n")
-        # 更新缓存
+        # 鏇存柊缂撳瓨
         self.cache[key] = value
 
     def query(self, key, default=None):

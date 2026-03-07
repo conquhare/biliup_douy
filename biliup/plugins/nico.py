@@ -1,4 +1,4 @@
-import random
+﻿import random
 import re
 import subprocess
 import time
@@ -17,19 +17,19 @@ class Nico(DownloadBase):
     async def acheck_stream(self, is_check=False):
         try:
             response = await biliup.common.util.client.get(self.url, timeout=5)
-            # 正则表达式
+            # 姝ｅ垯琛ㄨ揪寮?
             pattern = r'"name":"(.*?)","description":"(.*?)"'
-            # 执行匹配
+            # 鎵ц鍖归厤
             matches = re.findall(pattern, response.text)[0]
             self.room_title = matches[0]
         except:
-            logger.info("获取标题失败")
+            logger.info("鑾峰彇鏍囬澶辫触")
         port = random.randint(1025, 65535)
         stream_shell = [
             "streamlink",
-            "--player-external-http",  # 为外部程序提供流媒体数据
-            "--player-external-http-port", str(port),  # 对外部输出流的端口
-            self.url, "best"  # 流链接
+            "--player-external-http",  # 涓哄閮ㄧ▼搴忔彁渚涙祦濯掍綋鏁版嵁
+            "--player-external-http-port", str(port),  # 瀵瑰閮ㄨ緭鍑烘祦鐨勭鍙?
+            self.url, "best"  # 娴侀摼鎺?
         ]
         if self.config.get('user', {}).get('niconico-email') is not None:
             niconico_email = "--niconico-email " + self.config.get('user', {}).get('niconico-email')
