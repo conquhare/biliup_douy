@@ -291,6 +291,65 @@ Write-Host "清理后的版本号: $version"
 
 ---
 
+## Skill 目录管理方案
+
+### 问题背景
+- GitNexus 默认使用 `.claude/skills/` 目录存放 Skill 文件
+- Trae IDE 默认使用 `.trae/skills/` 目录
+- 我们希望统一使用 `.trae/skills/`，但 GitNexus 需要真实目录才能创建子目录
+
+### 解决方案：目录联接（Junction）
+
+使用 Windows 目录联接（Junction）让两个目录指向同一位置：
+
+```
+biliup_code/
+├── .claude/
+│   └── skills/                    ← 真实目录（GitNexus 使用）
+│       ├── encoding-checker/      ← 自定义 skill
+│       ├── gitnexus/              ← GitNexus skill
+│       └── proxy-troubleshooting/ ← 自定义 skill
+└── .trae/
+    └── skills -> .claude/skills   ← 目录联接（Junction）
+```
+
+### 创建目录联接
+
+```powershell
+# 1. 确保 .claude/skills 真实目录存在
+# 将自定义 skill 移动到 .claude/skills/ 下
+
+# 2. 创建目录联接
+$target = Resolve-Path ".claude\skills"
+New-Item -ItemType Junction -Path ".trae\skills" -Target $target -Force
+
+# 3. 验证
+Get-Item ".trae\skills" | Select-Object Mode, Name, Target
+```
+
+### 注意事项
+
+1. **目录联接 vs 符号链接**
+   - 目录联接（Junction）：只能用于目录，不需要管理员权限
+   - 符号链接（SymbolicLink）：可用于文件和目录，需要管理员权限或 Developer Mode
+
+2. **GitNexus 兼容性**
+   - 符号链接会导致 `ENOTDIR` 错误（GitNexus 无法创建子目录）
+   - 目录联接可以正常工作
+
+3. **Git 版本控制**
+   - `.trae/skills` 作为目录联接会被 git 跟踪为普通目录
+   - 实际文件存储在 `.claude/skills/`
+
+### 自定义 Skill 存放位置
+
+**推荐做法：**
+1. 所有自定义 Skill 放在 `.claude/skills/` 下
+2. 通过 `.trae/skills/` 访问（统一路径）
+3. 这样 GitNexus 和 Trae 都能正确找到 Skill
+
+---
+
 ## 网络诊断工具
 
 ### 测试 GitHub 连接
