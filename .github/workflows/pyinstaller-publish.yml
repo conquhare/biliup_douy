@@ -163,14 +163,17 @@ jobs:
         $targetTriple = rustc -Vv | Select-String "host:" | ForEach-Object {$_.Line.split(" ")[1]}
         $archiveName = "biliup-$version-x86_64-windows.zip"
 
-        # 单文件模式：直接压缩 dist/biliup.exe
-        if (Test-Path "dist/biliup.exe") {
+        # 文件夹模式：压缩 dist/biliup/ 目录
+        if (Test-Path "dist/biliup") {
+          Compress-Archive -Path "dist/biliup/*" -DestinationPath $archiveName
+          Write-Host "创建压缩包: $archiveName (文件夹模式)"
+        } elseif (Test-Path "dist/biliup.exe") {
+          # 兼容单文件模式
           Compress-Archive -Path "dist/biliup.exe" -DestinationPath $archiveName
           Write-Host "创建压缩包: $archiveName (单文件模式)"
         } else {
-          # 兼容旧版文件夹模式
-          Compress-Archive -Path "dist/bbup/*" -DestinationPath $archiveName
-          Write-Host "创建压缩包: $archiveName (文件夹模式)"
+          Write-Error "未找到构建输出"
+          exit 1
         }
         Write-Host "目标架构: $targetTriple"
 

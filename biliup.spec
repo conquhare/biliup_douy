@@ -64,9 +64,8 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
     [],
+    exclude_binaries=True,
     name='biliup',
     debug=False,
     bootloader_ignore_signals=False,
@@ -81,5 +80,15 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=['public\\logo.png'],
-    onefile=True,  # 单文件模式
+    # onefile=False,  # 文件夹模式（解决 DLL 加载问题）
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=True,
+    upx=True,
+    upx_exclude=[],
+    name='biliup',
 )
