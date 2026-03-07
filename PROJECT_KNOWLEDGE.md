@@ -417,6 +417,63 @@ paths:
 
 ---
 
+## PyInstaller 单文件模式问题
+
+### 问题：Failed to load Python DLL
+
+**错误信息：**
+```
+[PYI-280488:ERROR] Failed to load Python DLL 'C:\Users\...\Temp\_MEI2814322\python314.dll'.
+LoadLibrary: ?????????
+```
+
+**原因：**
+PyInstaller 单文件模式（`onefile=True`）在运行时会将文件解压到临时目录，但有时会出现 DLL 加载失败的问题。可能原因：
+
+1. **临时目录权限问题** - 某些系统临时目录权限受限
+2. **杀毒软件拦截** - 安全软件阻止 DLL 加载
+3. **路径长度问题** - Windows 路径长度限制
+4. **文件被占用** - 之前的运行实例未完全清理
+
+**解决方案：**
+
+#### 方案 1：使用文件夹模式（推荐）
+修改 `biliup.spec`，移除 `onefile=True`，使用 `COLLECT` 生成文件夹：
+```python
+# 单文件模式（可能有问题）
+onefile=True
+
+# 改为文件夹模式（更稳定）
+# 移除 onefile 参数，使用 COLLECT
+```
+
+#### 方案 2：设置临时目录环境变量
+运行前设置环境变量：
+```powershell
+$env:TMP = "C:\temp"
+$env:TEMP = "C:\temp"
+biliup.exe list
+```
+
+#### 方案 3：以管理员身份运行
+右键点击 EXE，选择"以管理员身份运行"
+
+#### 方案 4：添加到杀毒软件白名单
+将 EXE 所在目录添加到杀毒软件排除项
+
+#### 方案 5：清理临时文件
+```powershell
+# 删除 PyInstaller 临时文件
+Remove-Item -Path "$env:TEMP\_MEI*" -Recurse -Force -ErrorAction SilentlyContinue
+```
+
+**最佳实践：**
+- 对于需要稳定运行的场景，建议使用**文件夹模式**而非单文件模式
+- 单文件模式适合便携和分发，但可能有兼容性问题
+- 文件夹模式启动更快，兼容性更好
+
+---
+
 ## 网络诊断工具
 
 ### 测试 GitHub 连接
