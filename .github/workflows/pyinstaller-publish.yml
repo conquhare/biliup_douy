@@ -1,5 +1,10 @@
 name: Build Windows EXE
 
+env:
+  # 独立版本号管理 - 不依赖上游 Cargo.toml
+  # 修改此值来更新版本号
+  BASE_VERSION: '0.2.0'
+
 on:
   push:
     branches:
@@ -36,11 +41,6 @@ on:
         required: true
         default: false
         type: boolean
-
-env:
-  # 独立版本号管理 - 不依赖上游 Cargo.toml
-  # 修改此值来更新版本号
-  BASE_VERSION: '0.2.0'
 
 jobs:
   build:
