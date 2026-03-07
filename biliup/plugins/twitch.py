@@ -101,7 +101,7 @@ class Twitch(DownloadBase, BatchCheck):
             'variables': {'channel_name': channel_name}
         }, self.config)).get('data', {}).get('user')
         if not user:
-            logger.warning(f"{Twitch.__name__}: {self.url}: 鑾峰彇閿欒", exc_info=True)
+            logger.warning(f"{Twitch.__name__}: {self.url}: 获取错误", exc_info=True)
             return False
         elif not user['stream'] or user['stream']['type'] != 'live':
             return False
@@ -118,7 +118,7 @@ class Twitch(DownloadBase, BatchCheck):
 
             stream_shell = [
                 "streamlink",
-                "--player-external-http",  # 涓哄閮ㄧ▼搴忔彁渚涙祦濯掍綋鏁版嵁
+                "--player-external-http",  # 涓哄閮ㄧ▼搴忔彁渚涙祦濯掍綋数据
                 "--player-external-http-port", str(port),  # 瀵瑰閮ㄨ緭鍑烘祦鐨勭鍙?
                 "--player-external-http-interface", "localhost",
                 # "--twitch-disable-ads",                     # 鍘诲箍鍛婏紝鍘绘帀銆佽烦杩囧祵鍏ョ殑骞垮憡娴?
@@ -177,7 +177,7 @@ class Twitch(DownloadBase, BatchCheck):
         for index, data in enumerate(gql):
             user = data.get('data', {}).get('user')
             if not user:
-                logger.warning(f"{Twitch.__name__}: {check_urls[index]}: 鑾峰彇閿欒")
+                logger.warning(f"{Twitch.__name__}: {check_urls[index]}: 获取错误")
                 continue
             elif not user['stream'] or user['stream']['type'] != 'live':
                 continue
@@ -236,7 +236,7 @@ class TwitchUtils:
                     data.extend(__data)
             return data
 
-        # 姝ｅ父涓嬭浇鐢变笂灞傛柟娉曞鐞?
+        # 姝ｅ父下载鐢变笂灞傛柟娉曞鐞?
         return await TwitchUtils.__post_gql(headers, ops, config)
 
     @staticmethod

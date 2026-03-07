@@ -26,7 +26,7 @@ async def main():
 
     # event_manager.start()
 
-    # 鍚姩鏃跺垹闄や复鏃舵枃浠跺す
+    # 启动时删除临时文件夹
     shutil.rmtree('./cache/temp', ignore_errors=True)
     from biliup.common.util import loop
 

@@ -27,7 +27,7 @@ class AfreecaTV(DownloadBase):
         try:
             username = match1(self.url, VALID_URL_BASE)
             if not username:
-                logger.warning(f"{AfreecaTV.__name__}: {self.url}: 鐩存挱闂村湴鍧€閿欒")
+                logger.warning(f"{AfreecaTV.__name__}: {self.url}: 直播闂村湴鍧€错误")
                 return False
 
             channel_info = (await biliup.common.util.client.post(CHANNEL_API_URL, data={
@@ -43,7 +43,7 @@ class AfreecaTV(DownloadBase):
             }, headers=self.fake_headers, timeout=5)).json()
 
             if channel_info["CHANNEL"]["RESULT"] == -6:
-                logger.warning(f"{AfreecaTV.__name__}: {self.url}: 妫€娴嬪け璐?璇锋鏌ヨ处鍙峰瘑鐮佽缃?)
+                logger.warning(f"{AfreecaTV.__name__}: {self.url}: 检娴嬪け璐?璇锋鏌ヨ处鍙峰瘑鐮佽缃?)
                 return False
 
             if channel_info["CHANNEL"]["RESULT"] != 1:
@@ -73,7 +73,7 @@ class AfreecaTV(DownloadBase):
 
             self.raw_stream_url = view_info["view_url"] + "?aid=" + aid_info["CHANNEL"]["AID"]
         except:
-            logger.warning(f"{AfreecaTV.__name__}: {self.url}: 鑾峰彇閿欒锛屾湰娆¤烦杩?)
+            logger.warning(f"{AfreecaTV.__name__}: {self.url}: 获取错误锛屾湰娆¤烦杩?)
             return False
 
         return True

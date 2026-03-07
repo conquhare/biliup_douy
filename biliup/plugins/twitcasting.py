@@ -33,7 +33,7 @@ class Twitcasting(DownloadBase):
 
         room_html = (await biliup.common.util.client.get(self.url, headers=self.fake_headers)).text
         if 'Enter the secret word to access' in room_html:
-            logger.warning(f"{Twitcasting.__name__}: {self.url}: 鐩存挱闂撮渶瑕佸瘑鐮?)
+            logger.warning(f"{Twitcasting.__name__}: {self.url}: 直播闂撮渶瑕佸瘑鐮?)
             return False
 
         # 灏哄涓嶅悎閫?
@@ -45,14 +45,14 @@ class Twitcasting(DownloadBase):
             f'https://twitcasting.tv/streamserver.php?target={uploader_id}&mode=client&player=pc_web',
             headers=self.fake_headers)
         if response.status_code != 200:
-            logger.warning(f"{Twitcasting.__name__}: {self.url}: 鑾峰彇閿欒锛屾湰娆¤烦杩?)
+            logger.warning(f"{Twitcasting.__name__}: {self.url}: 获取错误锛屾湰娆¤烦杩?)
             return False
         stream_info = response.json()
         if not stream_info:
-            logger.warning(f"{Twitcasting.__name__}: {self.url}: 鐩存挱闂村湴鍧€閿欒")
+            logger.warning(f"{Twitcasting.__name__}: {self.url}: 直播闂村湴鍧€错误")
             return False
         if not stream_info['movie']['live']:
-            logger.debug(f"{Twitcasting.__name__}: {self.url}: 鏈紑鎾?)
+            logger.debug(f"{Twitcasting.__name__}: {self.url}: 未开鎾?)
             return False
 
         self._movie_id = stream_info['movie']['id']
@@ -79,7 +79,7 @@ class Twitcasting(DownloadBase):
             stream_url = next(iter(streams.values()))
 
         if not stream_url:
-            logger.error(f"{Twitcasting.__name__}: {self.url}: 鏈煡鎵惧埌鐩存挱娴?=> {stream_info}")
+            logger.error(f"{Twitcasting.__name__}: {self.url}: 鏈煡鎵惧埌直播娴?=> {stream_info}")
             return False
 
         self.raw_stream_url = stream_url
@@ -127,10 +127,10 @@ class Twitcasting(DownloadBase):
 #         _hash_str = salt + timestamp + method + pathname + search + sessionid
 #         return str(timestamp + "." + TwitcastingUtils.hashlib.sha256(_hash_str.encode()).hexdigest())
 # '''
-# X-Web-Authorizekey 鍙湪 PlayerPage2.js 鏂囦欢涓?
+# X-Web-Authorizekey 鍙湪 PlayerPage2.js 文件涓?
 # 閫氳繃 return ""[u(413)](m, ".")[u(413)](f) 鎵€鍦ㄧ殑鏂规硶璁＄畻鑰屽嚭
 # 鐢?salt + 10浣?timestamp + 鎺ュ彛Method澶у啓 + 鎺ュ彛pathname + 鎺ュ彛search + web-authorize-session-id 鎷兼帴鍚?
-# 鍐嶇粡杩?SHA-256 澶勭悊锛屾渶鍚庡湪瀛楃涓插墠闈㈡嫾鎺ヤ笂 10浣?timestamp 鍜?dot 寰楀埌
+# 鍐嶇粡杩?SHA-256 处理锛屾渶鍚庡湪字符涓插墠闈㈡嫾鎺ヤ笂 10浣?timestamp 鍜?dot 寰楀埌
 # '''
 # __n = int(time.time() * 1000)
 # _salt = "d6g97jormun44naq"

@@ -63,7 +63,7 @@ class AsyncProcThread:
 
     def terminate(self):
         '''
-        @brief: 鍏抽棴鎵€鏈夊紓姝ョ嚎绋?
+        @brief: 关闭鎵€鏈夊紓姝ョ嚎绋?
         @return: None
         @rtype: None
         '''
@@ -78,7 +78,7 @@ class AsyncProcThread:
 
     def put(self, reqmsg):
         '''
-        @brief: 澶勭悊鏁版嵁鍏ラ槦鍒?
+        @brief: 处理数据鍏ラ槦鍒?
         @param reqmsg: 寰呭鐞嗘暟鎹?
         @type reqmsg: ReqMessage
         @return: None
@@ -97,7 +97,7 @@ class AsyncProcThread:
 
     def pop(self):
         '''
-        @brief: 澶勭悊鏁版嵁鍑洪槦鍒?
+        @brief: 处理数据鍑洪槦鍒?
         @return: ReqMessage
         @rtype: ReqMessage
         '''
@@ -111,7 +111,7 @@ class AsyncProcThread:
 
     def start(self):
         '''
-        @brief: 鍚姩寮傛绾跨▼
+        @brief: 启动寮傛绾跨▼
         @return: None
         @rtype: None
         '''
@@ -142,7 +142,7 @@ class AsyncProcThreadRunner(threading.Thread):
     def initialize(self, queue):
         '''
         @brief: 浣跨敤AsyncProcThreadRunner鍓嶅繀椤昏皟鐢ㄦ鍑芥暟
-        @param queue: 鏈塸op()鐨勭被锛岀敤浜庢彁鍙栧緟澶勭悊鏁版嵁
+        @param queue: 鏈塸op()鐨勭被锛岀敤浜庢彁鍙栧緟处理数据
         @type queue: AsyncProcThread
         @return: None
         @rtype: None
@@ -152,7 +152,7 @@ class AsyncProcThreadRunner(threading.Thread):
 
     def terminate(self):
         '''
-        @brief: 鍏抽棴绾跨▼
+        @brief: 关闭绾跨▼
         @return: None
         @rtype: None
         '''
@@ -161,7 +161,7 @@ class AsyncProcThreadRunner(threading.Thread):
 
     def run(self):
         '''
-        @brief: 绾跨▼鍚姩鍑芥暟锛屾墽琛屽紓姝ヨ皟鐢?
+        @brief: 绾跨▼启动鍑芥暟锛屾墽琛屽紓姝ヨ皟鐢?
         '''
         tarsLogger.debug('AsyncProcThreadRunner:run')
         while not self.__terminate:
@@ -194,7 +194,7 @@ class ServantProxyCallback(object):
     def onDispatch(reqmsg):
         '''
         @brief: 鍒嗛厤鍝嶅簲鎶ユ枃鍒板搴旂殑鍥炶皟鍑芥暟
-        @param queue: 鏈塸op()鐨勭被锛岀敤浜庢彁鍙栧緟澶勭悊鏁版嵁
+        @param queue: 鏈塸op()鐨勭被锛岀敤浜庢彁鍙栧緟处理数据
         @type queue: AsyncProcThread
         @return: None
         @rtype: None

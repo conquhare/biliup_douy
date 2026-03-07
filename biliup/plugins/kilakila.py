@@ -44,15 +44,15 @@ class Kilakila(DownloadBase):
                     REMOVE_ROOM: 19
                 },
                 '''
-                logger.debug(f"{self.plugin_msg}: 鏈紑鎾?)
+                logger.debug(f"{self.plugin_msg}: 未开鎾?)
                 return False
             self.room_title = r['b']['title']
 
             if is_check:
-                logger.info(f"{self.plugin_msg}: 鐩存挱鑳屾櫙鍥鹃摼鎺? {r['b']['defaultBackgroundPicUrl']}")
+                logger.info(f"{self.plugin_msg}: 直播鑳屾櫙鍥鹃摼鎺? {r['b']['defaultBackgroundPicUrl']}")
                 return True
 
-            # 鐩存挱瑙嗛娴佷负 320*240 榛戣壊鑳屾櫙锛屽彲鎼厤鑳屾櫙鍥鹃噸鏂板帇鍒惰棰?
+            # 直播瑙嗛娴佷负 320*240 榛戣壊鑳屾櫙锛屽彲鎼厤鑳屾櫙鍥鹃噸鏂板帇鍒惰棰?
             # self.background_pic_url = r['b']['defaultBackgroundPicUrl']
             self.live_cover_url = r['b']['backPic']
             if self.kila_protocol == 'flv':
@@ -62,6 +62,6 @@ class Kilakila(DownloadBase):
         except json.JSONDecodeError:
             logger.error(f"{self.plugin_msg}: {r.text}")
         except:
-            logger.error(f"{self.plugin_msg}: 鑾峰彇鎴块棿淇℃伅澶辫触", exc_info=True)
+            logger.error(f"{self.plugin_msg}: 获取鎴块棿信息失败", exc_info=True)
 
         return True

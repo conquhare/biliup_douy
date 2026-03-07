@@ -13,7 +13,7 @@ logger = logging.getLogger('biliup')
 class Daemon(object):
     def __init__(self, pidfile, fn, change_currentdirectory=False, stdin='/dev/null', stdout='/dev/null',
                  stderr='/dev/null'):
-        # 闇€瑕佽幏鍙栬皟璇曚俊鎭紝鏀逛负stdin='/dev/stdin', stdout='/dev/stdout', stderr='/dev/stderr'锛屼互root韬唤杩愯銆?
+        # 闇€瑕佽幏鍙栬皟璇曚俊鎭紝鏀逛负stdin='/dev/stdin', stdout='/dev/stdout', stderr='/dev/stderr'锛屼互root韬唤运行銆?
         self.stdin = stdin
         self.stdout = stdout
         self.stderr = stderr
@@ -31,9 +31,9 @@ class Daemon(object):
             sys.exit(1)
 
         if self.cd:
-            os.chdir("/")  # 淇敼宸ヤ綔鐩綍
-        os.setsid()  # 璁剧疆鏂扮殑浼氳瘽杩炴帴
-        os.umask(0)  # 閲嶆柊璁剧疆鏂囦欢鍒涘缓鏉冮檺
+            os.chdir("/")  # 淇敼宸ヤ綔目录
+        os.setsid()  # 设置鏂扮殑浼氳瘽杩炴帴
+        os.umask(0)  # 閲嶆柊设置文件创建鏉冮檺
 
         try:
             pid = os.fork()  # 绗簩娆ork锛岀姝㈣繘绋嬫墦寮€缁堢
@@ -54,7 +54,7 @@ class Daemon(object):
         os.dup2(so.fileno(), sys.stdout.fileno())
         os.dup2(se.fileno(), sys.stderr.fileno())
 
-        # 娉ㄥ唽閫€鍑哄嚱鏁帮紝鏍规嵁鏂囦欢pid鍒ゆ柇鏄惁瀛樺湪杩涚▼
+        # 娉ㄥ唽閫€鍑哄嚱鏁帮紝鏍规嵁文件pid鍒ゆ柇鏄惁存在杩涚▼
         atexit.register(self.delpid)
         pid = str(os.getpid())
         with open(self.pidfile, 'w+') as f:
@@ -63,11 +63,11 @@ class Daemon(object):
 
     def delpid(self):
         os.remove(self.pidfile)
-        # logger.debug('杩涚▼缁撴潫')
+        # logger.debug('杩涚▼结束')
 
     def start(self):
-        # 妫€鏌id鏂囦欢鏄惁瀛樺湪浠ユ帰娴嬫槸鍚﹀瓨鍦ㄨ繘绋?
-        # logger.debug('鍑嗗鍚姩杩涚▼')
+        # 检鏌id文件鏄惁存在浠ユ帰娴嬫槸鍚﹀瓨鍦ㄨ繘绋?
+        # logger.debug('鍑嗗启动杩涚▼')
         try:
             pf = open(self.pidfile, 'r')
             pid = int(pf.read().strip())
@@ -80,12 +80,12 @@ class Daemon(object):
             sys.stderr.write(message % self.pidfile)
             sys.exit(1)
 
-        # 鍚姩鐩戞帶
+        # 启动鐩戞帶
         self._daemonize()
         self._run()
 
     def stop(self):
-        # 浠巔id鏂囦欢涓幏鍙杙id
+        # 浠巔id文件涓幏鍙杙id
         try:
             pf = open(self.pidfile, 'r')
             pid = int(pf.read().strip())

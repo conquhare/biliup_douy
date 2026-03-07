@@ -16,7 +16,7 @@ class YDownload(DownloadBase):
             self.get_sinfo()
             return True
         except yt_dlp.utils.DownloadError:
-            logger.debug('%s鏈紑鎾垨璇诲彇涓嬭浇淇℃伅澶辫触' % self.fname)
+            logger.debug('%s未开鎾垨璇诲彇下载信息失败' % self.fname)
             return False
 
     def get_sinfo(self):

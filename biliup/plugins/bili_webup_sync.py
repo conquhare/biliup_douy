@@ -83,7 +83,7 @@ class BiliWebAsync(UploadBase):
         bili.database_row_id = database_row_id
 
         bili.login(self.persistence_path, self.user_cookie)
-        videos.title = self.data["format_title"][:80]  # 绋夸欢鏍囬闄愬埗80瀛?
+        videos.title = self.data["format_title"][:80]  # 绋夸欢鏍囬限制80瀛?
         if self.credits:
             videos.desc_v2 = self.creditsToDesc_v2()
         else:
@@ -95,8 +95,8 @@ class BiliWebAsync(UploadBase):
         videos.desc = self.desc
         videos.copyright = self.copyright
         if self.copyright == 2:
-            videos.source = self.data["url"]  # 娣诲姞杞浇鍦板潃璇存槑
-        # 璁剧疆瑙嗛鍒嗗尯,榛樿涓?74 鐢熸椿锛屽叾浠栧垎鍖?
+            videos.source = self.data["url"]  # 娣诲姞杞浇鍦板潃说明
+        # 设置瑙嗛鍒嗗尯,榛樿涓?74 鐢熸椿锛屽叾浠栧垎鍖?
         videos.tid = self.tid
         videos.set_tag(self.tags)
         if self.dtime:
@@ -104,7 +104,7 @@ class BiliWebAsync(UploadBase):
         if self.cover_path:
             videos.cover = bili.cover_up(self.cover_path).replace('http:', '')
 
-        # 鍏朵粬鍙傛暟璁剧疆
+        # 其他参数设置
         videos.extra_fields = self.extra_fields
         videos.dolby = self.dolby
         videos.hires = self.hires
@@ -116,7 +116,7 @@ class BiliWebAsync(UploadBase):
         while True:
             # 璋冭瘯浣跨敤 鍒唒 寮哄埗鍋滄
             # if file_index > 10:
-            #     logger.info(f"[consumer debug] 鍋滄涓嬭浇鍥炶皟")
+            #     logger.info(f"[consumer debug] 鍋滄下载鍥炶皟")
             #     stop_event.set()
             #     break
 
@@ -151,22 +151,22 @@ class BiliWebAsync(UploadBase):
             # print("[consumer] bili.video.videos", bili.video.videos)
             logger.info(f"[consumer] bili.video.videos {bili.video.videos}")
             if data_size < 100:
-                # print(f"[consumer] 鍋滄涓嬭浇鍥炶皟")
+                # print(f"[consumer] 鍋滄下载鍥炶皟")
                 # n = video_upload_queue.get()
-                logger.info(f"[consumer] 鍋滄涓嬭浇鍥炶皟")
+                logger.info(f"[consumer] 鍋滄下载鍥炶皟")
                 stop_event.set()
                 break
 
-        logger.info("绛夊緟涓婁紶绾跨▼缁撴潫")
+        logger.info("等待上传绾跨▼结束")
         for t in thread_list:
             t.join()
 
         # ret = bili.submit(self.submit_api)  # 鎻愪氦瑙嗛
-        # logger.info(f"涓婁紶鎴愬姛: {ret}")
+        # logger.info(f"上传成功: {ret}")
         file_list = []
         # if config.get('sync_save_dir', None):
         #     file_list = [os for file_name in os.listdir("sync_downloaded")]
-        # print("涓婁紶瀹屾垚", file_list)
+        # print("上传瀹屾垚", file_list)
         return file_list
 
     def creditsToDesc_v2(self):
@@ -189,7 +189,7 @@ class BiliWebAsync(UploadBase):
                     "@credit", "@" + credit["username"] + "  ", 1)
                 desc_v2_tmp = desc_v2_tmp[num + 7:]
             except IndexError:
-                logger.error('绠€浠嬩腑鐨凘credit鍗犱綅绗﹀皯浜巆redits鐨勬暟閲?鏇挎崲澶辫触')
+                logger.error('绠€浠嬩腑鐨凘credit鍗犱綅绗﹀皯浜巆redits鐨勬暟閲?鏇挎崲失败')
         desc_v2.append({
             "raw_text": " " + desc_v2_tmp,
             "biz_id": "",
@@ -268,7 +268,7 @@ class BiliBili:
                        }, f)
 
     def login_by_password(self, username, password):
-        print('浣跨敤璐﹀彿涓婁紶')
+        print('浣跨敤璐﹀彿上传')
         key_hash, pub_key = self.get_key()
         encrypt_password = base64.b64encode(rsa.encrypt(f'{key_hash}{password}'.encode(), pub_key))
         payload = {
@@ -314,7 +314,7 @@ class BiliBili:
         data = self.__session.get("https://api.bilibili.com/x/web-interface/nav", timeout=5).json()
         if data["code"] != 0:
             raise Exception(data)
-        print('浣跨敤cookies涓婁紶')
+        print('浣跨敤cookies上传')
 
     def sign(self, param):
         return hashlib.md5(f"{param}{self.appsec}".encode()).hexdigest()
@@ -417,7 +417,7 @@ class BiliBili:
                         logger.info(f"淇敼endpoint: {ret['endpoint']}")
                         break
                 else:
-                    logger.warning(f"閫夋嫨鐨勭嚎璺?{self._auto_os['os']} 娌℃湁杩斿洖瀵瑰簲 endpoint锛屼笉鍋氫慨鏀?)
+                    logger.warning(f"閫夋嫨鐨勭嚎璺?{self._auto_os['os']} 没有杩斿洖瀵瑰簲 endpoint锛屼笉鍋氫慨鏀?)
         video_part = asyncio.run(upload(stream_queue, file_name, total_size, ret))
         if video_part is None:
             stop_event.set()
@@ -430,18 +430,18 @@ class BiliBili:
             context_data.pop('subtitle', None)
             videos = Data(**context_data)
 
-        videos.append(video_part)  # 娣诲姞宸茬粡涓婁紶鐨勮棰?
+        videos.append(video_part)  # 娣诲姞宸茬粡上传鐨勮棰?
         edit = False if videos.aid is None else True
         ret = self.submit(submit_api=submit_api, edit=edit, videos=videos)
-        # logger.info(f"涓婁紶鎴愬姛: {ret}")
+        # logger.info(f"上传成功: {ret}")
         if edit:
-            logger.info(f"缂栬緫娣诲姞鎴愬姛: {ret}")
+            logger.info(f"缂栬緫娣诲姞成功: {ret}")
         else:
-            logger.info(f"涓婁紶鎴愬姛: {ret}")
+            logger.info(f"上传成功: {ret}")
         aid = ret['data']['aid']
         videos.aid = aid
         context['sync_downloader_map'][str(self.database_row_id)] = videos.__dict__
-        logger.info(f"涓婁紶瀹屾垚 {file_name} {context['sync_downloader_map'][str(self.database_row_id)] }")
+        logger.info(f"上传瀹屾垚 {file_name} {context['sync_downloader_map'][str(self.database_row_id)] }")
         if file_name_callback:
             file_name_callback(self.save_path)
 
@@ -452,16 +452,16 @@ class BiliBili:
         endpoint = ret["endpoint"]
         biz_id = ret["biz_id"]
         upos_uri = ret["upos_uri"]
-        url = f"https:{endpoint}/{upos_uri.replace('upos://', '')}"  # 瑙嗛涓婁紶璺緞
+        url = f"https:{endpoint}/{upos_uri.replace('upos://', '')}"  # 瑙嗛上传璺緞
         headers = {
             "X-Upos-Auth": auth
         }
-        # 鍚戜笂浼犲湴鍧€鐢宠涓婁紶锛屽緱鍒颁笂浼爄d绛変俊鎭?
+        # 鍚戜笂浼犲湴鍧€鐢宠上传锛屽緱鍒颁笂浼爄d绛変俊鎭?
         upload_id = self.__session.post(f'{url}?uploads&output=json', timeout=15,
                                         headers=headers).json()["upload_id"]
         # 寮€濮嬩笂浼?
-        parts = []  # 鍒嗗潡淇℃伅
-        chunks = math.ceil(total_size / chunk_size)  # 鑾峰彇鍒嗗潡鏁伴噺
+        parts = []  # 鍒嗗潡信息
+        chunks = math.ceil(total_size / chunk_size)  # 获取鍒嗗潡鏁伴噺
 
         start = time.perf_counter()
 
@@ -504,7 +504,7 @@ class BiliBili:
                     if f.done():
                         futures.remove(f)
 
-                # 绛夊緟鎵€鏈夊垎鐗囦笂浼犲畬鎴愶紝骞舵寜椤哄簭鏀堕泦缁撴灉
+                # 等待鎵€鏈夊垎鐗囦笂浼犲畬鎴愶紝骞舵寜椤哄簭鏀堕泦缁撴灉
             for future in concurrent.futures.as_completed(futures):
                 pass
 
@@ -546,7 +546,7 @@ class BiliBili:
             try:
                 r = requests.put(url=url, params=params_clone, data=chunk, headers=headers)
 
-                # 濡傛灉涓婁紶鎴愬姛锛岄€€鍑洪噸璇曞惊鐜?
+                # 濡傛灉上传成功锛岄€€鍑洪噸璇曞惊鐜?
                 if r.status_code == 200:
                     const_time = time.perf_counter() - st
                     speed = len(chunk) * 8 / 1024 / 1024 / const_time
@@ -558,7 +558,7 @@ class BiliBili:
                         "eTag": "etag"
                     }
 
-                # 濡傛灉涓婁紶澶辫触锛屼絾鏈揪鍒版渶澶ч噸璇曟鏁帮紝绛夊緟涓€娈垫椂闂村悗閲嶈瘯
+                # 濡傛灉上传失败锛屼絾鏈揪鍒版渶澶ч噸璇曟鏁帮紝等待涓€娈垫椂闂村悗閲嶈瘯
                 else:
                     retries += 1
                     logger.warning(
@@ -576,19 +576,19 @@ class BiliBili:
                 backoff_time = backoff_factor ** retries
                 time.sleep(backoff_time)
 
-        # 濡傛灉閲嶈瘯浜嗘墍鏈夋鏁颁粛鐒跺け璐ワ紝璁板綍閿欒
+        # 濡傛灉閲嶈瘯浜嗘墍鏈夋鏁颁粛鐒跺け璐ワ紝璁板綍错误
         logger.error(f"{file_name} - chunks-{params_clone['chunk']} - Upload failed after {max_retries} attempts.")
         return None
 
     def queue_reader_generator(self, simple_queue: queue.SimpleQueue, chunk_size: int, max_size: int):
         """
-        浠?simple_queue 涓鍙栨暟鎹苟鎸?chunk_size 澶у皬鍒嗗潡浜у嚭 (yield)
-        褰撻槦鍒椾腑鑾峰彇鍒?None 鎴栬€呮暟鎹€婚噺杈惧埌 max_size 鍚庯紝灏辩敤 0x00 琛ラ綈鍒?chunk_size
+        浠?simple_queue 涓鍙栨暟鎹苟鎸?chunk_size 大小鍒嗗潡浜у嚭 (yield)
+        褰撻槦鍒椾腑获取鍒?None 鎴栬€呮暟鎹€婚噺杈惧埌 max_size 鍚庯紝灏辩敤 0x00 琛ラ綈鍒?chunk_size
 
-        :param simple_queue: queue.SimpleQueue 瀹炰緥锛屾暟鎹祦浼氫互澶氫釜鍒嗗寘 (bytes) 鍏ラ槦锛屾渶鍚庝互 None 琛ㄧず缁撴潫
-        :param chunk_size: 娑堣垂鑰呮瘡娆℃兂瑕佽幏鍙栫殑鏁版嵁鍧楀ぇ灏?
+        :param simple_queue: queue.SimpleQueue 瀹炰緥锛屾暟鎹祦浼氫互澶氫釜鍒嗗寘 (bytes) 鍏ラ槦锛屾渶鍚庝互 None 琛ㄧず结束
+        :param chunk_size: 娑堣垂鑰呮瘡娆℃兂瑕佽幏鍙栫殑数据鍧楀ぇ灏?
         :param max_size: 闇€瑕佹渶缁堣ˉ榻愮殑鎬诲ぇ灏忥紙鍗曚綅锛氬瓧鑺傦級锛屽繀椤绘槸 chunk_size 鐨勬暣鏁板€?
-        :return: 鐢熸垚鍣紝鎸?chunk_size 澶у皬鍒嗘壒娆′骇鍑烘暟鎹?
+        :return: 鐢熸垚鍣紝鎸?chunk_size 大小鍒嗘壒娆′骇鍑烘暟鎹?
         """
         if max_size % chunk_size != 0:
             raise ValueError("max_size must be a multiple of chunk_size")
@@ -607,13 +607,13 @@ class BiliBili:
                 break
 
             if data is None:
-                # 鏁版嵁娴佺粨鏉燂紝鐢?x00濉厖鍓╀綑鐨勫潡
+                # 数据娴佺粨鏉燂紝鐢?x00濉厖鍓╀綑鐨勫潡
                 remaining_chunks = total_chunks - chunks_yielded
                 if remaining_chunks == total_chunks:
-                    # print("绌哄寘璺宠繃")
+                    # print("绌哄寘跳过")
                     break
                 if len(current_buffer) > 0:
-                    # 澶勭悊褰撳墠缂撳啿鍖轰腑鐨勬渶鍚庝竴鍧楁暟鎹?
+                    # 处理褰撳墠缂撳啿鍖轰腑鐨勬渶鍚庝竴鍧楁暟鎹?
                     padding_size = chunk_size - len(current_buffer)
                     if padding_size > 0:
                         current_buffer += b'\x00' * padding_size
@@ -632,7 +632,7 @@ class BiliBili:
 
             save_file and save_file.write(data)
 
-            # 灏嗘柊鏁版嵁娣诲姞鍒扮紦鍐插尯
+            # 灏嗘柊数据娣诲姞鍒扮紦鍐插尯
             current_buffer.extend(data)
 
             # 杈撳嚭瀹屾暣鐨勫潡
@@ -666,7 +666,7 @@ class BiliBili:
                 user_weight = 1
             logger.info(f'鎺ㄦ祴鐨勭敤鎴锋潈閲? {user_weight}')
             # submit_api = 'web' if user_weight == 2 else 'client'
-            # web 鐩墠锛?025-01-26锛夊叏閲忓垎p鍔熻兘
+            # web 鐩墠锛?025-01-26锛夊叏閲忓垎p功能
             submit_api = 'web'
         ret = None
         if submit_api == 'web':
@@ -748,7 +748,7 @@ class BiliBili:
 
     def get_tags(self, upvideo, typeid="", desc="", cover="", groupid=1, vfea=""):
         """
-        涓婁紶瑙嗛鍚庤幏寰楁帹鑽愭爣绛?
+        上传瑙嗛鍚庤幏寰楁帹鑽愭爣绛?
         :param vfea:
         :param groupid:
         :param typeid:
@@ -776,7 +776,7 @@ class BiliBili:
 @dataclass
 class Data:
     """
-    cover: 灏侀潰鍥剧墖锛屽彲鐢眗ecovers鏂规硶寰楀埌瑙嗛鐨勫抚鎴浘
+    cover: 界面鍥剧墖锛屽彲鐢眗ecovers鏂规硶寰楀埌瑙嗛鐨勫抚鎴浘
     """
     copyright: int = 2
     source: str = ''
@@ -812,12 +812,12 @@ class Data:
             self.tag = ','.join(self.tag)
 
     def delay_time(self, dtime: int):
-        """璁剧疆寤舵椂鍙戝竷鏃堕棿锛岃窛绂绘彁浜ゅぇ浜?灏忔椂锛屾牸寮忎负10浣嶆椂闂存埑"""
+        """设置寤舵椂鍙戝竷时间锛岃窛绂绘彁浜ゅぇ浜?灏忔椂锛屾牸寮忎负10浣嶆椂闂存埑"""
         if dtime - int(time.time()) > 7200:
             self.dtime = dtime
 
     def set_tag(self, tag: list):
-        """璁剧疆鏍囩锛宼ag涓烘暟缁?""
+        """设置鏍囩锛宼ag涓烘暟缁?""
         self.tag = ','.join(tag)
 
     def append(self, video):

@@ -26,7 +26,7 @@ DEFAULT_MAX_RETRIES = 2
 DEFAULT_CONNECTION_LIMITS = httpx.Limits(max_connections=100, max_keepalive_connections=100)
 
 def _get_proxy_config():
-    """浠庣幆澧冨彉閲忔垨閰嶇疆涓幏鍙栦唬鐞嗚缃?""
+    """浠庣幆澧冨彉閲忔垨配置涓幏鍙栦唬鐞嗚缃?""
     # 浼樺厛浣跨敤鐜鍙橀噺
     http_proxy = os.environ.get('HTTP_PROXY') or os.environ.get('http_proxy')
     https_proxy = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
@@ -61,7 +61,7 @@ logger = logging.getLogger('biliup')
 
 
 def update_client_proxy():
-    """鏇存柊HTTP瀹㈡埛绔殑浠ｇ悊閰嶇疆锛堝湪閰嶇疆鍙樻洿鍚庤皟鐢級"""
+    """更新HTTP瀹㈡埛绔殑浠ｇ悊配置锛堝湪配置鍙樻洿鍚庤皟鐢級"""
     global client
     mounts = _get_proxy_config()
     if mounts:
@@ -73,7 +73,7 @@ def update_client_proxy():
             verify=_ssl_context,
             mounts=mounts
         )
-        logger.info(f"HTTP瀹㈡埛绔唬鐞嗛厤缃凡鏇存柊: {mounts}")
+        logger.info(f"HTTP瀹㈡埛绔唬鐞嗛厤缃凡更新: {mounts}")
 
 
 def check_timerange(name):

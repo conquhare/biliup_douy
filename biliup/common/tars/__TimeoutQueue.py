@@ -36,7 +36,7 @@ from .__util import (NewLock, LockGuard)
 
 class ReqMessage:
     '''
-    @brief: 璇锋眰鍝嶅簲鎶ユ枃锛屼繚瀛樹竴涓姹傚搷搴旀墍闇€瑕佺殑鏁版嵁
+    @brief: 璇锋眰鍝嶅簲鎶ユ枃锛屼繚瀛樹竴涓姹傚搷搴旀墍闇€瑕佺殑数据
     '''
     SYNC_CALL = 1
     ASYNC_CALL = 2
@@ -74,11 +74,11 @@ class ReqMessage:
     @staticmethod
     def unpackRspList(buf):
         '''
-        @brief: 瑙ｇ爜鍝嶅簲鎶ユ枃
+        @brief: 解码鍝嶅簲鎶ユ枃
         @param buf: 澶氫釜搴忓垪鍖栧悗鐨勫搷搴旀姤鏂囨暟鎹?
         @type buf: str
-        @return: 瑙ｇ爜鍑烘潵鐨勫搷搴旀姤鏂囧拰瑙ｇ爜鐨刡uffer闀垮害
-        @rtype: rsplist: 瑁呮湁ResponsePacket鐨刲ist
+        @return: 解码鍑烘潵鐨勫搷搴旀姤鏂囧拰解码鐨刡uffer闀垮害
+        @rtype: rsplist: 瑁呮有ResponsePacket鐨刲ist
                 unpacklen: int
         '''
         rsplist = []
@@ -109,7 +109,7 @@ class TimeoutQueue:
     '''
     @brief: 瓒呮椂闃熷垪锛屽姞閿侊紝绾跨▼瀹夊叏
             鍙互鍍忛槦鍒椾竴鏍稦IFO锛屼篃鍙互鍍忓瓧鍏镐竴鏍锋寜key鍙杋tem
-    @todo: 闄愬埗闃熷垪闀垮害
+    @todo: 限制闃熷垪闀垮害
     '''
 
     def __init__(self, timeout=3):
@@ -122,16 +122,16 @@ class TimeoutQueue:
 
     def getTimeout(self):
         '''
-        @brief: 鑾峰彇瓒呮椂鏃堕棿锛屽崟浣嶄负s
-        @return: 瓒呮椂鏃堕棿
+        @brief: 获取瓒呮椂时间锛屽崟浣嶄负s
+        @return: 瓒呮椂时间
         @rtype: float
         '''
         return self.__timeout
 
     def setTimeout(self, timeout):
         '''
-        @brief: 璁剧疆瓒呮椂鏃堕棿锛屽崟浣嶄负s
-        @param timeout: 瓒呮椂鏃堕棿
+        @brief: 设置瓒呮椂时间锛屽崟浣嶄负s
+        @param timeout: 瓒呮椂时间
         @type timeout: float
         @return: None
         @rtype: None
@@ -140,7 +140,7 @@ class TimeoutQueue:
 
     def size(self):
         '''
-        @brief: 鑾峰彇闃熷垪闀垮害
+        @brief: 获取闃熷垪闀垮害
         @return: 闃熷垪闀垮害
         @rtype: int
         '''
@@ -196,10 +196,10 @@ class TimeoutQueue:
 
     def push(self, item, uniqId):
         '''
-        @brief: 鏁版嵁鍏ラ槦鍒楋紝濡傛灉闃熷垪宸茬粡鏈変簡uniqId锛屾彃鍏ュけ璐?
+        @brief: 数据鍏ラ槦鍒楋紝濡傛灉闃熷垪宸茬粡鏈変簡uniqId锛屾彃鍏ュけ璐?
         @param item: 鎻掑叆鐨勬暟鎹?
         @type item: any type
-        @return: 鎻掑叆鏄惁鎴愬姛
+        @return: 鎻掑叆鏄惁成功
         @rtype: bool
         '''
         begtime = time.time()
@@ -217,7 +217,7 @@ class TimeoutQueue:
 
     def peek(self, uniqId):
         '''
-        @brief: 鏍规嵁uniqId鑾峰彇item锛屼笉浼氬垹闄tem
+        @brief: 鏍规嵁uniqId获取item锛屼笉浼氬垹闄tem
         @param uniqId: item鐨刬d
         @type uniqId: int
         @return: item
@@ -234,7 +234,7 @@ class TimeoutQueue:
 
     def timeout(self):
         '''
-        @brief: 妫€娴嬫槸鍚︽湁item瓒呮椂锛屽鏋滄湁灏卞垹闄?
+        @brief: 检娴嬫槸鍚︽有item瓒呮椂锛屽鏋滄有灏卞垹闄?
         @return: None
         @rtype: None
         '''
@@ -242,7 +242,7 @@ class TimeoutQueue:
         # self.__lock.acquire()
         lock = LockGuard(self.__lock)
 
-        # 澶勭悊寮傚父鎯呭喌锛岄槻姝㈡閿?
+        # 处理寮傚父鎯呭喌锛岄槻姝㈡閿?
         try:
             new_data = {}
             for uniqId, item in self.__data.items():

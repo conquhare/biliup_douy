@@ -41,11 +41,11 @@ class ServantProxy(object):
             3銆侀槻姝㈠拰鐢ㄦ埛鍦═ars涓畾涔夌殑鍑芥暟鍚嶅啿绐侊紝鎺ュ彛浠ars_寮€澶?
     '''
 
-    # 鏈嶅姟鍣ㄥ搷搴旂殑閿欒鐮?
-    TARSSERVERSUCCESS = 0  # 鏈嶅姟鍣ㄧ澶勭悊鎴愬姛
-    TARSSERVERDECODEERR = -1  # 鏈嶅姟鍣ㄧ瑙ｇ爜寮傚父
-    TARSSERVERENCODEERR = -2  # 鏈嶅姟鍣ㄧ缂栫爜寮傚父
-    TARSSERVERNOFUNCERR = -3  # 鏈嶅姟鍣ㄧ娌℃湁璇ュ嚱鏁?
+    # 鏈嶅姟鍣ㄥ搷搴旂殑错误鐮?
+    TARSSERVERSUCCESS = 0  # 鏈嶅姟鍣ㄧ处理成功
+    TARSSERVERDECODEERR = -1  # 鏈嶅姟鍣ㄧ解码寮傚父
+    TARSSERVERENCODEERR = -2  # 鏈嶅姟鍣ㄧ编码寮傚父
+    TARSSERVERNOFUNCERR = -3  # 鏈嶅姟鍣ㄧ没有璇ュ嚱鏁?
     TARSSERVERNOSERVANTERR = -4  # 鏈嶅姟鍣ㄧ浜旇Servant瀵硅薄
     TARSSERVERRESETGRID = -5  # 鏈嶅姟鍣ㄧ鐏板害鐘舵€佷笉涓€鑷?
     TARSSERVERQUEUETIMEOUT = -6  # 鏈嶅姟鍣ㄩ槦鍒楄秴杩囬檺鍒?
@@ -108,7 +108,7 @@ class ServantProxy(object):
 
     def tars_name(self):
         '''
-        @brief: 鑾峰彇ServantProxy鐨勫悕瀛?
+        @brief: 获取ServantProxy鐨勫悕瀛?
         @return: ServantProxy鐨勫悕瀛?
         @rtype: str
         '''
@@ -116,8 +116,8 @@ class ServantProxy(object):
 
     def tars_timeout(self):
         '''
-        @brief: 鑾峰彇瓒呮椂鏃堕棿锛屽崟浣嶆槸ms
-        @return: 瓒呮椂鏃堕棿
+        @brief: 获取瓒呮椂时间锛屽崟浣嶆槸ms
+        @return: 瓒呮椂时间
         @rtype: int
         '''
         # 榛樿鐨勪负3S = ObjectProxy.DEFAULT_TIMEOUT
@@ -141,7 +141,7 @@ class ServantProxy(object):
         @type sFuncName: str
         @param sBuffer: 搴忓垪鍖栧悗鐨勫彂閫佸弬鏁?
         @type sBuffer: str
-        @param context: 涓婁笅鏂囦欢淇℃伅
+        @param context: 涓婁笅文件信息
         @type context: ServantProxy.mapcls_context
         @param status: 鐘舵€佷俊鎭?
         @type status:
@@ -197,7 +197,7 @@ class ServantProxy(object):
         @type sFuncName: str
         @param sBuffer: 搴忓垪鍖栧悗鐨勫彂閫佸弬鏁?
         @type sBuffer: str
-        @param context: 涓婁笅鏂囦欢淇℃伅
+        @param context: 涓婁笅文件信息
         @type context: ServantProxy.mapcls_context
         @param status: 鐘舵€佷俊鎭?
         @type status:
@@ -239,8 +239,8 @@ class ServantProxy(object):
 
     def __timeout(self):
         '''
-        @brief: 鑾峰彇瓒呮椂鏃堕棿锛屽崟浣嶆槸s
-        @return: 瓒呮椂鏃堕棿
+        @brief: 获取瓒呮椂时间锛屽崟浣嶆槸s
+        @return: 瓒呮椂时间
         @rtype: float
         '''
         return self.__object.timeout()
@@ -248,9 +248,9 @@ class ServantProxy(object):
     def __invoke(self, reqmsg):
         '''
         @brief: 杩滅▼杩囩▼璋冪敤
-        @param reqmsg: 璇锋眰鏁版嵁
+        @param reqmsg: 璇锋眰数据
         @type reqmsg: ReqMessage
-        @return: 璋冪敤鎴愬姛鎴栧け璐?
+        @return: 璋冪敤成功鎴栧け璐?
         @rtype: bool
         '''
         tarsLogger.debug('ServantProxy:invoke, func: %s',
@@ -301,7 +301,7 @@ class ServantProxy(object):
         @brief: 閫氱煡杩滅▼杩囩▼璋冪敤绾跨▼鍝嶅簲鎶ユ枃鍒颁簡
         @param reqmsg: 璇锋眰鍝嶅簲鎶ユ枃
         @type reqmsg: ReqMessage
-        @return: 鍑芥暟鎵ц鎴愬姛鎴栧け璐?
+        @return: 鍑芥暟鎵ц成功鎴栧け璐?
         @rtype: bool
         '''
         tarsLogger.debug('ServantProxy:finished')
@@ -315,11 +315,11 @@ class ServantProxy(object):
     def tarsRaiseException(self, errno, desc):
         '''
         @brief: 鏈嶅姟鍣ㄨ皟鐢ㄥけ璐ワ紝鏍规嵁鏈嶅姟绔粰鐨勯敊璇爜鎶涘嚭寮傚父
-        @param errno: 閿欒鐮?
+        @param errno: 错误鐮?
         @type errno: int
-        @param desc: 閿欒鎻忚堪
+        @param desc: 错误鎻忚堪
         @type desc: str
-        @return: 娌℃湁杩斿洖鍊硷紝鍑芥暟浼氭姏鍑哄紓甯?
+        @return: 没有杩斿洖鍊硷紝鍑芥暟浼氭姏鍑哄紓甯?
         @rtype:
         '''
         if errno == ServantProxy.TARSSERVERSUCCESS:

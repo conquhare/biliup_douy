@@ -21,10 +21,10 @@ class Douyin(DownloadBase):
         self.douyin_protocol = config.get('douyin_protocol', 'flv')
         self.douyin_double_screen = config.get('douyin_double_screen', False)
         self.douyin_true_origin = config.get('douyin_true_origin', False)
-        self.douyin_danmaku_types = config.get('douyin_danmaku_types', None)  # 寮瑰箷绫诲瀷绛涢€?
+        self.douyin_danmaku_types = config.get('douyin_danmaku_types', None)  # 寮瑰箷类型绛涢€?
         self.fake_headers['cookie'] = config.get('user', {}).get('douyin_cookie', '')
         self.__web_rid = None # 缃戦〉绔埧闂村彿 鎴?鎶栭煶鍙?
-        self.__room_id = None # 鍗曞満鐩存挱鐨勭洿鎾埧闂?
+        self.__room_id = None # 鍗曞満直播鐨勭洿鎾埧闂?
         self.__sec_uid = None
 
     async def acheck_stream(self, is_check=False):
@@ -72,11 +72,11 @@ class Douyin(DownloadBase):
                         user_page.split('<script id="RENDER_DATA" type="application/json">')[1].split('</script>')[0])
                     web_rid = match1(user_page_data, r'"web_rid":"([^"]+)"')
                     if not web_rid:
-                        logger.debug(f"{self.plugin_msg}: 鏈紑鎾?)
+                        logger.debug(f"{self.plugin_msg}: 未开鎾?)
                         return False
                     self.__web_rid = web_rid
                 except (KeyError, IndexError):
-                    logger.error(f"{self.plugin_msg}: 鎴块棿鍙疯幏鍙栧け璐ワ紝璇锋鏌ookie璁剧疆")
+                    logger.error(f"{self.plugin_msg}: 鎴块棿鍙疯幏鍙栧け璐ワ紝璇锋鏌ookie设置")
                     return False
                 except:
                     logger.exception(f"{self.plugin_msg}: 鎴块棿鍙疯幏鍙栧け璐?)
@@ -93,38 +93,38 @@ class Douyin(DownloadBase):
                 _room_info = await self.get_web_room_info(self.__web_rid)
                 if _room_info:
                     if not _room_info['data'].get('user'):
-                        if _room_info['data'].get('prompts', '') == '鐩存挱宸茬粨鏉?:
+                        if _room_info['data'].get('prompts', '') == '直播已结鏉?:
                             return False
-                        # 鍙兘鏄敤鎴疯灏佺
+                        # 可能鏄敤鎴疯灏佺
                         raise Exception(f"{str(_room_info)}")
                     self.__sec_uid = _room_info['data']['user']['sec_uid']
-            # PCWeb 绔棤娴?鎴?娌℃湁鎻愪緵 web_rid
+            # PCWeb 绔棤娴?鎴?没有鎻愪緵 web_rid
             if not _room_info.get('data', {}).get('data'):
                 _room_info = await self.get_h5_room_info(self.__sec_uid, self.__room_id)
                 if _room_info['data'].get('room', {}).get('owner'):
                     self.__web_rid = _room_info['data']['room']['owner']['web_rid']
             try:
-                # 鍑虹幇寮傚父涓嶇敤鎻愮ず锛岀洿鎺ュ埌 绉诲姩缃戦〉 绔幏鍙?
+                # 鍑虹幇寮傚父涓嶇敤鎻愮ず锛岀洿鎺ュ埌 移动缃戦〉 绔幏鍙?
                 room_info = _room_info['data']['data'][0]
             except (KeyError, IndexError):
-                # 濡傛灉 绉诲姩缃戦〉 绔篃娌℃湁鏁版嵁锛屽綋鍋氭湭寮€鎾鐞?
+                # 濡傛灉 移动缃戦〉 绔篃没有数据锛屽綋鍋氭湭寮€鎾鐞?
                 room_info = _room_info['data'].get('room', {})
-                # 褰撳仛鏈紑鎾鐞?
+                # 褰撳仛未开鎾鐞?
                 # if not room_info:
-                #     logger.info(f"{self.plugin_msg}: 鑾峰彇鐩存挱闂翠俊鎭け璐?{_room_info}")
+                #     logger.info(f"{self.plugin_msg}: 获取直播闂翠俊鎭け璐?{_room_info}")
             if room_info.get('status') != 2:
-                logger.debug(f"{self.plugin_msg}: 鏈紑鎾?)
+                logger.debug(f"{self.plugin_msg}: 未开鎾?)
                 return False
             self.__room_id = room_info['id_str']
             self.room_title = room_info['title']
         except:
-            logger.exception(f"{self.plugin_msg}: 鑾峰彇鐩存挱闂翠俊鎭け璐?)
+            logger.exception(f"{self.plugin_msg}: 获取直播闂翠俊鎭け璐?)
             return False
 
         if is_check:
             return True
         else:
-            # 娓呯悊涓婁竴娆¤幏鍙栫殑鐩存挱娴?
+            # 清理涓婁竴娆¤幏鍙栫殑直播娴?
             self.raw_stream_url = ""
 
         try:
@@ -133,7 +133,7 @@ class Douyin(DownloadBase):
                 pull_data = next(iter(room_info['stream_url']['pull_datas'].values()))
             stream_data = json_loads(pull_data['stream_data'])['data']
         except:
-            logger.exception(f"{self.plugin_msg}: 鍔犺浇鐩存挱娴佸け璐?)
+            logger.exception(f"{self.plugin_msg}: 鍔犺浇直播娴佸け璐?)
             logger.debug(f"{self.plugin_msg}: room_info {room_info}")
             return False
 
@@ -159,7 +159,7 @@ class Douyin(DownloadBase):
             if quality not in quality_items:
                 quality = quality_items[0]
             try:
-                # 濡傛灉娌℃湁杩欎釜鐢昏川鍒欏彇鐩歌繎鐨?浼樺厛浣庢竻鏅板害
+                # 濡傛灉没有杩欎釜鐢昏川鍒欏彇鐩歌繎鐨?浼樺厛浣庢竻鏅板害
                 if quality not in stream_data:
                     # 鍙€夌殑娓呮櫚搴?鍚嚜韬?
                     optional_quality_items = [x for x in quality_items if x in stream_data.keys() or x == quality]
@@ -227,7 +227,7 @@ class Douyin(DownloadBase):
 
     async def get_h5_room_info(self, sec_user_id: str, room_id: str) -> dict:
         '''
-        Mobile web 鐨?API 淇℃伅锛屾捣澶栧彲鑳戒笉鍏佽浣跨敤
+        Mobile web 鐨?API 信息锛屾捣澶栧彲鑳戒笉鍏佽浣跨敤
         '''
         if not sec_user_id:
             raise ValueError("sec_user_id is None")

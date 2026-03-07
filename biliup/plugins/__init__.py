@@ -97,7 +97,7 @@ class Wbi:
 
     def update_key(self, img, sub):
         """
-        鏇存柊 key锛屽熀浜?img 鍜?sub 鐨勭粍鍚堛€?
+        更新 key锛屽熀浜?img 鍜?sub 鐨勭粍鍚堛€?
         """
         KEY_LENGTH = 32
         full = img + sub
@@ -109,8 +109,8 @@ class Wbi:
     def sign(self, query: dict, ts: int = 0):
         """
         鐢熸垚绛惧悕銆?
-        :param query: 璇锋眰鍙傛暟
-        :param ts: 鏃堕棿鎴筹紙鍙€夛級锛岄粯璁や负褰撳墠鏃堕棿鎴炽€?
+        :param query: 璇锋眰参数
+        :param ts: 时间鎴筹紙鍙€夛級锛岄粯璁や负褰撳墠时间鎴炽€?
         """
         if self.key is None:
             raise ValueError("Key is not set.")

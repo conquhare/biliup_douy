@@ -23,11 +23,11 @@ class Nico(DownloadBase):
             matches = re.findall(pattern, response.text)[0]
             self.room_title = matches[0]
         except:
-            logger.info("鑾峰彇鏍囬澶辫触")
+            logger.info("获取鏍囬失败")
         port = random.randint(1025, 65535)
         stream_shell = [
             "streamlink",
-            "--player-external-http",  # 涓哄閮ㄧ▼搴忔彁渚涙祦濯掍綋鏁版嵁
+            "--player-external-http",  # 涓哄閮ㄧ▼搴忔彁渚涙祦濯掍綋数据
             "--player-external-http-port", str(port),  # 瀵瑰閮ㄨ緭鍑烘祦鐨勭鍙?
             self.url, "best"  # 娴侀摼鎺?
         ]

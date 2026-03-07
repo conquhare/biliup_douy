@@ -15,7 +15,7 @@ class Acfun(DownloadBase):
 
     async def acheck_stream(self, is_check=False):
         if len(self.url.split("acfun.cn/live/")) < 2:
-            logger.debug("鐩存挱闂村湴鍧€閿欒")
+            logger.debug("直播闂村湴鍧€错误")
             return False
         rid = self.url.split("acfun.cn/live/")[1]
         did = "web_"+get_random_name(16)

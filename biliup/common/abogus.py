@@ -28,44 +28,44 @@ from typing import Union, Callable, List, Dict
 
 class StringProcessor:
     """
-    StringProcessor 绫荤敤浜庤绠桝Bogus绠楁硶涓墍闇€鐨勫瓧绗︿覆澶勭悊鏂规硶銆?
-    鍖呮嫭瀛楃涓插拰 ASCII 鐮佷箣闂寸殑杞崲銆佹棤绗﹀彿鍙崇Щ杩愮畻绛夈€?
+    StringProcessor 绫荤敤浜庤绠桝Bogus绠楁硶涓墍闇€鐨勫瓧绗︿覆处理鏂规硶銆?
+    包括字符涓插拰 ASCII 鐮佷箣闂寸殑转换銆佹棤绗﹀彿鍙崇Щ杩愮畻绛夈€?
 
     绫绘柟娉?
 
         to_ord_str(s: str) -> str:
-            灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸瓧绗︿覆銆?
+            灏嗗瓧绗︿覆转换涓?ASCII 鐮佸瓧绗︿覆銆?
 
         to_ord_array(s: str) -> List[int]:
-            灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸垪琛ㄣ€?
+            灏嗗瓧绗︿覆转换涓?ASCII 鐮佸垪琛ㄣ€?
 
         to_char_str(s: List[int]) -> str:
-            灏?ASCII 鐮佸垪琛ㄨ浆鎹负瀛楃涓层€?
+            灏?ASCII 鐮佸垪琛ㄨ浆鎹负字符涓层€?
 
         to_char_array(s: str) -> List[int]:
-            灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸垪琛ㄣ€?
+            灏嗗瓧绗︿覆转换涓?ASCII 鐮佸垪琛ㄣ€?
 
         js_shift_right(val: int, n: int) -> int:
             瀹炵幇 JavaScript 涓殑鏃犵鍙峰彸绉昏繍绠椼€?
 
         generate_random_bytes(length: int = 3) -> str:
-            鐢熸垚涓€缁勪吉闅忔満瀛楄妭瀛楃涓诧紝鐢ㄤ簬娣锋穯鏁版嵁銆?
+            鐢熸垚涓€缁勪吉闅忔満瀛楄妭字符涓诧紝鐢ㄤ簬娣锋穯数据銆?
 
     浣跨敤绀轰緥:
     ```python
-        # 灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸瓧绗︿覆
+        # 灏嗗瓧绗︿覆转换涓?ASCII 鐮佸瓧绗︿覆
         ord_str = StringProcessor.to_ord_str("Hello, World!")
         print(ord_str)
 
-        # 灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸垪琛?
+        # 灏嗗瓧绗︿覆转换涓?ASCII 鐮佸垪琛?
         ord_array = StringProcessor.to_ord_array("Hello, World!")
         print(ord_array)
 
-        # 灏?ASCII 鐮佸垪琛ㄨ浆鎹负瀛楃涓?
+        # 灏?ASCII 鐮佸垪琛ㄨ浆鎹负字符涓?
         char_str = StringProcessor.to_char_str(ord_array)
         print(char_str)
 
-        # 灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸垪琛?
+        # 灏嗗瓧绗︿覆转换涓?ASCII 鐮佸垪琛?
         char_array = StringProcessor.to_char_array("Hello, World!")
         print(char_array)
 
@@ -73,7 +73,7 @@ class StringProcessor:
         shifted_val = StringProcessor.js_shift_right(10, 2)
         print(shifted_val)
 
-        # 鐢熸垚涓€缁勪吉闅忔満瀛楄妭瀛楃涓?
+        # 鐢熸垚涓€缁勪吉闅忔満瀛楄妭字符涓?
         random_bytes = StringProcessor.generate_random_bytes(3)
         print(random_bytes)
     ```
@@ -82,52 +82,52 @@ class StringProcessor:
     @staticmethod
     def to_ord_str(s: str) -> str:
         """
-        灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸瓧绗︿覆 (Convert a string to an ASCII code string).
+        灏嗗瓧绗︿覆转换涓?ASCII 鐮佸瓧绗︿覆 (Convert a string to an ASCII code string).
 
         Args:
-            s (str): 杈撳叆瀛楃涓?(Input string).
+            s (str): 杈撳叆字符涓?(Input string).
 
         Returns:
-            str: 杞崲鍚庣殑 ASCII 鐮佸瓧绗︿覆 (Converted ASCII code string).
+            str: 转换鍚庣殑 ASCII 鐮佸瓧绗︿覆 (Converted ASCII code string).
         """
         return "".join([chr(i) for i in s])
 
     @staticmethod
     def to_ord_array(s: str) -> List[int]:
         """
-        灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸垪琛?(Convert a string to a list of ASCII codes).
+        灏嗗瓧绗︿覆转换涓?ASCII 鐮佸垪琛?(Convert a string to a list of ASCII codes).
 
         Args:
-            s (str): 杈撳叆瀛楃涓?(Input string).
+            s (str): 杈撳叆字符涓?(Input string).
 
         Returns:
-            List[int]: 杞崲鍚庣殑 ASCII 鐮佸垪琛?(Converted list of ASCII codes).
+            List[int]: 转换鍚庣殑 ASCII 鐮佸垪琛?(Converted list of ASCII codes).
         """
         return [ord(char) for char in s]
 
     @staticmethod
     def to_char_str(s: List[int]) -> str:
         """
-        灏?ASCII 鐮佸垪琛ㄨ浆鎹负瀛楃涓?(Convert a list of ASCII codes to a string).
+        灏?ASCII 鐮佸垪琛ㄨ浆鎹负字符涓?(Convert a list of ASCII codes to a string).
 
         Args:
             s (str): ASCII 鐮佸垪琛?(List of ASCII codes).
 
         Returns:
-            str: 杞崲鍚庣殑瀛楃涓?(Converted string).
+            str: 转换鍚庣殑字符涓?(Converted string).
         """
         return "".join([chr(i) for i in s])
 
     @staticmethod
     def to_char_array(s: str) -> List[int]:
         """
-        灏嗗瓧绗︿覆杞崲涓?ASCII 鐮佸垪琛?(Convert a string to a list of ASCII codes).
+        灏嗗瓧绗︿覆转换涓?ASCII 鐮佸垪琛?(Convert a string to a list of ASCII codes).
 
         Args:
-            s (str): 杈撳叆瀛楃涓?(Input string).
+            s (str): 杈撳叆字符涓?(Input string).
 
         Returns:
-            List[int]: 杞崲鍚庣殑 ASCII 鐮佸垪琛?(Converted list of ASCII codes).
+            List[int]: 转换鍚庣殑 ASCII 鐮佸垪琛?(Converted list of ASCII codes).
         """
         return [ord(char) for char in s]
 
@@ -148,13 +148,13 @@ class StringProcessor:
     @staticmethod
     def generate_random_bytes(length: int = 3) -> str:
         """
-        鐢熸垚涓€缁勪吉闅忔満瀛楄妭瀛楃涓诧紝鐢ㄤ簬娣锋穯鏁版嵁 (Generate a pseudo-random byte string to obfuscate the data).
+        鐢熸垚涓€缁勪吉闅忔満瀛楄妭字符涓诧紝鐢ㄤ簬娣锋穯数据 (Generate a pseudo-random byte string to obfuscate the data).
 
         Args:
             length (int): 鐢熸垚鐨勫瓧鑺傚簭鍒楅暱搴?(Length of the byte sequence to generate).
 
         Returns:
-            str: 鐢熸垚鐨勪吉闅忔満瀛楄妭瀛楃涓?(Generated pseudo-random byte string).
+            str: 鐢熸垚鐨勪吉闅忔満瀛楄妭字符涓?(Generated pseudo-random byte string).
         """
 
         def generate_byte_sequence() -> List[str]:
@@ -175,36 +175,36 @@ class StringProcessor:
 
 class CryptoUtility:
     """
-    CryptoUtility 绫荤敤浜庢彁渚涘姞瀵嗗拰缂栫爜鐨勫伐鍏锋柟娉曪紝鍖呮嫭 SM3 鍝堝笇銆佹坊鍔犵洂鍊笺€丅ase64 缂栫爜鍜?RC4 鍔犲瘑绛夈€?
+    CryptoUtility 绫荤敤浜庢彁渚涘姞瀵嗗拰编码鐨勫伐鍏锋柟娉曪紝包括 SM3 鍝堝笇銆佹坊鍔犵洂鍊笺€丅ase64 编码鍜?RC4 鍔犲瘑绛夈€?
 
     绫诲睘鎬?
         salt (str): 鍔犲瘑鐩愬€?(Encryption salt).
-        base64_alphabet (List[str]): 鑷畾涔?Base64 瀛楃琛?(Custom Base64 alphabet).
+        base64_alphabet (List[str]): 鑷畾涔?Base64 字符琛?(Custom Base64 alphabet).
 
     绫绘柟娉?
         sm3_to_array(input_data: Union[str, List[int]]) -> List[int]:
-            璁＄畻璇锋眰浣撶殑 SM3 鍝堝笇鍊硷紝骞跺皢缁撴灉杞崲涓烘暣鏁版暟缁勩€?
+            璁＄畻璇锋眰浣撶殑 SM3 鍝堝笇鍊硷紝骞跺皢缁撴灉转换涓烘暣鏁版暟缁勩€?
 
         add_salt(param: str) -> str:
-            涓哄瓧绗︿覆鍙傛暟娣诲姞鐩愬€笺€?
+            涓哄瓧绗︿覆参数娣诲姞鐩愬€笺€?
 
         process_param(param: Union[str, List[int]], add_salt: bool) -> Union[str, List[int]]:
-            澶勭悊杈撳叆鍙傛暟锛屾牴鎹渶瑕佹坊鍔犵洂鍊笺€?
+            处理杈撳叆参数锛屾牴鎹渶瑕佹坊鍔犵洂鍊笺€?
 
         params_to_array(param: Union[str, List[int]], add_salt: bool = True) -> List[int]:
-            鑾峰彇杈撳叆鍙傛暟鐨勫搱甯屾暟缁勩€?
+            获取杈撳叆参数鐨勫搱甯屾暟缁勩€?
 
         transform_bytes(bytes_list: List[int]) -> str:
-            瀵硅緭鍏ョ殑瀛楄妭鍒楄〃杩涜鍔犲瘑/瑙ｅ瘑鎿嶄綔锛岃繑鍥炲鐞嗗悗鐨勫瓧绗︿覆銆?
+            瀵硅緭鍏ョ殑瀛楄妭鍒楄〃杩涜鍔犲瘑/解密鎿嶄綔锛岃繑鍥炲鐞嗗悗鐨勫瓧绗︿覆銆?
 
         base64_encode(input_string: str, selected_alphabet: int = 0) -> str:
-            浣跨敤鑷畾涔夊瓧绗﹁〃瀵硅緭鍏ュ瓧绗︿覆杩涜 Base64 缂栫爜銆?
+            浣跨敤鑷畾涔夊瓧绗﹁〃瀵硅緭鍏ュ瓧绗︿覆杩涜 Base64 编码銆?
 
         abogus_encode(abogus_bytes_str: str, selected_alphabet: int) -> str:
-            瀵硅緭鍏ョ殑瀛楄妭瀛楃涓茶繘琛岃嚜瀹氫箟 Base64 缂栫爜锛屽苟娣诲姞浣嶇Щ鍜屽～鍏呫€?
+            瀵硅緭鍏ョ殑瀛楄妭字符涓茶繘琛岃嚜瀹氫箟 Base64 编码锛屽苟娣诲姞浣嶇Щ鍜屽～鍏呫€?
 
         rc4_encrypt(key: bytes, plaintext: str) -> bytes:
-            浣跨敤 RC4 绠楁硶鍔犲瘑鏁版嵁銆?
+            浣跨敤 RC4 绠楁硶鍔犲瘑数据銆?
 
     浣跨敤绀轰緥:
     ```python
@@ -212,27 +212,27 @@ class CryptoUtility:
         sm3_hash = CryptoUtility.sm3_to_array("Hello, World!")
         print(sm3_hash)
 
-        # 涓哄瓧绗︿覆鍙傛暟娣诲姞鐩愬€?
+        # 涓哄瓧绗︿覆参数娣诲姞鐩愬€?
         salted_param = CryptoUtility.add_salt("Hello, World!")
         print(salted_param)
 
-        # 鑾峰彇杈撳叆鍙傛暟鐨勫搱甯屾暟缁?
+        # 获取杈撳叆参数鐨勫搱甯屾暟缁?
         hash_array = CryptoUtility.params_to_array("Hello, World!")
         print(hash_array)
 
-        # 瀵硅緭鍏ョ殑瀛楄妭鍒楄〃杩涜鍔犲瘑/瑙ｅ瘑鎿嶄綔
+        # 瀵硅緭鍏ョ殑瀛楄妭鍒楄〃杩涜鍔犲瘑/解密鎿嶄綔
         encrypted_str = CryptoUtility.transform_bytes([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33])
         print(encrypted_str)
 
-        # 浣跨敤鑷畾涔夊瓧绗﹁〃瀵硅緭鍏ュ瓧绗︿覆杩涜 Base64 缂栫爜
+        # 浣跨敤鑷畾涔夊瓧绗﹁〃瀵硅緭鍏ュ瓧绗︿覆杩涜 Base64 编码
         base64_str = CryptoUtility.base64_encode("Hello, World!")
         print(base64_str)
 
-        # 瀵硅緭鍏ョ殑瀛楄妭瀛楃涓茶繘琛岃嚜瀹氫箟 Base64 缂栫爜锛屽苟娣诲姞浣嶇Щ鍜屽～鍏?
+        # 瀵硅緭鍏ョ殑瀛楄妭字符涓茶繘琛岃嚜瀹氫箟 Base64 编码锛屽苟娣诲姞浣嶇Щ鍜屽～鍏?
         abogus_str = CryptoUtility.abogus_encode("Hello, World!", 0)
         print(abogus_str)
 
-        # 浣跨敤 RC4 绠楁硶鍔犲瘑鏁版嵁
+        # 浣跨敤 RC4 绠楁硶鍔犲瘑数据
         key = b"key"
         plaintext = "Hello, World!"
         ciphertext = CryptoUtility.rc4_encrypt(key, plaintext)
@@ -247,7 +247,7 @@ class CryptoUtility:
 
         Args:
             salt (str): 鍔犲瘑鐩愬€?(Encryption salt).
-            custom_base64_alphabet (List[str]): 鑷畾涔?Base64 瀛楃琛?(Custom Base64 alphabet).
+            custom_base64_alphabet (List[str]): 鑷畾涔?Base64 字符琛?(Custom Base64 alphabet).
         """
         self.salt = salt
         self.base64_alphabet = custom_base64_alphabet
@@ -273,32 +273,32 @@ class CryptoUtility:
     @staticmethod
     def sm3_to_array(input_data: Union[str, List[int]]) -> List[int]:
         """
-        璁＄畻璇锋眰浣撶殑 SM3 鍝堝笇鍊硷紝骞跺皢缁撴灉杞崲涓烘暣鏁版暟缁?(Calculate the SM3 hash value of the request body and convert the result to an array of integers).
+        璁＄畻璇锋眰浣撶殑 SM3 鍝堝笇鍊硷紝骞跺皢缁撴灉转换涓烘暣鏁版暟缁?(Calculate the SM3 hash value of the request body and convert the result to an array of integers).
 
         Args:
-            input_data (Union[str, List[int]]): 杈撳叆鏁版嵁 (Input data).
+            input_data (Union[str, List[int]]): 杈撳叆数据 (Input data).
 
         Returns:
             List[int]: 鍝堝笇鍊肩殑鏁存暟鏁扮粍 (Array of integers representing the hash value).
         """
-        # 濡傛灉杈撳叆鏄瓧绗︿覆锛屽垯灏嗗叾缂栫爜涓哄瓧鑺傛暟缁?
+        # 濡傛灉杈撳叆鏄瓧绗︿覆锛屽垯灏嗗叾编码涓哄瓧鑺傛暟缁?
         if isinstance(input_data, str):
             input_data_bytes = input_data.encode("utf-8")
         else:
-            input_data_bytes = bytes(input_data)  # 灏?List[int] 杞崲涓哄瓧鑺傛暟缁?
+            input_data_bytes = bytes(input_data)  # 灏?List[int] 转换涓哄瓧鑺傛暟缁?
 
-        # 灏嗗瓧鑺傛暟缁勮浆鎹负閫傚悎 sm3.sm3_hash 鍑芥暟澶勭悊鐨勫垪琛ㄦ牸寮?
+        # 灏嗗瓧鑺傛暟缁勮浆鎹负閫傚悎 sm3.sm3_hash 鍑芥暟处理鐨勫垪琛ㄦ牸寮?
         hex_result = sm3.sm3_hash(func.bytes_to_list(input_data_bytes))
 
-        # 灏嗗崄鍏繘鍒跺瓧绗︿覆缁撴灉杞崲涓哄崄杩涘埗鏁存暟鍒楄〃
+        # 灏嗗崄鍏繘鍒跺瓧绗︿覆缁撴灉转换涓哄崄杩涘埗鏁存暟鍒楄〃
         return [int(hex_result[i : i + 2], 16) for i in range(0, len(hex_result), 2)]
 
     def add_salt(self, param: str) -> str:
         """
-        涓哄瓧绗︿覆鍙傛暟娣诲姞鐩愬€?(Add salt to the string parameter).
+        涓哄瓧绗︿覆参数娣诲姞鐩愬€?(Add salt to the string parameter).
 
         Args:
-            param (str): 杈撳叆瀛楃涓?(Input string).
+            param (str): 杈撳叆字符涓?(Input string).
 
         Returns:
             str: 娣诲姞鐩愬€煎悗鐨勫瓧绗︿覆 (String with added salt).
@@ -309,14 +309,14 @@ class CryptoUtility:
         self, param: Union[str, List[int]], add_salt: bool
     ) -> Union[str, List[int]]:
         """
-        澶勭悊杈撳叆鍙傛暟锛屾牴鎹渶瑕佹坊鍔犵洂鍊?(Process input parameter and add salt if needed).
+        处理杈撳叆参数锛屾牴鎹渶瑕佹坊鍔犵洂鍊?(Process input parameter and add salt if needed).
 
         Args:
-            param (Union[str, List[int]]): 杈撳叆鍙傛暟 (Input parameter).
+            param (Union[str, List[int]]): 杈撳叆参数 (Input parameter).
             add_salt (bool): 鏄惁娣诲姞鐩愬€?(Whether to add salt).
 
         Returns:
-            Union[str, List[int]]: 澶勭悊鍚庣殑鍙傛暟 (Processed parameter).
+            Union[str, List[int]]: 处理鍚庣殑参数 (Processed parameter).
         """
         if isinstance(param, str) and add_salt:
             param = self.add_salt(param)
@@ -326,10 +326,10 @@ class CryptoUtility:
         self, param: Union[str, List[int]], add_salt: bool = True
     ) -> List[int]:
         """
-        鑾峰彇杈撳叆鍙傛暟鐨勫搱甯屾暟缁?(Get the hash array of the input parameter).
+        获取杈撳叆参数鐨勫搱甯屾暟缁?(Get the hash array of the input parameter).
 
         Args:
-            param (Union[str, List[int]]): 杈撳叆鍙傛暟 (Input parameter).
+            param (Union[str, List[int]]): 杈撳叆参数 (Input parameter).
             add_salt (bool): 鏄惁娣诲姞鐩愬€?(Whether to add salt).
 
         Returns:
@@ -340,15 +340,15 @@ class CryptoUtility:
 
     def transform_bytes(self, bytes_list: List[int]) -> str:
         """
-        瀵硅緭鍏ョ殑瀛楄妭鍒楄〃杩涜鍔犲瘑/瑙ｅ瘑鎿嶄綔锛岃繑鍥炲鐞嗗悗鐨勫瓧绗︿覆 (Encrypt/decrypt the input byte list and return the processed string).
+        瀵硅緭鍏ョ殑瀛楄妭鍒楄〃杩涜鍔犲瘑/解密鎿嶄綔锛岃繑鍥炲鐞嗗悗鐨勫瓧绗︿覆 (Encrypt/decrypt the input byte list and return the processed string).
 
         Args:
             bytes_list (List[int]): 杈撳叆鐨勫瓧鑺傚垪琛?(Input byte list).
 
         Returns:
-            str: 澶勭悊鍚庣殑瀛楃涓?(Processed string).
+            str: 处理鍚庣殑字符涓?(Processed string).
         """
-        # 灏嗗瓧鑺傚垪琛ㄨ浆鎹负瀛楃瀛楃涓?
+        # 灏嗗瓧鑺傚垪琛ㄨ浆鎹负字符字符涓?
         bytes_str = StringProcessor.to_char_str(bytes_list)
         result_str = []
         index_b = self.big_array[1]
@@ -384,48 +384,48 @@ class CryptoUtility:
 
     def base64_encode(self, input_string: str, selected_alphabet: int = 0) -> str:
         """
-        浣跨敤鑷畾涔夊瓧绗﹁〃瀵硅緭鍏ュ瓧绗︿覆杩涜 Base64 缂栫爜 (Encode the input string using a custom Base64 alphabet).
+        浣跨敤鑷畾涔夊瓧绗﹁〃瀵硅緭鍏ュ瓧绗︿覆杩涜 Base64 编码 (Encode the input string using a custom Base64 alphabet).
 
         Args:
-            input_string (str): 杈撳叆瀛楃涓?(Input string).
-            selected_alphabet (int): 閫夋嫨鐨勮嚜瀹氫箟 Base64 瀛楃琛ㄧ储寮?(Selected custom Base64 alphabet index).
+            input_string (str): 杈撳叆字符涓?(Input string).
+            selected_alphabet (int): 閫夋嫨鐨勮嚜瀹氫箟 Base64 字符琛ㄧ储寮?(Selected custom Base64 alphabet index).
 
         Returns:
-            str: 缂栫爜鍚庣殑瀛楃涓?(Encoded string).
+            str: 编码鍚庣殑字符涓?(Encoded string).
         """
 
-        # 灏嗚緭鍏ュ瓧绗︿覆杞崲涓篈SCII鐮佺殑浜岃繘鍒跺舰寮?
+        # 灏嗚緭鍏ュ瓧绗︿覆转换涓篈SCII鐮佺殑浜岃繘鍒跺舰寮?
         binary_string = "".join(["{:08b}".format(ord(char)) for char in input_string])
 
         # 琛ュ叏浜岃繘鍒跺瓧绗︿覆浣垮叾闀垮害涓?鐨勫€嶆暟
         padding_length = (6 - len(binary_string) % 6) % 6
         binary_string += "0" * padding_length
 
-        # 灏嗕簩杩涘埗瀛楃涓插垎鍓蹭负6浣嶄竴缁?
+        # 灏嗕簩杩涘埗字符涓插垎鍓蹭负6浣嶄竴缁?
         base64_indices = [
             int(binary_string[i : i + 6], 2) for i in range(0, len(binary_string), 6)
         ]
 
-        # 鏍规嵁鑷畾涔夊瓧绗﹁〃鐢熸垚杈撳嚭瀛楃涓?
+        # 鏍规嵁鑷畾涔夊瓧绗﹁〃鐢熸垚杈撳嚭字符涓?
         output_string = "".join(
             [self.base64_alphabet[selected_alphabet][index] for index in base64_indices]
         )
 
-        # 娣诲姞绛夊彿濉厖锛屼娇绗﹀悎 Base64 缂栫爜瑙勮寖
+        # 娣诲姞绛夊彿濉厖锛屼娇绗﹀悎 Base64 编码瑙勮寖
         output_string += "=" * (padding_length // 2)
 
         return output_string
 
     def abogus_encode(self, abogus_bytes_str: str, selected_alphabet: int) -> str:
         """
-        瀵硅緭鍏ョ殑瀛楄妭瀛楃涓茶繘琛岃嚜瀹氫箟 Base64 缂栫爜锛屽苟娣诲姞浣嶇Щ鍜屽～鍏?(Encode the input byte string using a custom Base64 alphabet, and add shifts and padding).
+        瀵硅緭鍏ョ殑瀛楄妭字符涓茶繘琛岃嚜瀹氫箟 Base64 编码锛屽苟娣诲姞浣嶇Щ鍜屽～鍏?(Encode the input byte string using a custom Base64 alphabet, and add shifts and padding).
 
         Args:
             abogus_bytes_str (str): 杈撳叆鐨勫瓧鑺傚瓧绗︿覆 (Input byte string).
-            selected_alphabet (int): 閫夋嫨鐨勮嚜瀹氫箟 Base64 瀛楃琛ㄧ储寮?(Selected custom Base64 alphabet index).
+            selected_alphabet (int): 閫夋嫨鐨勮嚜瀹氫箟 Base64 字符琛ㄧ储寮?(Selected custom Base64 alphabet index).
 
         Returns:
-            str: 缂栫爜鍚庣殑瀛楃涓?(Encoded string).
+            str: 编码鍚庣殑字符涓?(Encoded string).
         """
         abogus = []
 
@@ -456,14 +456,14 @@ class CryptoUtility:
     @staticmethod
     def rc4_encrypt(key: bytes, plaintext: str) -> bytes:
         """
-        浣跨敤 RC4 绠楁硶鍔犲瘑鏁版嵁 (Encrypt data using the RC4 algorithm).
+        浣跨敤 RC4 绠楁硶鍔犲瘑数据 (Encrypt data using the RC4 algorithm).
 
         Args:
             key (bytes): 鍔犲瘑瀵嗛挜 (Encryption key).
-            plaintext (str): 鏄庢枃鏁版嵁 (Plaintext data).
+            plaintext (str): 鏄庢枃数据 (Plaintext data).
 
         Returns:
-            bytes: 鍔犲瘑鍚庣殑鏁版嵁 (Encrypted data).
+            bytes: 鍔犲瘑鍚庣殑数据 (Encrypted data).
         """
         S = list(range(256))
         j = 0
@@ -485,14 +485,14 @@ class CryptoUtility:
 
 class BrowserFingerprintGenerator:
     """
-    BrowserFingerprintGenerator 鐢ㄤ簬鐢熸垚妯℃嫙鐨勬祻瑙堝櫒鎸囩汗淇℃伅锛岀敤浜庡湪涓嶅悓娴忚鍣ㄧ幆澧冧腑杩涜娴嬭瘯鍜屾暟鎹噰闆嗐€?
+    BrowserFingerprintGenerator 鐢ㄤ簬鐢熸垚妯℃嫙鐨勬祻瑙堝櫒鎸囩汗信息锛岀敤浜庡湪涓嶅悓娴忚鍣ㄧ幆澧冧腑杩涜娴嬭瘯鍜屾暟鎹噰闆嗐€?
 
     绫诲睘鎬?
         browsers (Dict[str, Callable[[], str]]): 娴忚鍣ㄧ被鍨嬪拰鐢熸垚娴忚鍣ㄦ寚绾圭殑鏄犲皠鍏崇郴銆?
 
     鏂规硶:
         generate_fingerprint(browser_type="Edge"):
-            鏍规嵁鎸囧畾鐨勬祻瑙堝櫒绫诲瀷鐢熸垚娴忚鍣ㄦ寚绾广€?
+            鏍规嵁鎸囧畾鐨勬祻瑙堝櫒类型鐢熸垚娴忚鍣ㄦ寚绾广€?
 
         generate_chrome_fingerprint():
             鐢熸垚 Chrome 娴忚鍣ㄦ寚绾广€?
@@ -507,7 +507,7 @@ class BrowserFingerprintGenerator:
             鐢熸垚 Edge 娴忚鍣ㄦ寚绾广€?
 
         _generate_fingerprint(platform="Win32"):
-            鏍规嵁缁欏畾鐨勫弬鏁扮敓鎴愭祻瑙堝櫒鎸囩汗瀛楃涓层€?
+            鏍规嵁缁欏畾鐨勫弬鏁扮敓鎴愭祻瑙堝櫒鎸囩汗字符涓层€?
 
     浣跨敤绀轰緥:
     ```python
@@ -519,13 +519,13 @@ class BrowserFingerprintGenerator:
     @classmethod
     def generate_fingerprint(cls, browser_type: str = "Edge") -> str:
         """
-        鏍规嵁鎸囧畾鐨勬祻瑙堝櫒绫诲瀷鐢熸垚娴忚鍣ㄦ寚绾广€?(Generate a browser fingerprint based on the specified browser type.)
+        鏍规嵁鎸囧畾鐨勬祻瑙堝櫒类型鐢熸垚娴忚鍣ㄦ寚绾广€?(Generate a browser fingerprint based on the specified browser type.)
 
         Args:
             browser_type (str): 娴忚鍣ㄧ被鍨?(Browser type).
 
         Returns:
-            str: 鐢熸垚鐨勬祻瑙堝櫒鎸囩汗瀛楃涓?(Generated browser fingerprint string).
+            str: 鐢熸垚鐨勬祻瑙堝櫒鎸囩汗字符涓?(Generated browser fingerprint string).
         """
         cls.browsers: Dict[str, Callable[[], str]] = {
             "Chrome": cls.generate_chrome_fingerprint,
@@ -554,13 +554,13 @@ class BrowserFingerprintGenerator:
     @staticmethod
     def _generate_fingerprint(platform: str) -> str:
         """
-        鏍规嵁缁欏畾鐨勫弬鏁扮敓鎴愭祻瑙堝櫒鎸囩汗瀛楃涓层€?(Generate a browser fingerprint string based on the given parameters.)
+        鏍规嵁缁欏畾鐨勫弬鏁扮敓鎴愭祻瑙堝櫒鎸囩汗字符涓层€?(Generate a browser fingerprint string based on the given parameters.)
 
         Args:
             platform (str): 鎿嶄綔绯荤粺骞冲彴 (Operating system platform).
 
         Returns:
-            str: 鐢熸垚鐨勬祻瑙堝櫒鎸囩汗瀛楃涓?(Generated browser fingerprint string).
+            str: 鐢熸垚鐨勬祻瑙堝櫒鎸囩汗字符涓?(Generated browser fingerprint string).
         """
         inner_width = random.randint(1024, 1920)
         inner_height = random.randint(768, 1080)
@@ -583,7 +583,7 @@ class BrowserFingerprintGenerator:
 
 class ABogus:
     """
-    ABogus 绫荤敤浜庣敓鎴?ABogus 鍙傛暟銆?
+    ABogus 绫荤敤浜庣敓鎴?ABogus 参数銆?
 
     绫诲睘鎬?
         array1 (List[int]): 鍔犲瘑璇锋眰浣?(Encrypted request body).
@@ -594,29 +594,29 @@ class ABogus:
         salt (str): 鍔犲瘑鐩愬€?(Encryption salt).
         options (List[int]): 璇锋眰閫夐」 (Request options).
         ua_key (bytes): UA 鍔犲瘑瀵嗛挜 (UA encryption key).
-        character (str): 鑷畾涔?Base64 瀛楃琛?(Custom Base64 alphabet).
-        character2 (str): 鑷畾涔?Base64 瀛楃琛?(Custom Base64 alphabet).
-        character_list (List[str]): 鑷畾涔?Base64 瀛楃琛ㄥ垪琛?(List of custom Base64 alphabets).
+        character (str): 鑷畾涔?Base64 字符琛?(Custom Base64 alphabet).
+        character2 (str): 鑷畾涔?Base64 字符琛?(Custom Base64 alphabet).
+        character_list (List[str]): 鑷畾涔?Base64 字符琛ㄥ垪琛?(List of custom Base64 alphabets).
         crypto_utility (CryptoUtility): 鍔犲瘑宸ュ叿绫?(Encryption utility).
         user_agent (str): 鑷畾涔?UA (Custom User-Agent).
         browser_fp (str): 娴忚鍣ㄦ寚绾?(Browser fingerprint).
         sort_index (List[int]): 鎺掑簭绱㈠紩 (Sort index).
         sort_index_2 (List[int]): 鎺掑簭绱㈠紩 (Sort index).
 
-    璇存槑锛?
-        options 鍙傛暟鐢ㄤ簬鎸囧畾璇锋眰鐨勭被鍨嬶紝GET 璇锋眰浣跨敤 [0, 1, 8]锛孭OST 璇锋眰浣跨敤 [0, 1, 14]銆?4鍏煎8锛孭OST鍚屾牱鍙互缂栫爜params锛屾晠鍐欐銆?
+    说明锛?
+        options 参数鐢ㄤ簬鎸囧畾璇锋眰鐨勭被鍨嬶紝GET 璇锋眰浣跨敤 [0, 1, 8]锛孭OST 璇锋眰浣跨敤 [0, 1, 14]銆?4鍏煎8锛孭OST鍚屾牱鍙互编码params锛屾晠鍐欐銆?
         (The options parameter is used to specify the type of request. GET requests use [0, 1, 8], and POST requests use [0, 1, 14]. 14 is compatible with 8, and POST can also encode params, so it is hardcoded.)
 
     鏂规硶:
         encode_data(data: str, alphabet_index: int = 0) -> str:
-            浣跨敤鎸囧畾鐨勫瓧绗﹁〃瀵规暟鎹繘琛?Base64 缂栫爜 (Encode the data using the specified Base64 alphabet).
+            浣跨敤鎸囧畾鐨勫瓧绗﹁〃瀵规暟鎹繘琛?Base64 编码 (Encode the data using the specified Base64 alphabet).
 
         generate_abogus(params: str, request: str = "") -> str:
-            鐢熸垚 ABogus 鍙傛暟 (Generate the ABogus parameter).
+            鐢熸垚 ABogus 参数 (Generate the ABogus parameter).
 
     浣跨敤绀轰緥:
     ```python
-        # 鐢熸垚 ABogus 鍙傛暟锛岀疆绌轰娇鐢ㄩ粯璁?UA 鍜屾祻瑙堝櫒鎸囩汗
+        # 鐢熸垚 ABogus 参数锛岀疆绌轰娇鐢ㄩ粯璁?UA 鍜屾祻瑙堝櫒鎸囩汗
         abogus = ABogus(user_agent="xxx", fp="xxx")
         abogus_param = abogus.generate_abogus("device_platform=webapp&aid=6383&channel=channel_pc_web&aweme_id=7380308675841297704鈥︹€︾渷鐣モ€︹€?)
         print(abogus_param[1])
@@ -656,7 +656,7 @@ class ABogus:
         self.character2 = (
             "ckdp1h4ZKsUB80/Mfvw36XIgR25+WQAlEi7NLboqYTOPuzmFjJnryx9HVGDaStCe"
         )
-        self.character_list = [self.character, self.character2]  # 鑷畾涔塨ase64瀛楃琛?
+        self.character_list = [self.character, self.character2]  # 鑷畾涔塨ase64字符琛?
 
         self.crypto_utility = CryptoUtility(
             self.salt, self.character_list
@@ -666,7 +666,7 @@ class ABogus:
             user_agent
             if user_agent is not None and user_agent != ""
             else "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0"
-        )  # 鑷畾涔塽a锛屼负绌哄垯璁剧疆涓€涓粯璁a
+        )  # 鑷畾涔塽a锛屼负绌哄垯设置涓€涓粯璁a
 
         self.browser_fp = (
             fp
@@ -687,27 +687,27 @@ class ABogus:
 
     def encode_data(self, data: str, alphabet_index: int = 0) -> str:
         """
-        浣跨敤鎸囧畾鐨勫瓧绗﹁〃瀵规暟鎹繘琛?Base64 缂栫爜 (Encode the data using the specified Base64 alphabet).
+        浣跨敤鎸囧畾鐨勫瓧绗﹁〃瀵规暟鎹繘琛?Base64 编码 (Encode the data using the specified Base64 alphabet).
 
         Args:
-            data (str): 杈撳叆鏁版嵁 (Input data).
+            data (str): 杈撳叆数据 (Input data).
             alphabet_index (int): 鑷畾涔夊瓧绗﹁〃绱㈠紩 (Custom alphabet index).
 
         Returns:
-            str: 缂栫爜鍚庣殑鏁版嵁 (Encoded data).
+            str: 编码鍚庣殑数据 (Encoded data).
         """
         return self.crypto_utility.abogus_encode(data, alphabet_index)
 
     def generate_abogus(self, params: str, body: str = "") -> tuple:
         """
-        鐢熸垚 abogus 鍙傛暟 (Generate the ABogus parameter).
+        鐢熸垚 abogus 参数 (Generate the ABogus parameter).
 
         Args:
-            params (str): 璇锋眰鍙傛暟 (Request parameters).
+            params (str): 璇锋眰参数 (Request parameters).
             body (str): 璇锋眰浣擄紝GET鎺ュ彛鍒欎负绌?(Request body, empty for GET interfaces).
 
         Returns:
-            tuple: params 鐢熸垚鐨?abogus 鍙傛暟 鍜?ua (ABogus parameter generated by params and ua).
+            tuple: params 鐢熸垚鐨?abogus 参数 鍜?ua (ABogus parameter generated by params and ua).
         """
         ab_dir = {
             8: 3,  # 鍥哄畾
@@ -732,7 +732,7 @@ class ABogus:
         # 寮€濮嬪姞瀵嗘椂闂?
         start_encryption = int(time.time() * 1000)
 
-        # params鍙傛暟鍔犵洂鍔犲瘑
+        # params参数鍔犵洂鍔犲瘑
         array1 = self.crypto_utility.params_to_array(
             self.crypto_utility.params_to_array(params)
         )
@@ -749,7 +749,7 @@ class ABogus:
             add_salt=False,
         )
 
-        # 缁撴潫鍔犲瘑鏃堕棿
+        # 结束鍔犲瘑时间
         end_encryption = int(time.time() * 1000)
 
         # 鎻掑叆鍔犲瘑寮€濮嬫椂闂?
@@ -788,7 +788,7 @@ class ABogus:
         ab_dir[42] = array3[23]
         ab_dir[43] = array3[24]
 
-        # 鎻掑叆鍔犲瘑缁撴潫鏃堕棿
+        # 鎻掑叆鍔犲瘑结束时间
         ab_dir[44] = (end_encryption >> 24) & 255
         ab_dir[45] = (end_encryption >> 16) & 255
         ab_dir[46] = (end_encryption >> 8) & 255
@@ -813,10 +813,10 @@ class ABogus:
         ab_dir[64] = len(self.browser_fp)
         ab_dir[65] = len(self.browser_fp)
 
-        # 鑾峰彇 ab_dir 涓?sort_index 鐨勫€?
+        # 获取 ab_dir 涓?sort_index 鐨勫€?
         sorted_values = [ab_dir.get(i, 0) for i in self.sort_index]
 
-        # 灏嗘祻瑙堝櫒鎸囩汗杞崲涓?ASCII 鐮佸垪琛?
+        # 灏嗘祻瑙堝櫒鎸囩汗转换涓?ASCII 鐮佸垪琛?
         edge_fp_array = StringProcessor.to_char_array(self.browser_fp)
 
         # 灏嗘祻瑙堝櫒鎸囩汗闀垮害鐨勪綆 8 浣嶄綔涓哄紓鎴栧€?
@@ -843,9 +843,9 @@ class ABogus:
 
 if __name__ == "__main__":
     # 24/06/16 鏅氱偣寮€婧愯嚜瀹氫箟ua
-    # 24/07/08 鏀寔鑷畾涔塽a鍜屾祻瑙堝櫒鎸囩汗
+    # 24/07/08 支持鑷畾涔塽a鍜屾祻瑙堝櫒鎸囩汗
     # 24/11/15 瀹屾垚1.0.1.19鐗堟湰abogus绠楁硶锛屾嫨鏃ュ紑婧?
-    # 25/03/05 淇POST璇锋眰鍙傛暟鍔犲瘑閿欒锛屼慨琛ョ幆澧?
+    # 25/03/05 淇POST璇锋眰参数鍔犲瘑错误锛屼慨琛ョ幆澧?
 
     user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0"
     chrome_fp = BrowserFingerprintGenerator.generate_fingerprint("Edge")
@@ -863,15 +863,15 @@ if __name__ == "__main__":
     body = "aweme_type=0&item_id=7467485482314763572&play_delta=1&source=0"
     print(url + abogus.generate_abogus(params=params, body=body)[0])
 
-    # # 娴嬭瘯鐢熸垚100涓猘bogus鍙傛暟 鍜?100涓寚绾规墍闇€鏃堕棿
+    # # 娴嬭瘯鐢熸垚100涓猘bogus参数 鍜?100涓寚绾规墍闇€时间
     # start = time.time()
     # for _ in range(100):
     #     abogus.generate_abogus(params=params, body=body)
     # end = time.time()
-    # print("鐢熸垚100涓猘bogus鍙傛暟鍜屾寚绾规墍闇€鏃堕棿:", end - start)  # 鐢熸垚100涓猘bogus鍙傛暟鍜屾寚绾规墍闇€鏃堕棿: 2.203000783920288
+    # print("鐢熸垚100涓猘bogus参数鍜屾寚绾规墍闇€时间:", end - start)  # 鐢熸垚100涓猘bogus参数鍜屾寚绾规墍闇€时间: 2.203000783920288
 
     # start = time.time()
     # for _ in range(100):
     #     BrowserFingerprintGenerator.generate_fingerprint("Chrome")
     # end = time.time()
-    # print("鐢熸垚100涓寚绾规墍闇€鏃堕棿:", end - start)  # 鐢熸垚100涓寚绾规墍闇€鏃堕棿: 0.00400090217590332
+    # print("鐢熸垚100涓寚绾规墍闇€时间:", end - start)  # 鐢熸垚100涓寚绾规墍闇€时间: 0.00400090217590332

@@ -92,14 +92,14 @@ class BiliChrome(UploadBase):
             upload_success = self.driver.find_element_by_xpath(r'//*[@id="app"]/div/div[3]/h3').text
             if upload_success == '':
                 self.driver.save_screenshot('err.png')
-                logger.info('绋夸欢鎻愪氦澶辫触锛屾埅鍥捐褰?)
+                logger.info('绋夸欢鎻愪氦失败锛屾埅鍥捐褰?)
                 return
             else:
                 logger.info(upload_success)
             # logger.info('%s鎻愪氦瀹屾垚锛? % title_)
             return file_list
         except selenium.common.exceptions.NoSuchElementException:
-            logger.exception('鍙戠敓閿欒')
+            logger.exception('鍙戠敓错误')
         # except selenium.common.exceptions.TimeoutException:
         #     logger.exception('瓒呮椂')
         except selenium.common.exceptions.TimeoutException:
@@ -110,7 +110,7 @@ class BiliChrome(UploadBase):
             logger.info('娴忚鍣ㄩ┍鍔ㄩ€€鍑?)
 
     def login(self, filename):
-        logger.info('鍑嗗鏇存柊cookie')
+        logger.info('鍑嗗更新cookie')
         # screen_shot = driver.save_screenshot('bin/1.png')
         WebDriverWait(self.driver, 10).until(
             ec.presence_of_element_located((By.XPATH, r'//*[@id="login-username"]')))
@@ -131,9 +131,9 @@ class BiliChrome(UploadBase):
             print(cookie)
             with open(filename, "w") as f:
                 json.dump(cookie, f)
-            logger.info('鏇存柊cookie鎴愬姛')
+            logger.info('更新cookie成功')
         else:
-            logger.info('鏇存柊cookie澶辫触')
+            logger.info('更新cookie失败')
 
     def add_videos(self, videopath):
         formate_title = self.data["format_title"]
@@ -165,11 +165,11 @@ class BiliChrome(UploadBase):
                         aggregate.add(s.text)
                         print(s.text)
 
-                if len(aggregate) == 1 and ('Upload complete' in aggregate or '涓婁紶瀹屾垚' in aggregate):
+                if len(aggregate) == 1 and ('Upload complete' in aggregate or '上传瀹屾垚' in aggregate):
                     break
             except selenium.common.exceptions.StaleElementReferenceException:
                 logger.exception("selenium.common.exceptions.StaleElementReferenceException")
-        logger.info('涓婁紶%s涓暟%s' % (formate_title, len(info)))
+        logger.info('上传%s涓暟%s' % (formate_title, len(info)))
 
     def add_information(self):
         link = self.data.get("url")
@@ -178,7 +178,7 @@ class BiliChrome(UploadBase):
         self.driver.find_element_by_class_name(r'template-list-small-item').click()
         # driver.find_element_by_xpath(
         #     r'//*[@id="app"]/div[3]/div[2]/div[3]/div[1]/div[1]/div/div[2]/div[1]').click()
-        # 杈撳叆杞浇鏉ユ簮
+        # 杈撳叆杞浇来源
         input_o = self.driver.find_element_by_xpath(
             '//*[@class="upload-v2-container"]/div[2]/div[3]/div[1]/div[4]/div[3]/div/div/input')
         input_o.send_keys(link)
@@ -203,7 +203,7 @@ class BiliChrome(UploadBase):
         # 绠€浠?
         text_2 = self.driver.find_element_by_xpath(
             '//*[@class="upload-v2-container"]/div[2]/div[3]/div[1]/div[12]/div[2]/div/textarea')
-        text_2.send_keys('鑱屼笟閫夋墜鐩存挱绗竴瑙嗚褰曞儚銆傝繖涓嚜鍔ㄥ綍鍒朵笂浼犵殑灏忕▼搴忓紑婧愬湪Github锛?
+        text_2.send_keys('鑱屼笟閫夋墜直播绗竴瑙嗚褰曞儚銆傝繖涓嚜鍔ㄥ綍鍒朵笂浼犵殑灏忕▼搴忓紑婧愬湪Github锛?
                          'http://t.cn/RgapTpf(鎴栬€呭湪Github鎼滅储ForgQi)\n'
                          '浜ゆ祦缇わ細837362626')
 
@@ -218,7 +218,7 @@ class slider_cracker(object):
         # element = WebDriverWait(self.driver, 50).until(EC.element_to_be_clickable((By.XPATH, slider_xpath)))
         element = WebDriverWait(self.driver, 50).until(
             EC.element_to_be_clickable((By.CLASS_NAME, "geetest_slider_button")))
-        ActionChains(self.driver).move_to_element(element).perform()  # 榧犳爣绉诲姩鍒版粦鍔ㄦ浠ユ樉绀哄浘鐗?
+        ActionChains(self.driver).move_to_element(element).perform()  # 榧犳爣移动鍒版粦鍔ㄦ浠ユ樉绀哄浘鐗?
         js = 'document.querySelector("body > div.geetest_panel.geetest_wind ' \
              '> div.geetest_panel_box.geetest_no_logo.geetest_panelshowslide ' \
              '> div.geetest_panel_next > div > div.geetest_wrap > div.geetest_widget ' \
@@ -284,9 +284,9 @@ class slider_cracker(object):
         """
         鏍规嵁鍋忕Щ閲忚幏鍙栫Щ鍔ㄨ建杩?
         :param distance: 鍋忕Щ閲?
-        :return: 绉诲姩杞ㄨ抗
+        :return: 移动杞ㄨ抗
         """
-        # 绉诲姩杞ㄨ抗
+        # 移动杞ㄨ抗
         track = []
         # 褰撳墠浣嶇Щ
         current = 0
@@ -308,7 +308,7 @@ class slider_cracker(object):
             v0 = v
             # 褰撳墠閫熷害v = v0 + at
             v = v0 + a * t
-            # 绉诲姩璺濈x = v0t + 1/2 * a * t^2
+            # 移动璺濈x = v0t + 1/2 * a * t^2
             move = v0 * t + 1 / 2 * a * t * t
             # 褰撳墠浣嶇Щ
             current += move

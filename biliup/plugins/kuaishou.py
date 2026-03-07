@@ -18,7 +18,7 @@ class Kuaishou(DownloadBase):
         try:
             room_id = get_kwaiId(self.url)
             if not room_id:
-                logger.warning(f"Kuaishou - {self.url}: 鐩存挱闂村湴鍧€閿欒")
+                logger.warning(f"Kuaishou - {self.url}: 直播闂村湴鍧€错误")
                 return False
         except Exception as e:
             logger.error(f"Kuaishou - {self.url}: {e}")
@@ -36,7 +36,7 @@ class Kuaishou(DownloadBase):
         logger.debug(f"{plugin_msg}: 鏆傚仠 {times} 绉?)
         time.sleep(times)
 
-        err_keys = ["閿欒浠ｇ爜22", "涓绘挱灏氭湭寮€鎾?]
+        err_keys = ["错误浠ｇ爜22", "涓绘挱灏氭湭寮€鎾?]
         html = (await biliup.common.util.client.get(f"https://live.kuaishou.com/u/{room_id}", timeout=5)).text
         for key in err_keys:
             if key in html:
@@ -48,10 +48,10 @@ class Kuaishou(DownloadBase):
             timeout=5)).json()['data']
 
         if room_info['result'] == 22:
-            logger.error(f"{plugin_msg}: 鐩存挱闂村湴鍧€閿欒")
+            logger.error(f"{plugin_msg}: 直播闂村湴鍧€错误")
             return False
         if room_info['result'] == 671:
-            logger.debug(f"{plugin_msg}: 鐩存挱闂存湭寮€鎾垨闈炵洿鎾?)
+            logger.debug(f"{plugin_msg}: 直播闂存湭寮€鎾垨闈炵洿鎾?)
             return False
         if room_info['result'] != 1:
             logger.error(f"{plugin_msg}: {room_info}")
@@ -63,7 +63,7 @@ class Kuaishou(DownloadBase):
             return True
 
         if not self.room_title:
-            logger.warning(f"{plugin_msg}: 鐩存挱闂存爣棰樿幏鍙栧け璐ワ紝浣跨敤蹇墜ID浠ｆ浛")
+            logger.warning(f"{plugin_msg}: 直播闂存爣棰樿幏鍙栧け璐ワ紝浣跨敤蹇墜ID浠ｆ浛")
             self.room_title = room_id
         self.raw_stream_url = room_info['liveStream']['playUrls'][0]['adaptationSet']['representation'][-1]['url']
 

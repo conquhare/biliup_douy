@@ -111,12 +111,12 @@ class util:
 
 def xml2dict(node, dic={}):
     '''
-    @brief: 灏唜ml瑙ｆ瀽鏍戣浆鎴愬瓧鍏?
+    @brief: 灏唜ml解析鏍戣浆鎴愬瓧鍏?
     @param node: 鏍戠殑鏍硅妭鐐?
     @type node: cElementTree.Element
-    @param dic: 瀛樺偍淇℃伅鐨勫瓧鍏?
+    @param dic: 存储信息鐨勫瓧鍏?
     @type dic: dict
-    @return: 杞崲濂界殑瀛楀吀
+    @return: 转换濂界殑瀛楀吀
     @rtype: dict
     '''
     dic[node.tag] = ndic = {}
@@ -128,10 +128,10 @@ def xml2dict(node, dic={}):
 
 def configParse(filename):
     '''
-    @brief: 瑙ｆ瀽tars閰嶇疆鏂囦欢
-    @param filename: 鏂囦欢鍚?
+    @brief: 解析tars配置文件
+    @param filename: 文件鍚?
     @type filename: str
-    @return: 瑙ｆ瀽鍑烘潵鐨勯厤缃俊鎭?
+    @return: 解析鍑烘潵鐨勯厤缃俊鎭?
     @rtype: dict
     '''
     tree = ET.parse(filename)
@@ -195,7 +195,7 @@ class ConsistentHashNew(object):
 
     def addNode(self, node):
         """
-        娣诲姞node锛岄鍏堣鏍规嵁铏氭嫙鑺傜偣鐨勬暟鐩紝鍒涘缓鎵€鏈夌殑铏氭嫙鑺傜偣锛屽苟灏嗗叾涓庡搴旂殑node瀵瑰簲璧锋潵
+        娣诲姞node锛岄鍏堣鏍规嵁铏氭嫙鑺傜偣鐨勬暟鐩紝创建鎵€鏈夌殑铏氭嫙鑺傜偣锛屽苟灏嗗叾涓庡搴旂殑node瀵瑰簲璧锋潵
         褰撶劧杩橀渶瑕佸皢铏氭嫙鑺傜偣鐨刪ash鍊兼斁鍒版帓搴忕殑閲岄潰
         杩欓噷鍦ㄦ坊鍔犱簡鑺傜偣涔嬪悗锛岄渶瑕佷繚鎸佽櫄鎷熻妭鐐筯ash鍊肩殑椤哄簭
         :param node:
@@ -222,7 +222,7 @@ class ConsistentHashNew(object):
 
     def getNode(self, key):
         """
-        杩斿洖杩欎釜瀛楃涓插簲璇ュ搴旂殑node锛岃繖閲屽厛姹傚嚭瀛楃涓茬殑hash鍊硷紝鐒跺悗鎵惧埌绗竴涓皬浜庣瓑浜庣殑铏氭嫙鑺傜偣锛岀劧鍚庤繑鍥瀗ode
+        杩斿洖杩欎釜字符涓插簲璇ュ搴旂殑node锛岃繖閲屽厛姹傚嚭字符涓茬殑hash鍊硷紝鐒跺悗鎵惧埌绗竴涓皬浜庣瓑浜庣殑铏氭嫙鑺傜偣锛岀劧鍚庤繑鍥瀗ode
         濡傛灉hash鍊煎ぇ浜庢墍鏈夌殑鑺傜偣锛岄偅涔堢敤绗竴涓櫄鎷熻妭鐐?
         :param : hashNum or keyStr
         :return:

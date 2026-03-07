@@ -11,10 +11,10 @@ class Missevan(DownloadBase):
 
     async def acheck_stream(self, is_check=False):
         rid = 0
-        # 鐢ㄦ埛涓婚〉鑾峰彇鐩存挱闂村湴鍧€
+        # 鐢ㄦ埛涓婚〉获取直播闂村湴鍧€
         if self.url.split('www'):
             user_page = await biliup.common.util.client.get(self.url, timeout=30, headers=self.fake_headers)
-            # 鍙栫‖缂栫爜鍦ㄧ綉椤靛唴鐨勭洿鎾棿鍙?
+            # 鍙栫‖编码鍦ㄧ綉椤靛唴鐨勭洿鎾棿鍙?
             if user_page.status_code == 200:
                 start = user_page.text.find('data-id="') + 9
                 end = user_page.text.find('"', start)
@@ -34,7 +34,7 @@ class Missevan(DownloadBase):
         # 寮€鎾姸鎬?
         if room_info['info']['room']['status']['open'] == 0:
             creator_username = room_info['info']['room']['creator_username']
-            logger.debug(f"涓绘挱{creator_username}鏈紑鎾?)
+            logger.debug(f"涓绘挱{creator_username}未开鎾?)
             return False
 
         self.room_title = room_info['info']['room']['name']

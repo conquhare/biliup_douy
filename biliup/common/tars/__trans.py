@@ -107,8 +107,8 @@ class Transceiver:
 
     def getFd(self):
         '''
-        @brief: 鑾峰彇socket鐨勬枃浠舵弿杩扮
-        @return: 濡傛灉self.__sock娌℃湁寤虹珛杩斿洖-1
+        @brief: 获取socket鐨勬枃浠舵弿杩扮
+        @return: 濡傛灉self.__sock没有寤虹珛杩斿洖-1
         @rtype: int
         '''
         if self.__sock:
@@ -118,14 +118,14 @@ class Transceiver:
 
     def getEndPointInfo(self):
         '''
-        @return: 绔彛淇℃伅
+        @return: 绔彛信息
         @rtype: EndPointInfo
         '''
         return self.__epi
 
     def isValid(self):
         '''
-        @return: 鏄惁鍒涘缓浜唖ocket
+        @return: 鏄惁创建浜唖ocket
         @rtype: bool
         '''
         return self.__sock is not None
@@ -139,7 +139,7 @@ class Transceiver:
 
     def isConnFailed(self):
         '''
-        @return: 鏄惁杩炴帴澶辫触
+        @return: 鏄惁杩炴帴失败
         @rtype: bool
         '''
         return self.__connFailed
@@ -153,7 +153,7 @@ class Transceiver:
 
     def setConnFailed(self):
         '''
-        @brief: 璁剧疆涓鸿繛鎺ュけ璐?
+        @brief: 设置涓鸿繛鎺ュけ璐?
         @return: None
         @rtype: None
         '''
@@ -162,7 +162,7 @@ class Transceiver:
 
     def setConnected(self):
         '''
-        @brief: 璁剧疆涓鸿繛鎺ュ畬
+        @brief: 设置涓鸿繛鎺ュ畬
         @return: None
         @rtype: None
         '''
@@ -171,7 +171,7 @@ class Transceiver:
 
     def close(self):
         '''
-        @brief: 鍏抽棴杩炴帴
+        @brief: 关闭杩炴帴
         @return: None
         @rtype: None
         @note: 澶氭璋冪敤涓嶄細鏈夐棶棰?
@@ -190,11 +190,11 @@ class Transceiver:
     def writeToSendBuf(self, msg):
         '''
         @brief: 鎶婃暟鎹坊鍔犲埌send buffer閲?
-        @param msg: 鍙戦€佺殑鏁版嵁
+        @param msg: 鍙戦€佺殑数据
         @type msg: str
         @return: None
         @rtype: None
-        @note: 娌℃湁鍔犻攣锛屽绾跨▼璋冪敤浼氭湁race conditions
+        @note: 没有鍔犻攣锛屽绾跨▼璋冪敤浼氭有race conditions
         '''
         self._sendBuff += msg
 
@@ -235,7 +235,7 @@ class Transceiver:
     def reInit(self):
         '''
         @brief: 鍒濆鍖杝ocket锛屽苟杩炴帴鏈嶅姟鍣?
-        @return: 鎴愬姛杩斿洖0锛屽け璐ヨ繑鍥?1
+        @return: 成功杩斿洖0锛屽け璐ヨ繑鍥?1
         @rtype: int
         '''
         tarsLogger.debug('Transceiver:reInit')
@@ -269,7 +269,7 @@ class TcpTransceiver(Transceiver):
     def send(self, buf, flag=0):
         '''
         @brief: 瀹炵幇tcp鐨勫彂閫?
-        @param buf: 鍙戦€佺殑鏁版嵁
+        @param buf: 鍙戦€佺殑数据
         @type buf: str
         @param flag: 鍙戦€佹爣蹇?
         @param flag: int
@@ -296,7 +296,7 @@ class TcpTransceiver(Transceiver):
     def recv(self, bufsize, flag=0):
         '''
         @brief: 瀹炵幇tcp鐨剅ecv
-        @param bufsize: 鎺ユ敹澶у皬
+        @param bufsize: 鎺ユ敹大小
         @type bufsize: int
         @param flag: 鎺ユ敹鏍囧織
         @param flag: int
@@ -327,7 +327,7 @@ class TcpTransceiver(Transceiver):
 
     def doResponse(self):
         '''
-        @brief: 澶勭悊鎺ユ敹鐨勬暟鎹?
+        @brief: 处理鎺ユ敹鐨勬暟鎹?
         @return: 杩斿洖鍝嶅簲鎶ユ枃鐨勫垪琛紝濡傛灉鍑洪敊杩斿洖None
         @rtype: list: ResponsePacket
         '''
@@ -399,7 +399,7 @@ class FDReactor(threading.Thread):
 
     def terminate(self):
         '''
-        @brief: 缁撴潫FDReactor鐨勭嚎绋?
+        @brief: 结束FDReactor鐨勭嚎绋?
         @return: None
         @rtype: None
         '''
@@ -410,7 +410,7 @@ class FDReactor(threading.Thread):
 
     def handle(self, adapter, events):
         '''
-        @brief: 澶勭悊epoll浜嬩欢
+        @brief: 处理epoll浜嬩欢
         @param adapter: 浜嬩欢瀵瑰簲鐨刟dapter
         @type adapter: AdapterProxy
         @param events: epoll浜嬩欢
@@ -456,7 +456,7 @@ class FDReactor(threading.Thread):
 
     def handleInput(self, adapter):
         '''
-        @brief: 澶勭悊鎺ユ敹浜嬩欢
+        @brief: 处理鎺ユ敹浜嬩欢
         @param adapter: 浜嬩欢瀵瑰簲鐨刟dapter
         @type adapter: AdapterProxy
         @return: None
@@ -475,7 +475,7 @@ class FDReactor(threading.Thread):
 
     def handleOutput(self, adapter):
         '''
-        @brief: 澶勭悊鍙戦€佷簨浠?
+        @brief: 处理鍙戦€佷簨浠?
         @param adapter: 浜嬩欢瀵瑰簲鐨刟dapter
         @type adapter: AdapterProxy
         @return: None
@@ -489,7 +489,7 @@ class FDReactor(threading.Thread):
 
     def notify(self, adapter):
         '''
-        @brief: 鏇存柊adapter瀵瑰簲鐨刦d鐨別poll鐘舵€?
+        @brief: 更新adapter瀵瑰簲鐨刦d鐨別poll鐘舵€?
         @return: None
         @rtype: None
         @note: FDReactor浣跨敤鐨別poll鏄疎POLLET妯″紡锛屽悓涓€浜嬩欢鍙€氱煡涓€娆?
@@ -504,7 +504,7 @@ class FDReactor(threading.Thread):
     def registerAdapter(self, adapter, events):
         '''
         @brief: 娉ㄥ唽adapter
-        @param adapter: 鏀跺彂浜嬩欢澶勭悊绫?
+        @param adapter: 鏀跺彂浜嬩欢处理绫?
         @type adapter: AdapterProxy
         @param events: 娉ㄥ唽浜嬩欢
         @type events: int
@@ -523,7 +523,7 @@ class FDReactor(threading.Thread):
     def unregisterAdapter(self, adapter):
         '''
         @brief: 娉ㄩ攢adapter
-        @param adapter: 鏀跺彂浜嬩欢澶勭悊绫?
+        @param adapter: 鏀跺彂浜嬩欢处理绫?
         @type adapter: AdapterProxy
         @return: None
         @rtype: None
@@ -534,7 +534,7 @@ class FDReactor(threading.Thread):
 
     def run(self):
         '''
-        @brief: 绾跨▼鍚姩鍑芥暟锛屽惊鐜洃鍚綉缁滀簨浠?
+        @brief: 绾跨▼启动鍑芥暟锛屽惊鐜洃鍚綉缁滀簨浠?
         '''
         tarsLogger.debug('FDReactor:run')
 

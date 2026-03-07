@@ -30,13 +30,13 @@ class Bilibili:
     async def get_ws_info(url, content):
 
         uid = content['uid']
-        # 浼犲叆鍐呭涓紝濡傛灉 uid 涓嶄负 0锛屽垯 cookie 蹇呯劧瀛樺湪锛屼笖蹇呯劧涓鸿缁嗘ā寮?
+        # 浼犲叆鍐呭涓紝濡傛灉 uid 涓嶄负 0锛屽垯 cookie 蹇呯劧存在锛屼笖蹇呯劧涓鸿缁嗘ā寮?
         Bilibili.headers['cookie'] = f"buvid3={generate_fake_buvid3()};"
         if uid > 0:
             Bilibili.headers['cookie'] += content['cookie']
             
             
-        # 鑾峰彇寮瑰箷璁よ瘉淇℃伅
+        # 获取寮瑰箷璁よ瘉信息
         danmu_wss_url = 'wss://broadcastlv.chat.bilibili.com/sub'
         room_id = content.get('room_id')
         async with aiohttp.ClientSession(headers=Bilibili.headers) as session:
@@ -59,7 +59,7 @@ class Bilibili:
                 #print(danmu_info)
                 danmu_token = danmu_info['data']['token']
                 try:
-                    # 鍏佽鍙兘鑾峰彇涓嶅埌杩斿洖鐨刪ost
+                    # 鍏佽可能获取涓嶅埌杩斿洖鐨刪ost
                     danmu_host = danmu_info['data']['host_list'][0]
                     danmu_wss_url = f"wss://{danmu_host['host']}:{danmu_host['wss_port']}/sub"
                 except:
@@ -131,7 +131,7 @@ class Bilibili:
                         'LIVE_INTERACTIVE_GAME': 'interactive_danmaku',  # 鏂板浜掑姩寮瑰箷锛岀粡娴嬭瘯涓庡脊骞曞唴瀹逛竴鑷?
                         'GUARD_BUY': 'guard_buy'
                     }.get(j.get('cmd'), 'other')
-                    # 2021-06-03 bilibili 瀛楁鏇存柊, 褰㈠ DANMU_MSG:4:0:2:2:2:0
+                    # 2021-06-03 bilibili 瀛楁更新, 褰㈠ DANMU_MSG:4:0:2:2:2:0
                     if msg.get('msg_type', 'UNKNOWN').startswith('DANMU_MSG'):
                         msg['msg_type'] = 'danmaku'
 

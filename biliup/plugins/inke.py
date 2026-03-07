@@ -24,12 +24,12 @@ class Inke(DownloadBase):
         jsons = json.loads(r1.text)
         if jsons:
             if jsons.get('error_code') != 0:
-                logger.error("鐩存挱闂村湴鍧€閿欒")
+                logger.error("直播闂村湴鍧€错误")
                 return False
             if jsons['data']['status']:
                 self.room_title = jsons['data']['live_name']
                 self.raw_stream_url = jsons['data']['live_addr'][0]['stream_addr']
                 return True
 
-        logger.debug("涓绘挱鏈紑鎾?)
+        logger.debug("涓绘挱未开鎾?)
         return False

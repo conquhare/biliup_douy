@@ -49,17 +49,17 @@ class BiliWeb(UploadBase):
         """
         :param principal:
         :param data:
-        :param user_cookie: 鎶曠鐢ㄦ埛cookie鏂囦欢
+        :param user_cookie: 鎶曠鐢ㄦ埛cookie文件
         :param submit_api:
         :param copyright:
         :param postprocessor:
-        :param dtime: 寤舵椂鍙戝竷鏃堕棿銆傞渶璺濈鎻愪氦澶т簬4灏忔椂锛屾牸寮忎负10浣嶆椂闂存埑
+        :param dtime: 寤舵椂鍙戝竷时间銆傞渶璺濈鎻愪氦澶т簬4灏忔椂锛屾牸寮忎负10浣嶆椂闂存埑
         :param dynamic:
-        :param lines: 涓婁紶绾胯矾
-        :param threads: 涓婁紶绾跨▼鏁?
+        :param lines: 上传绾胯矾
+        :param threads: 上传绾跨▼鏁?
         :param tid: 绋夸欢鍒嗗尯
         :param tags: 绋夸欢鏍囩
-        :param cover_path: 绋夸欢灏侀潰璺緞
+        :param cover_path: 绋夸欢界面璺緞
         :param description: 瑙嗛绠€浠?
         :param credits: ???
         """
@@ -69,7 +69,7 @@ class BiliWeb(UploadBase):
         else:
             tags = [str(tag).format(streamer=self.data['name']) for tag in tags]
         self.user = user # 鏃х増鏈殑鐧诲綍鐢ㄦ埛
-        self.user_cookie = user_cookie # 鏂扮増鏈殑鐧诲綍鐢ㄦ埛cookie鏂囦欢
+        self.user_cookie = user_cookie # 鏂扮増鏈殑鐧诲綍鐢ㄦ埛cookie文件
         self.lines = lines
         self.submit_api = submit_api or 'web'
         self.threads = threads
@@ -88,10 +88,10 @@ class BiliWeb(UploadBase):
         database_row_id: int = 0
     ) -> List[UploadBase.FileInfo]:
         '''
-        涓婁紶瑙嗛
-        :param file_list: 瑙嗛鏂囦欢鍚嶅垪琛?
-        :param database_row_id: 鏁版嵁搴撹ID
-        :return: 涓婁紶缁撴灉
+        上传瑙嗛
+        :param file_list: 瑙嗛文件鍚嶅垪琛?
+        :param database_row_id: 数据搴撹ID
+        :return: 上传缁撴灉
         '''
         logger.info(f"寮€濮嬩笂浼犺棰?{database_row_id}")
         video = Data()
@@ -101,10 +101,10 @@ class BiliWeb(UploadBase):
             bili.appsec = self.user.get('appsec')
             bili.login(self.persistence_path, self.user_cookie)
             for file in file_list:
-                video_part = bili.upload_file(file.video, self.lines, self.threads)  # 涓婁紶瑙嗛
+                video_part = bili.upload_file(file.video, self.lines, self.threads)  # 上传瑙嗛
                 video_part['title'] = video_part['title'][:80]
-                video.append(video_part)  # 娣诲姞宸茬粡涓婁紶鐨勮棰?
-            video.title = self.data["format_title"][:80]  # 绋夸欢鏍囬闄愬埗80瀛?
+                video.append(video_part)  # 娣诲姞宸茬粡上传鐨勮棰?
+            video.title = self.data["format_title"][:80]  # 绋夸欢鏍囬限制80瀛?
             if self.credits:
                 video.desc_v2 = self.creditsToDesc_v2()
             else:
@@ -116,8 +116,8 @@ class BiliWeb(UploadBase):
             video.desc = self.desc
             video.copyright = self.copyright
             if self.copyright == 2:
-                video.source = self.data["url"]  # 娣诲姞杞浇鍦板潃璇存槑
-            # 璁剧疆瑙嗛鍒嗗尯,榛樿涓?74 鐢熸椿锛屽叾浠栧垎鍖?
+                video.source = self.data["url"]  # 娣诲姞杞浇鍦板潃说明
+            # 设置瑙嗛鍒嗗尯,榛樿涓?74 鐢熸椿锛屽叾浠栧垎鍖?
             video.tid = self.tid
             video.set_tag(self.tags)
             if self.dtime:
@@ -125,7 +125,7 @@ class BiliWeb(UploadBase):
             if self.cover_path:
                 video.cover = bili.cover_up(self.cover_path).replace('http:', '')
             ret = bili.submit(self.submit_api)  # 鎻愪氦瑙嗛
-        logger.info(f"涓婁紶鎴愬姛: {ret}")
+        logger.info(f"上传成功: {ret}")
         return file_list
 
     def creditsToDesc_v2(self):
@@ -148,7 +148,7 @@ class BiliWeb(UploadBase):
                         "@credit", "@"+credit["username"]+"  ", 1)
                     desc_v2_tmp = desc_v2_tmp[num+7:]
                 except IndexError:
-                    logger.error('绠€浠嬩腑鐨凘credit鍗犱綅绗﹀皯浜巆redits鐨勬暟閲?鏇挎崲澶辫触')
+                    logger.error('绠€浠嬩腑鐨凘credit鍗犱綅绗﹀皯浜巆redits鐨勬暟閲?鏇挎崲失败')
             desc_v2.append({
                 "raw_text": " "+desc_v2_tmp,
                 "biz_id": "",
@@ -290,7 +290,7 @@ class BiliBili:
             return r
 
     def login_by_password(self, username, password):
-        print('浣跨敤璐﹀彿涓婁紶')
+        print('浣跨敤璐﹀彿上传')
         key_hash, pub_key = self.get_key()
         encrypt_password = base64.b64encode(rsa.encrypt(f'{key_hash}{password}'.encode(), pub_key))
         payload = {
@@ -337,7 +337,7 @@ class BiliBili:
         data = self.__session.get("https://api.bilibili.com/x/web-interface/nav", timeout=5).json()
         if data["code"] != 0:
             raise Exception(data)
-        print('浣跨敤cookies涓婁紶')
+        print('浣跨敤cookies上传')
 
     def sign(self, param):
         return hashlib.md5(f"{param}{self.appsec}".encode()).hexdigest()
@@ -377,7 +377,7 @@ class BiliBili:
         return auto_os
 
     def upload_file(self, filepath: str, lines='AUTO', tasks=3):
-        """涓婁紶鏈湴瑙嗛鏂囦欢,杩斿洖瑙嗛淇℃伅dict
+        """上传鏈湴瑙嗛文件,杩斿洖瑙嗛信息dict
         b绔欑洰鍓嶆敮鎸?绉嶄笂浼犵嚎璺痷pos, kodo, gcs, bos
         gcs: {"os":"gcs","query":"bucket=bvcupcdngcsus&probe_version=20221109",
         "probe_url":"//storage.googleapis.com/bvcupcdngcsus/OK"},
@@ -476,8 +476,8 @@ class BiliBili:
                                                                              headers=post_headers).content)
         upload_id = initiate_multipart_upload_result.find('UploadId').text
         # 寮€濮嬩笂浼?
-        parts = []  # 鍒嗗潡淇℃伅
-        chunks = math.ceil(total_size / chunk_size)  # 鑾峰彇鍒嗗潡鏁伴噺
+        parts = []  # 鍒嗗潡信息
+        chunks = math.ceil(total_size / chunk_size)  # 获取鍒嗗潡鏁伴噺
 
         async def upload_chunk(session, chunks_data, params):
             async with session.put(url, params=params, raise_for_status=True,
@@ -530,7 +530,7 @@ class BiliBili:
                 raise IOError(res)
             except IOError:
                 ii += 1
-                logger.info("涓婁紶鍑虹幇闂锛屽皾璇曢噸杩烇紝娆℃暟锛? + str(ii))
+                logger.info("上传鍑虹幇闂锛屽皾璇曢噸杩烇紝娆℃暟锛? + str(ii))
                 time.sleep(15)
 
     async def kodo(self, file, total_size, ret, chunk_size=4194304, tasks=3):
@@ -546,8 +546,8 @@ class BiliBili:
             'Authorization': f"UpToken {token}",
         }
         # 寮€濮嬩笂浼?
-        parts = []  # 鍒嗗潡淇℃伅
-        chunks = math.ceil(total_size / chunk_size)  # 鑾峰彇鍒嗗潡鏁伴噺
+        parts = []  # 鍒嗗潡信息
+        chunks = math.ceil(total_size / chunk_size)  # 获取鍒嗗潡鏁伴噺
 
         async def upload_chunk(session, chunks_data, params):
             async with session.post(f'{url}/{len(chunks_data)}',
@@ -578,16 +578,16 @@ class BiliBili:
         endpoint = ret["endpoint"]
         biz_id = ret["biz_id"]
         upos_uri = ret["upos_uri"]
-        url = f"https:{endpoint}/{upos_uri.replace('upos://', '')}"  # 瑙嗛涓婁紶璺緞
+        url = f"https:{endpoint}/{upos_uri.replace('upos://', '')}"  # 瑙嗛上传璺緞
         headers = {
             "X-Upos-Auth": auth
         }
-        # 鍚戜笂浼犲湴鍧€鐢宠涓婁紶锛屽緱鍒颁笂浼爄d绛変俊鎭?
+        # 鍚戜笂浼犲湴鍧€鐢宠上传锛屽緱鍒颁笂浼爄d绛変俊鎭?
         upload_id = self.__session.post(f'{url}?uploads&output=json', timeout=15,
                                         headers=headers).json()["upload_id"]
         # 寮€濮嬩笂浼?
-        parts = []  # 鍒嗗潡淇℃伅
-        chunks = math.ceil(total_size / chunk_size)  # 鑾峰彇鍒嗗潡鏁伴噺
+        parts = []  # 鍒嗗潡信息
+        chunks = math.ceil(total_size / chunk_size)  # 获取鍒嗗潡鏁伴噺
 
         async def upload_chunk(session, chunks_data, params):
             async with session.put(url, params=params, raise_for_status=True,
@@ -731,7 +731,7 @@ class BiliBili:
 
     def get_tags(self, upvideo, typeid="", desc="", cover="", groupid=1, vfea=""):
         """
-        涓婁紶瑙嗛鍚庤幏寰楁帹鑽愭爣绛?
+        上传瑙嗛鍚庤幏寰楁帹鑽愭爣绛?
         :param vfea:
         :param groupid:
         :param typeid:
@@ -747,7 +747,7 @@ class BiliBili:
 
     # ==================== 鍚堥泦锛圫EASON锛夌鐞?====================
     #
-    # B绔?鏂扮増鍚堥泦"锛圫EASON 绫诲瀷锛夌殑绠＄悊鎺ュ彛锛屾敮鎸侊細
+    # B绔?鏂扮増鍚堥泦"锛圫EASON 类型锛夌殑绠＄悊鎺ュ彛锛屾敮鎸侊細
     #   - 鍒楀嚭鐢ㄦ埛鐨勬墍鏈夊悎闆?
     #   - 鏌ョ湅鍚堥泦鍐呯殑瑙嗛鍒楄〃
     #   - 灏嗚棰戞坊鍔犲埌鍚堥泦
@@ -755,19 +755,19 @@ class BiliBili:
     #   - 瀵瑰悎闆嗗唴瑙嗛閲嶆柊鎺掑簭
     #
     # 鏍稿績姒傚康锛?
-    #   season_id  - 鍚堥泦ID锛屼粠鍒涗綔涓績鍚堥泦绠＄悊椤甸潰鐨刄RL鎴?list_seasons() 鑾峰彇
-    #   section_id - 鍚堥泦涓嬬殑"鍒嗗尯"ID锛屾瘡涓悎闆嗚嚦灏戞湁涓€涓粯璁ゅ垎鍖猴紝
-    #                閫氳繃 list_seasons() 杩斿洖鐨?sections.sections[0].id 鑾峰彇
+    #   season_id  - 鍚堥泦ID锛屼粠鍒涗綔涓績鍚堥泦绠＄悊椤甸潰鐨刄RL鎴?list_seasons() 获取
+    #   section_id - 鍚堥泦涓嬬殑"鍒嗗尯"ID锛屾瘡涓悎闆嗚嚦灏戞有涓€涓粯璁ゅ垎鍖猴紝
+    #                閫氳繃 list_seasons() 杩斿洖鐨?sections.sections[0].id 获取
     #   episode_id - 瑙嗛鍦ㄥ悎闆嗕腑鐨勫唴閮↖D锛堜笉鏄?aid锛夛紝
-    #                閫氳繃 get_season_section() 杩斿洖鐨?episodes[i]['id'] 鑾峰彇
+    #                閫氳繃 get_season_section() 杩斿洖鐨?episodes[i]['id'] 获取
     #
     # 鍏稿瀷娴佺▼锛堜笂浼犲悗娣诲姞鍒板悎闆嗭級锛?
-    #   1. seasons = bili.list_seasons()  # 鑾峰彇鍚堥泦鍒楄〃锛屾壘鍒?season_id 鍜?section_id
-    #   2. info = bili.get_video_info(aid)  # 鑾峰彇瑙嗛鐨?cid 鍜?title
+    #   1. seasons = bili.list_seasons()  # 获取鍚堥泦鍒楄〃锛屾壘鍒?season_id 鍜?section_id
+    #   2. info = bili.get_video_info(aid)  # 获取瑙嗛鐨?cid 鍜?title
     #   3. bili.add_to_season(section_id, [{...}])  # 娣诲姞鍒板悎闆?
     def list_seasons(self, pn=1, ps=30):
         """
-        鑾峰彇鐢ㄦ埛鐨勫悎闆嗗垪琛?
+        获取鐢ㄦ埛鐨勫悎闆嗗垪琛?
 
         杩斿洖鍊肩ず渚?:
 
@@ -779,7 +779,7 @@ class BiliBili:
                 'page': {'pn': 1, 'ps': 30, 'total': 5}
             }
 
-        鑾峰彇 section_id 鐨勬柟寮忥細
+        获取 section_id 鐨勬柟寮忥細
         ``data['seasons'][0]['sections']['sections'][0]['id']``
 
         :param pn: 椤电爜锛屼粠1寮€濮?
@@ -797,7 +797,7 @@ class BiliBili:
 
     def get_season_section(self, section_id, sort=''):
         """
-        鑾峰彇鍚堥泦鍒嗗尯鍐呯殑瑙嗛鍒楄〃
+        获取鍚堥泦鍒嗗尯鍐呯殑瑙嗛鍒楄〃
 
         杩斿洖鍊间腑姣忎釜 episode 鍖呭惈::
 
@@ -805,9 +805,9 @@ class BiliBili:
 
         鍏朵腑 ``id`` 鏄?episode_id锛堝悎闆嗗唴閮↖D锛夛紝鐢ㄤ簬 remove_from_season 鍜屾帓搴忋€?
 
-        :param section_id: 鍒嗗尯ID锛岄€氳繃 list_seasons() 鑾峰彇
+        :param section_id: 鍒嗗尯ID锛岄€氳繃 list_seasons() 获取
         :param sort: 鎺掑簭鏂瑰紡锛屽彲閫?'desc'锛堥檷搴忥級
-        :return: 鍖呭惈 section 淇℃伅鍜?episodes 鍒楄〃鐨?dict
+        :return: 鍖呭惈 section 信息鍜?episodes 鍒楄〃鐨?dict
         """
         params = {'id': section_id}
         if sort:
@@ -822,10 +822,10 @@ class BiliBili:
 
     def get_video_info(self, aid):
         """
-        鑾峰彇瑙嗛淇℃伅锛堟爣棰樸€乧id 绛夛級锛岀敤浜庢坊鍔犲埌鍚堥泦鍓嶈幏鍙栧繀瑕佸弬鏁?
+        获取瑙嗛信息锛堟爣棰樸€乧id 绛夛級锛岀敤浜庢坊鍔犲埌鍚堥泦鍓嶈幏鍙栧繀瑕佸弬鏁?
 
         :param aid: 瑙嗛AV鍙凤紙鏁存暟锛?
-        :return: 瑙嗛淇℃伅 dict锛屽寘鍚?title, pages[0].cid 绛?
+        :return: 瑙嗛信息 dict锛屽寘鍚?title, pages[0].cid 绛?
         """
         r = self.__session.get(
             'https://api.bilibili.com/x/web-interface/view',
@@ -851,7 +851,7 @@ class BiliBili:
 
         鍙竴娆℃坊鍔犲涓棰戯紙浼犲叆澶氫釜 episode dict锛夈€?
 
-        :param section_id: 鍒嗗尯ID锛岄€氳繃 list_seasons() 鑾峰彇
+        :param section_id: 鍒嗗尯ID锛岄€氳繃 list_seasons() 获取
         :param episodes: 瑙嗛鍒楄〃锛屾瘡椤归』鍚?aid, cid, title, charging_pay
         :return: API 杩斿洖鐨?JSON
         :raises Exception: API 杩斿洖 code != 0 鏃舵姏鍑?
@@ -876,7 +876,7 @@ class BiliBili:
         浠庡悎闆嗕腑绉婚櫎涓€涓棰?
 
         娉ㄦ剰锛氬弬鏁版槸 episode_id锛堝悎闆嗗唴閮↖D锛夛紝涓嶆槸 aid銆?
-        闇€瑕佸厛閫氳繃 get_season_section() 鑾峰彇 episodes 鍒楄〃锛?
+        闇€瑕佸厛閫氳繃 get_season_section() 获取 episodes 鍒楄〃锛?
         鎵惧埌鐩爣瑙嗛鐨?``episode['id']`` 瀛楁銆?
 
         姣忔鍙兘绉婚櫎涓€涓棰戯紝鎵归噺绉婚櫎闇€瑕佸惊鐜皟鐢ㄣ€?
@@ -907,8 +907,8 @@ class BiliBili:
             bili.sort_season_episodes(section_id, season_id, sorts)
 
         娉ㄦ剰浜嬮」锛?
-        - sorts 蹇呴』鍖呭惈鍚堥泦涓殑**鎵€鏈?*瑙嗛锛屼笉鑳藉彧浼犻儴鍒?
-        - section_id銆乻eason_id銆乻ection_title 涓変釜鍙傛暟缂轰竴涓嶅彲锛屽惁鍒欒繑鍥?-400
+        - sorts 必须鍖呭惈鍚堥泦涓殑**鎵€鏈?*瑙嗛锛屼笉鑳藉彧浼犻儴鍒?
+        - section_id銆乻eason_id銆乻ection_title 涓変釜参数缂轰竴涓嶅彲锛屽惁鍒欒繑鍥?-400
         - sort 搴忓彿浠?寮€濮?
 
         :param section_id: 鍒嗗尯ID
@@ -952,7 +952,7 @@ class BiliBili:
 @dataclass
 class Data:
     """
-    cover: 灏侀潰鍥剧墖锛屽彲鐢眗ecovers鏂规硶寰楀埌瑙嗛鐨勫抚鎴浘
+    cover: 界面鍥剧墖锛屽彲鐢眗ecovers鏂规硶寰楀埌瑙嗛鐨勫抚鎴浘
     """
     copyright: int = 2
     source: str = ''
@@ -980,12 +980,12 @@ class Data:
             self.tag = ','.join(self.tag)
 
     def delay_time(self, dtime: int):
-        """璁剧疆寤舵椂鍙戝竷鏃堕棿锛岃窛绂绘彁浜ゅぇ浜?灏忔椂锛屾牸寮忎负10浣嶆椂闂存埑"""
+        """设置寤舵椂鍙戝竷时间锛岃窛绂绘彁浜ゅぇ浜?灏忔椂锛屾牸寮忎负10浣嶆椂闂存埑"""
         if dtime - int(time.time()) > 7200:
             self.dtime = dtime
 
     def set_tag(self, tag: list):
-        """璁剧疆鏍囩锛宼ag涓烘暟缁?""
+        """设置鏍囩锛宼ag涓烘暟缁?""
         self.tag = ','.join(tag)
 
     def append(self, video):

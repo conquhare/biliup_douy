@@ -40,7 +40,7 @@ from .exception import (TarsException)
 
 class Communicator:
     '''
-    @brief: 閫氳鍣紝鍒涘缓鍜岀淮鎶ervantProxy銆丱bjectProxy銆丗DReactor绾跨▼鍜岃秴鏃剁嚎绋?
+    @brief: 閫氳鍣紝创建鍜岀淮鎶ervantProxy銆丱bjectProxy銆丗DReactor绾跨▼鍜岃秴鏃剁嚎绋?
     '''
     default_config = {'tars':
                       {'application':
@@ -73,7 +73,7 @@ class Communicator:
 
     def initialize(self):
         '''
-        @brief: 浣跨敤閫氳鍣ㄥ墠蹇呴』鍏堣皟鐢ㄦ鍑芥暟
+        @brief: 浣跨敤閫氳鍣ㄥ墠必须鍏堣皟鐢ㄦ鍑芥暟
         '''
         tarsLogger.debug('Communicator:initialize')
         if self.__initialize:
@@ -125,10 +125,10 @@ class Communicator:
 
     def parseConnAddr(self, connAddr):
         '''
-        @brief: 瑙ｆ瀽connAddr瀛楃涓?
+        @brief: 解析connAddr字符涓?
         @param connAddr: 杩炴帴鍦板潃
         @type connAddr: str
-        @return: 瑙ｆ瀽缁撴灉
+        @return: 解析缁撴灉
         @rtype: dict, key鏄痵tr锛寁al閲宯ame鏄痵tr锛?
                 timeout鏄痜loat锛宔ndpoint鏄疎ndPointInfo鐨刲ist
         '''
@@ -175,24 +175,24 @@ class Communicator:
 
     def getReactor(self):
         '''
-        @brief: 鑾峰彇reactor
+        @brief: 获取reactor
         '''
         return self.__reactor
 
     def getAsyncProc(self):
         '''
-        @brief: 鑾峰彇asyncProc
+        @brief: 获取asyncProc
         '''
         return self.__asyncProc
 
     def getProperty(self, name, dt_type=str):
         '''
-        @brief: 鑾峰彇閰嶇疆
-        @param name: 閰嶇疆鍚嶇О
+        @brief: 获取配置
+        @param name: 配置鍚嶇О
         @type name: str
-        @param dt_type: 鏁版嵁绫诲瀷
+        @param dt_type: 数据类型
         @type name: type
-        @return: 閰嶇疆鍐呭
+        @return: 配置鍐呭
         @rtype: str
         '''
         try:
@@ -205,12 +205,12 @@ class Communicator:
 
     def setProperty(self, name, value):
         '''
-        @brief: 淇敼閰嶇疆
-        @param name: 閰嶇疆鍚嶇О
+        @brief: 淇敼配置
+        @param name: 配置鍚嶇О
         @type propertys: str
-        @param value: 閰嶇疆鍐呭
+        @param value: 配置鍐呭
         @type propertys: str
-        @return: 璁剧疆鏄惁鎴愬姛
+        @return: 设置鏄惁成功
         @rtype: bool
         '''
         try:
@@ -221,8 +221,8 @@ class Communicator:
 
     def setPropertys(self, propertys):
         '''
-        @brief: 淇敼閰嶇疆
-        @param propertys: 閰嶇疆闆嗗悎
+        @brief: 淇敼配置
+        @param propertys: 配置闆嗗悎
         @type propertys: map, key type: str, value type: str
         @return: 鏃?
         @rtype: None
@@ -231,20 +231,20 @@ class Communicator:
 
     def updateConfig(self):
         '''
-        @brief: 閲嶆柊璁剧疆閰嶇疆
+        @brief: 閲嶆柊设置配置
         '''
 
     def stringToProxy(self, servantProxy, connAddr):
         '''
         @brief: 鍒濆鍖朣ervantProxy
-        @param connAddr: 鏈嶅姟鍣ㄥ湴鍧€淇℃伅
+        @param connAddr: 鏈嶅姟鍣ㄥ湴鍧€信息
         @type connAddr: str
         @param servant: servant proxy
         @type servant: ServantProxy瀛愮被
         @return: 鏃?
         @rtype: None
         @note: 濡傛灉connAddr鐨凷ervantObj杩炴帴杩囷紝杩斿洖杩炴帴杩囩殑ServantProxy
-               濡傛灉娌℃湁杩炴帴杩囷紝鐢ㄥ弬鏁皊ervant鍒濆鍖栵紝杩斿洖servant
+               濡傛灉没有杩炴帴杩囷紝鐢ㄥ弬鏁皊ervant鍒濆鍖栵紝杩斿洖servant
         '''
         tarsLogger.debug('Communicator:stringToProxy')
 
@@ -264,7 +264,7 @@ class Communicator:
 
     def handleTimeout(self):
         '''
-        @brief: 澶勭悊瓒呮椂浜嬩欢
+        @brief: 处理瓒呮椂浜嬩欢
         @return: 鏃?
         @rtype: None
         '''
@@ -275,7 +275,7 @@ class Communicator:
 
 class ObjectProxy:
     '''
-    @brief: 涓€涓猳bject name鍦ㄤ竴涓狢ommunicator閲屾湁涓€涓猳bjectproxy
+    @brief: 涓€涓猳bject name鍦ㄤ竴涓狢ommunicator閲屾有涓€涓猳bjectproxy
             绠＄悊鏀跺彂鐨勬秷鎭槦鍒?
     '''
     DEFAULT_TIMEOUT = 3.0
@@ -299,7 +299,7 @@ class ObjectProxy:
         @brief: 鍒濆鍖栵紝浣跨敤ObjectProxy鍓嶅繀椤昏皟鐢?
         @param comm: 閫氳鍣?
         @type comm: Communicator
-        @param connInfo: 杩炴帴淇℃伅
+        @param connInfo: 杩炴帴信息
         @type comm: dict
         @return: None
         @rtype: None
@@ -319,7 +319,7 @@ class ObjectProxy:
             'sync-invoke-timeout', float) / 1000
 
         # 閫氳繃Communicator鐨勯厤缃缃秴鏃?
-        # 涓嶅啀閫氳繃杩炴帴淇℃伅鐨?t鏉ヨ缃?
+        # 涓嶅啀閫氳繃杩炴帴信息鐨?t鏉ヨ缃?
         # if connInfo['timeout'] != -1:
         # self.__timeout = connInfo['timeout']
         eplist = connInfo['endpoint']
@@ -342,7 +342,7 @@ class ObjectProxy:
 
     def name(self):
         '''
-        @brief: 鑾峰彇object name
+        @brief: 获取object name
         @return: object name
         @rtype: str
         '''
@@ -350,8 +350,8 @@ class ObjectProxy:
 
     # def setTimeout(self, timeout):
         # '''
-        # @brief: 璁剧疆瓒呮椂
-        # @param timeout: 瓒呮椂鏃堕棿锛屽崟浣嶄负s
+        # @brief: 设置瓒呮椂
+        # @param timeout: 瓒呮椂时间锛屽崟浣嶄负s
         # @type timeout: float
         # @return: None
         # @rtype: None
@@ -361,15 +361,15 @@ class ObjectProxy:
 
     def timeout(self):
         '''
-        @brief: 鑾峰彇瓒呮椂鏃堕棿
-        @return: 瓒呮椂鏃堕棿锛屽崟浣嶄负s
+        @brief: 获取瓒呮椂时间
+        @return: 瓒呮椂时间锛屽崟浣嶄负s
         @rtype: float
         '''
         return self.__timeout
 
     def getTimeoutQueue(self):
         '''
-        @brief: 鑾峰彇瓒呮椂闃熷垪
+        @brief: 获取瓒呮椂闃熷垪
         @return: 瓒呮椂闃熷垪
         @rtype: TimeoutQueue
         '''
@@ -389,7 +389,7 @@ class ObjectProxy:
         @brief: 杩滅▼杩囩▼璋冪敤
         @param reqmsg: 璇锋眰鍝嶅簲鎶ユ枃
         @type reqmsg: ReqMessage
-        @return: 閿欒鐮?
+        @return: 错误鐮?
         @rtype:
         '''
         tarsLogger.debug('ObjectProxy:invoke, objname: %s, func: %s',
@@ -410,7 +410,7 @@ class ObjectProxy:
     def popRequest(self):
         '''
         @brief: 杩斿洖娑堟伅闃熷垪閲岀殑璇锋眰鍝嶅簲鎶ユ枃锛孎IFO
-                涓嶅垹闄imeoutQueue閲岀殑鏁版嵁锛屽搷搴旀椂瑕佺敤
+                涓嶅垹闄imeoutQueue閲岀殑数据锛屽搷搴旀椂瑕佺敤
         @return: 璇锋眰鍝嶅簲鎶ユ枃
         @rtype: ReqMessage
         '''

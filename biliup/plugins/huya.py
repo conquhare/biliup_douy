@@ -68,8 +68,8 @@ class Huya(DownloadBase):
 
         # 鍏煎 biliup/biliup#1200
         self.room_title = room_profile['room_title']
-        # 杩囨护鍥炴斁
-        for key in ["鍥炴斁", "閲嶆挱"]:
+        # 过滤回放
+        for key in ["回放", "閲嶆挱"]:
             # 鍓嶄笁鎴栧悗涓?
             if key in self.room_title[:3] or key in self.room_title[-3:]:
                 logger.debug(f"{self.plugin_msg}: {self.room_title}")
@@ -207,9 +207,9 @@ class Huya(DownloadBase):
 
     def extract_room_profile(self, data: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
         '''
-        ON: 鐩存挱
+        ON: 直播
         REPLAY: 閲嶆挱
-        OFF: 鏈紑鎾?
+        OFF: 未开鎾?
         '''
         # PC web
         if isinstance(data, str):
@@ -220,7 +220,7 @@ class Huya(DownloadBase):
             if room_data['state'] != 'ON' or not bitrate_info:
                 return {
                     'live': False,
-                    'message': '鏈紑鎾? if room_data['state'] != 'ON' else '鏈帹娴?,
+                    'message': '未开鎾? if room_data['state'] != 'ON' else '鏈帹娴?,
                 }
             live_info = s_json['data'][0]['gameLiveInfo']
             streams_info = s_json['data'][0]['gameStreamInfoList']
@@ -230,7 +230,7 @@ class Huya(DownloadBase):
             if data['liveStatus'] != 'ON' or not data.get('liveData', {}).get('bitRateInfo'):
                 return {
                     'live': False,
-                    'message': '鏈紑鎾? if data['liveStatus'] != 'ON' else '鏈帹娴?,
+                    'message': '未开鎾? if data['liveStatus'] != 'ON' else '鏈帹娴?,
                 }
             live_info = data['liveData']
             bitrate_info = json_loads(live_info['bitRateInfo'])
@@ -251,9 +251,9 @@ class Huya(DownloadBase):
 
     async def get_room_profile(self, use_api=False) -> dict:
         '''
-        鑾峰彇鎴块棿淇℃伅
+        获取鎴块棿信息
         :param use_api: 鏄惁浣跨敤API
-        :return: 鎴块棿淇℃伅
+        :return: 鎴块棿信息
         '''
         if use_api:
             params = {
@@ -369,9 +369,9 @@ class Huya(DownloadBase):
         secret_prefix = base64.b64decode(fm.encode()).decode().split('_')[0]
 
         ws_time = url_query['wsTime'][0]
-        # 淇 hls m3u8 閾炬帴杩囨湡鏃堕棿
+        # 淇 hls m3u8 閾炬帴杩囨湡时间
         if int(ws_time, 16) - int(clac_start_time) < (20 * 60):
-            # 濡傛灉杩囨湡鏃堕棿灏忎簬 20 鍒嗛挓锛岃皟鏁磋繃鏈熸椂闂翠负 1 澶?
+            # 濡傛灉杩囨湡时间灏忎簬 20 鍒嗛挓锛岃皟鏁磋繃鏈熸椂闂翠负 1 澶?
             ws_time = hex(24 * 60 * 60 + int(clac_start_time))[2:]
         secret_str = f'{secret_prefix}_{clac_uid}_{stream_name}_{secret_hash}_{ws_time}'
         ws_secret = hashlib.md5(secret_str.encode()).hexdigest()
@@ -466,7 +466,7 @@ class PLATFORM(Enum):
 
     @property
     def short_name(self) -> str:
-        """鑾峰彇骞冲彴鐭悕绉?""
+        """获取骞冲彴鐭悕绉?""
         name = self.name.lower()
         idx = name.find('_')
         return name[idx + 1:] if idx != -1 else name
@@ -508,7 +508,7 @@ class UAGenerator:
             config = UAGenerator.HYAPP_CONFIGS[platform]
 
         hyapp_platform = platform.short_name
-        hyapp_version = config.get("version", "0.0.0")   # TODO: 鏃ユ湡鏍煎紡鍖?
+        hyapp_version = config.get("version", "0.0.0")   # TODO: 鏃ユ湡格式鍖?
         hyapp_channel = config.get("channel", "official")
 
         # Add random build number for version
