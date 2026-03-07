@@ -350,6 +350,73 @@ Get-Item ".trae\skills" | Select-Object Mode, Name, Target
 
 ---
 
+## CI 自动编译触发规则
+
+### 路径过滤配置
+
+在 `.github/workflows/pyinstaller-publish.yml` 中配置了 `paths` 过滤，只有修改以下文件时才会触发自动编译：
+
+```yaml
+paths:
+  # Python 代码
+  - 'biliup/**'
+  # Rust 代码
+  - 'crates/**'
+  - 'Cargo.toml'
+  - 'Cargo.lock'
+  # 前端代码
+  - 'app/**'
+  - 'public/**'
+  - 'package.json'
+  - 'package-lock.json'
+  - 'next.config.js'
+  # Python 构建配置
+  - 'pyproject.toml'
+  - 'biliup.spec'
+  # 工作流本身
+  - '.github/workflows/pyinstaller-publish.yml'
+```
+
+### 编译流程
+
+当触发自动编译时，执行以下步骤：
+
+1. **前端构建** - `npm install && npm run build`
+   - 编译 Next.js 前端代码
+   - 生成静态资源
+
+2. **Rust 扩展构建** - `maturin build --release`
+   - 编译 `crates/` 下的 Rust 代码
+   - 生成 Python wheel 包
+
+3. **EXE 打包** - `pyinstaller biliup.spec`
+   - 打包 Python 代码和 Rust 扩展
+   - 生成独立的 Windows EXE
+
+### 触发场景
+
+**会自动触发编译：**
+- 修改 Python 代码 (`biliup/**`)
+- 修改 Rust 代码 (`crates/**`)
+- 修改前端代码 (`app/**`, `public/**`)
+- 修改构建配置 (`Cargo.toml`, `pyproject.toml`, `biliup.spec`)
+
+**不会触发自动编译：**
+- 修改文档 (`*.md`, `docs/**`)
+- 修改 Skill 文件 (`.claude/skills/**`)
+- 修改运行时配置
+- 修改测试文件
+
+### 手动触发
+
+如需强制编译，可在 GitHub Actions 页面手动触发：
+1. 进入 Actions → Build Windows EXE
+2. 点击 "Run workflow"
+3. 输入版本号（可选）
+4. 点击运行
+
+---
+
 ## 网络诊断工具
 
 ### 测试 GitHub 连接
