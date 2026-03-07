@@ -163,10 +163,15 @@ jobs:
         $targetTriple = rustc -Vv | Select-String "host:" | ForEach-Object {$_.Line.split(" ")[1]}
         $archiveName = "biliup-$version-x86_64-windows.zip"
 
-        # 压缩 dist/bbup 文件夹
-        Compress-Archive -Path "dist/bbup/*" -DestinationPath $archiveName
-
-        Write-Host "创建压缩包: $archiveName"
+        # 单文件模式：直接压缩 dist/biliup.exe
+        if (Test-Path "dist/biliup.exe") {
+          Compress-Archive -Path "dist/biliup.exe" -DestinationPath $archiveName
+          Write-Host "创建压缩包: $archiveName (单文件模式)"
+        } else {
+          # 兼容旧版文件夹模式
+          Compress-Archive -Path "dist/bbup/*" -DestinationPath $archiveName
+          Write-Host "创建压缩包: $archiveName (文件夹模式)"
+        }
         Write-Host "目标架构: $targetTriple"
 
     - name: Upload Artifact
