@@ -5,6 +5,15 @@ on:
     branches:
       - master
       - main
+    paths:
+      # 只有修改以下路径的文件时才触发自动编译
+      - 'biliup/**'
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'pyproject.toml'
+      - 'biliup.spec'
+      - '.github/workflows/pyinstaller-publish.yml'
   workflow_dispatch:
     inputs:
       version:
