@@ -7,12 +7,22 @@ on:
       - main
     paths:
       # 只有修改以下路径的文件时才触发自动编译
+      # Python 代码
       - 'biliup/**'
+      # Rust 代码
       - 'crates/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
+      # 前端代码
+      - 'app/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'next.config.js'
+      # Python 构建配置
       - 'pyproject.toml'
       - 'biliup.spec'
+      # 工作流本身
       - '.github/workflows/pyinstaller-publish.yml'
   workflow_dispatch:
     inputs:
