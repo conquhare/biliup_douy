@@ -10,26 +10,21 @@ end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 
+# Python files
+[*.py]
+indent_style = space
+indent_size = 4
+
 # Rust files
 [*.rs]
 indent_style = space
 indent_size = 4
 
-# TypeScript/JavaScript files
-[*.{ts,tsx,js,jsx}]
-indent_style = space
-indent_size = 2
-
-# JSON/YAML/TOML files
-[*.{json,yaml,yml,toml}]
+# Web files
+[*.{js,jsx,ts,tsx,json,css,scss,html}]
 indent_style = space
 indent_size = 2
 
 # Markdown files
 [*.md]
 trim_trailing_whitespace = false
-
-# Python files
-[*.py]
-indent_style = space
-indent_size = 4
