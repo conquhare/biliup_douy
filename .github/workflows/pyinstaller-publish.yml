@@ -67,29 +67,46 @@ jobs:
         if (-not $version.StartsWith('v')) {
           $version = "v$version"
         }
-        Write-Host "VERSION=$version" >> $env:GITHUB_OUTPUT
+        # 使用 GitHub Actions 的特殊语法设置输出
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "VERSION=$version"
+        Add-Content -Path $env:GITHUB_ENV -Value "VERSION=$version"
         Write-Host "设置版本号: $version"
 
     - name: Update version in Cargo.toml
       shell: pwsh
       run: |
         $version = "${{ steps.version.outputs.VERSION }}"
+        Write-Host "从步骤输出获取的版本号: '$version'"
+        Write-Host "从环境变量获取的版本号: '$env:VERSION'"
+
+        # 如果步骤输出为空，使用环境变量
+        if ([string]::IsNullOrEmpty($version)) {
+          $version = $env:VERSION
+          Write-Host "使用环境变量版本号: '$version'"
+        }
+
         # 移除 v 前缀
         $version = $version -replace '^v', ''
         # 移除 -hash 后缀（只保留主版本号）
         $version = $version -replace '-[a-f0-9]+$', ''
         $version = $version -replace '-\d+$', ''
 
-        Write-Host "准备设置版本号: $version"
+        Write-Host "处理后的版本号: '$version'"
+
+        if ([string]::IsNullOrEmpty($version)) {
+          Write-Error "版本号为空，无法继续"
+          exit 1
+        }
 
         # 使用更简单可靠的方法：直接替换整行
         $cargoToml = Get-Content Cargo.toml
         $updated = $false
         for ($i = 0; $i -lt $cargoToml.Length; $i++) {
           if ($cargoToml[$i] -match '^version\s*=\s*"') {
+            $oldLine = $cargoToml[$i]
             $cargoToml[$i] = "version = `"$version`""
             $updated = $true
-            Write-Host "找到并替换第 $i 行"
+            Write-Host "找到并替换第 $i 行: '$oldLine' -> '$($cargoToml[$i])'"
             break
           }
         }
