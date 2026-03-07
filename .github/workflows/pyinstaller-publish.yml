@@ -8,15 +8,20 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '版本号 (例如: v0.1.1)'
+        description: '版本号 (例如: v0.2.0)'
         required: true
-        default: 'v0.1.1'
+        default: 'v0.2.0'
         type: string
       release:
         description: '是否创建 Release'
         required: true
         default: false
         type: boolean
+
+env:
+  # 独立版本号管理 - 不依赖上游 Cargo.toml
+  # 修改此值来更新版本号
+  BASE_VERSION: '0.2.0'
 
 jobs:
   build:
@@ -25,7 +30,7 @@ jobs:
     runs-on: 'windows-latest'
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set version
       id: version
       shell: pwsh
@@ -33,14 +38,19 @@ jobs:
         if ("${{ github.event.inputs.version }}") {
           $version = "${{ github.event.inputs.version }}"
         } else {
-          # 自动生成版本号：从 Cargo.toml 读取并添加构建号
-          $cargoVersion = (Select-String -Path Cargo.toml -Pattern '^version = "([^"]+)"' | Select-Object -First 1).Matches.Groups[1].Value
+          # 自动生成版本号：使用 BASE_VERSION + 构建号
+          $baseVersion = "${{ env.BASE_VERSION }}"
           $shortSha = "${{ github.sha }}".Substring(0, 7)
-          $version = "v$cargoVersion-$shortSha"
+          $buildNumber = "${{ github.run_number }}"
+          $version = "v$baseVersion-$buildNumber-g$shortSha"
+        }
+        # 确保版本号以 v 开头
+        if (-not $version.StartsWith('v')) {
+          $version = "v$version"
         }
         Write-Host "VERSION=$version" >> $env:GITHUB_OUTPUT
         Write-Host "设置版本号: $version"
-    
+
     - name: Update version in Cargo.toml
       shell: pwsh
       run: |
@@ -49,45 +59,45 @@ jobs:
         $version = $version -replace '^v', ''
         # 移除 -hash 后缀（只保留主版本号）
         $version = $version -replace '-[a-f0-9]+$', ''
-        
+        $version = $version -replace '-\d+$', ''
+
         # 读取 Cargo.toml
         $cargoToml = Get-Content Cargo.toml -Raw
-        
+
         # 替换版本号（匹配 [workspace.package] 下的 version）
-        # 使用更宽松的模式，处理不同的换行符
         $pattern = '(\[workspace\.package\]\s*\nversion\s*=\s*)"[^"]*"'
         $replacement = '$1"' + $version + '"'
         $cargoToml = $cargoToml -replace $pattern, $replacement
-        
+
         # 写回文件
         Set-Content Cargo.toml $cargoToml
-        
+
         Write-Host "版本号已更新为: $version"
         Write-Host "--- Cargo.toml 中的版本配置 ---"
         Get-Content Cargo.toml | Select-String -Pattern '\[workspace\.package\]|^version' | Select-Object -First 5
-    
+
     - uses: actions/setup-node@v4
       with:
         node-version: '20'
-    
+
     - name: Build frontend
       run: |
         npm install
         npm run build
-    
+
     - uses: actions/setup-python@v5
       with:
         python-version: '3.x'
-    
+
     - name: Install Rust stable
       uses: dtolnay/rust-toolchain@stable
-    
+
     - name: Build Rust extension
       uses: PyO3/maturin-action@v1
       with:
         command: build
         args: --release
-    
+
     - name: Build EXE with PyInstaller
       shell: bash
       run: |
@@ -95,27 +105,28 @@ jobs:
         pip install target/wheels/*.whl
         pip install Pillow pyinstaller
         pyinstaller biliup.spec
-    
+
     - name: Package EXE
       shell: pwsh
       run: |
         $version = "${{ steps.version.outputs.VERSION }}"
         $targetTriple = rustc -Vv | Select-String "host:" | ForEach-Object {$_.Line.split(" ")[1]}
         $archiveName = "biliup-$version-x86_64-windows.zip"
-        
+
         # 压缩 dist/bbup 文件夹
         Compress-Archive -Path "dist/bbup/*" -DestinationPath $archiveName
-        
+
         Write-Host "创建压缩包: $archiveName"
         Write-Host "目标架构: $targetTriple"
-    
+
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: biliup-windows-exe-${{ steps.version.outputs.VERSION }}
         path: biliup-*.zip
-    
+
     - name: Create Release
+      if: github.event.inputs.release == 'true'
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ steps.version.outputs.VERSION }}

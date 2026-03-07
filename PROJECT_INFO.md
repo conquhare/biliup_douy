@@ -145,6 +145,73 @@ https_proxy = "https://127.0.0.1:7890"
 - 已在 `PROJECT_KNOWLEDGE.md` 中记录编码问题解决方案
 - 建议 VS Code 设置 `"files.encoding": "utf8"`
 
+## CI/CD 构建配置
+
+### 版本号管理策略
+
+#### 独立版本号体系
+由于本项目是 fork 自上游仓库，但做了大量自定义修改，因此采用**独立的版本号管理体系**，不沿用上游 Cargo.toml 的版本号。
+
+**配置位置**: `.github/workflows/pyinstaller-publish.yml`
+
+```yaml
+env:
+  # 独立版本号管理 - 不依赖上游 Cargo.toml
+  # 修改此值来更新版本号
+  BASE_VERSION: '0.2.0'
+```
+
+#### 版本号生成规则
+1. **手动触发**: 使用输入的版本号（如 `v0.2.0`）
+2. **自动触发**（推送到 master/main）: `v{BASE_VERSION}-{buildNumber}-g{shortSha}`
+   - 示例: `v0.2.0-15-gabc1234`
+
+#### 修改版本号步骤
+1. 编辑 `.github/workflows/pyinstaller-publish.yml`
+2. 修改 `BASE_VERSION` 的值
+3. 提交并推送到 master 分支
+
+#### 触发构建方式
+
+**方式1: 推送到 master/main 分支**
+```bash
+git add .
+git commit -m "更新代码"
+git push origin master
+```
+
+**方式2: 手动触发（推荐用于发布）**
+1. 进入 GitHub 仓库页面 → Actions → Build Windows EXE
+2. 点击 "Run workflow"
+3. 输入版本号（如 `v0.2.0`）
+4. 勾选 "创建 Release"（如需要）
+5. 点击运行
+
+#### 产物下载
+构建完成后，可在以下位置下载：
+1. **Actions 页面** → 具体运行记录 → Artifacts
+2. **Release 页面**（如果创建了 Release）
+
+### 构建流程
+
+#### 完整构建步骤
+1. **设置版本号** - 根据触发方式确定版本号
+2. **更新 Cargo.toml** - 将版本号写入 Rust 配置（仅用于构建，不影响独立版本号管理）
+3. **构建前端** - `npm install && npm run build`
+4. **构建 Rust 扩展** - 使用 maturin 构建 wheel
+5. **构建 EXE** - 使用 PyInstaller 打包
+6. **打包发布** - 创建 zip 压缩包
+7. **上传产物** - 上传 Artifact
+8. **创建 Release** - 可选，手动触发时创建
+
+#### 关键配置
+- **Node.js**: 使用固定版本 `20` 避免网络问题
+- **Python**: `3.x`
+- **Rust**: `stable` 工具链
+- **Maturin**: 用于构建 Rust Python 扩展
+
+---
+
 ## 待完成任务
 
 - [ ] 集成AI自动切片功能
