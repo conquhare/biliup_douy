@@ -19,7 +19,7 @@ a = Analysis(
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
-    optimize=0,
+    optimize=2,  # 启用字节码优化
 )
 pyz = PYZ(a.pure)
 
@@ -32,7 +32,7 @@ exe = EXE(
     name='biliup',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=False,
+    strip=True,  # 去除符号表，减小体积
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
