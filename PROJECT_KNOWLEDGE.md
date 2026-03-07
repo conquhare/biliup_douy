@@ -50,8 +50,30 @@ git config --get https.proxy
 
 ### 预防措施
 
-#### 创建连接测试脚本
-创建 `test-proxy.ps1`:
+#### 使用现成的测试脚本
+项目已包含 `test-proxy.ps1` 脚本，GitHub 不通时直接执行即可：
+
+```powershell
+# 快速测试代理和 GitHub 连接
+.\test-proxy.ps1
+```
+
+**脚本功能**:
+1. 测试代理端口（默认 54350）是否监听
+2. 测试 GitHub 访问（HTTP 状态码）
+3. 测试 Git 连接（自动配置代理）
+4. 如连接失败，自动尝试禁用 SSL 验证
+
+**使用方法**:
+```powershell
+# 在 PowerShell 中执行
+.\test-proxy.ps1
+
+# 如果测试通过，会提示可以执行 git push
+```
+
+#### 创建连接测试脚本（备用）
+如果 `test-proxy.ps1` 不存在，可创建如下脚本：
 ```powershell
 # 测试代理连接脚本
 $proxyPort = 54350  # 根据实际情况修改
