@@ -80,20 +80,31 @@ jobs:
         $version = $version -replace '-[a-f0-9]+$', ''
         $version = $version -replace '-\d+$', ''
 
-        # 读取 Cargo.toml
-        $cargoToml = Get-Content Cargo.toml -Raw
+        Write-Host "准备设置版本号: $version"
 
-        # 替换版本号（匹配 [workspace.package] 下的 version）
-        $pattern = '(\[workspace\.package\]\s*\nversion\s*=\s*)"[^"]*"'
-        $replacement = '$1"' + $version + '"'
-        $cargoToml = $cargoToml -replace $pattern, $replacement
+        # 使用更简单可靠的方法：直接替换整行
+        $cargoToml = Get-Content Cargo.toml
+        $updated = $false
+        for ($i = 0; $i -lt $cargoToml.Length; $i++) {
+          if ($cargoToml[$i] -match '^version\s*=\s*"') {
+            $cargoToml[$i] = "version = `"$version`""
+            $updated = $true
+            Write-Host "找到并替换第 $i 行"
+            break
+          }
+        }
+
+        if (-not $updated) {
+          Write-Error "未找到 version 行，替换失败"
+          exit 1
+        }
 
         # 写回文件
-        Set-Content Cargo.toml $cargoToml
+        $cargoToml | Set-Content Cargo.toml
 
         Write-Host "版本号已更新为: $version"
         Write-Host "--- Cargo.toml 中的版本配置 ---"
-        Get-Content Cargo.toml | Select-String -Pattern '\[workspace\.package\]|^version' | Select-Object -First 5
+        Get-Content Cargo.toml | Select-String -Pattern '^version' | Select-Object -First 3
 
     - uses: actions/setup-node@v4
       with:
