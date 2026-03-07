@@ -58,10 +58,11 @@ jobs:
           $version = "${{ github.event.inputs.version }}"
         } else {
           # 自动生成版本号：使用 BASE_VERSION + 构建号
+          # 格式：0.2.0.dev11+g93446c9 (符合 PEP 440)
           $baseVersion = "${{ env.BASE_VERSION }}"
           $shortSha = "${{ github.sha }}".Substring(0, 7)
           $buildNumber = "${{ github.run_number }}"
-          $version = "v$baseVersion-$buildNumber-g$shortSha"
+          $version = "v$baseVersion.dev$buildNumber+$shortSha"
         }
         # 确保版本号以 v 开头
         if (-not $version.StartsWith('v')) {
@@ -87,9 +88,11 @@ jobs:
 
         # 移除 v 前缀
         $version = $version -replace '^v', ''
-        # 移除 -hash 后缀（只保留主版本号）
-        $version = $version -replace '-[a-f0-9]+$', ''
-        $version = $version -replace '-\d+$', ''
+        # 对于 PEP 440 格式 (0.2.0.dev11+g93446c9)，需要移除 +local 部分
+        # 因为 Cargo.toml 只需要主版本号
+        $version = $version -replace '\+.*$', ''
+        # 移除 .devN 后缀，只保留主版本号 (0.2.0)
+        $version = $version -replace '\.dev\d+$', ''
 
         Write-Host "处理后的版本号: '$version'"
 
