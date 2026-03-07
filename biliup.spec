@@ -4,6 +4,7 @@ from PyInstaller.utils.hooks import collect_all, copy_metadata
 datas = [('biliup/Danmaku/douyin_util/', 'biliup/Danmaku/douyin_util/')]
 binaries = []
 hiddenimports = [
+    # Danmaku 模块
     'biliup.Danmaku',
     'biliup.Danmaku.bilibili',
     'biliup.Danmaku.douyin',
@@ -12,9 +13,34 @@ hiddenimports = [
     'biliup.Danmaku.twitcasting',
     'biliup.Danmaku.twitch',
     'biliup.Danmaku.youtube',
+    'biliup.Danmaku.paramgen',
+    'biliup.Danmaku.paramgen.liveparam',
+    'biliup.Danmaku.paramgen.arcparam',
+    'biliup.Danmaku.paramgen.enc',
+    # Engine 模块
+    'biliup.engine',
     'biliup.engine.download',
     'biliup.engine.upload',
     'biliup.engine.decorators',
+    'biliup.engine.sync_downloader',
+    # Common 模块
+    'biliup.common',
+    'biliup.common.util',
+    'biliup.common.log',
+    'biliup.common.reload',
+    'biliup.common.abogus',
+    'biliup.common.Daemon',
+    # Tars 模块
+    'biliup.common.tars',
+    'biliup.common.tars.core',
+    'biliup.common.tars.exception',
+    'biliup.common.tars.EndpointF',
+    'biliup.common.tars.QueryF',
+    # 第三方库
+    'lxml.etree',
+    'aiohttp',
+    'charset_normalizer',
+    'chardet',
 ]
 tmp_ret = collect_all('biliup.plugins')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
