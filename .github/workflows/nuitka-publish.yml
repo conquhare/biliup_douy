@@ -6,28 +6,8 @@ env:
   BASE_VERSION: '0.2.0'
 
 on:
-  push:
-    branches:
-      - master
-      - main
-    paths:
-      # 只有修改以下路径的文件时才触发自动编译
-      # Python 代码
-      - 'biliup/**'
-      # Rust 代码
-      - 'crates/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      # 前端代码
-      - 'app/**'
-      - 'public/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'next.config.js'
-      # Python 构建配置
-      - 'pyproject.toml'
-      # 工作流本身
-      - '.github/workflows/nuitka-publish.yml'
+  # 移除 push 自动触发，仅保留手动触发
+  # 避免 Python 文件变更时自动编译
   workflow_dispatch:
     inputs:
       version:
