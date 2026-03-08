@@ -183,10 +183,22 @@ jobs:
         $targetTriple = rustc -Vv | Select-String "host:" | ForEach-Object {$_.Line.split(" ")[1]}
         $archiveName = "biliup-$version-x86_64-windows-nuitka.zip"
 
-        # Nuitka 文件夹模式：压缩 dist/biliup/ 目录
-        if (Test-Path "dist/biliup") {
+        # 调试：列出 dist 目录内容
+        Write-Host "=== dist 目录内容 ==="
+        if (Test-Path "dist") {
+          Get-ChildItem -Path "dist" -Recurse | Select-Object -First 20
+        } else {
+          Write-Host "dist 目录不存在"
+        }
+
+        # Nuitka 文件夹模式：检查可能的输出路径
+        if (Test-Path "dist/biliup.dist") {
+          # Nuitka 默认输出：biliup.dist 目录
+          Compress-Archive -Path "dist/biliup.dist/*" -DestinationPath $archiveName
+          Write-Host "创建压缩包: $archiveName (Nuitka 文件夹模式 - biliup.dist)"
+        } elseif (Test-Path "dist/biliup") {
           Compress-Archive -Path "dist/biliup/*" -DestinationPath $archiveName
-          Write-Host "创建压缩包: $archiveName (Nuitka 文件夹模式)"
+          Write-Host "创建压缩包: $archiveName (Nuitka 文件夹模式 - biliup)"
         } elseif (Test-Path "dist/biliup.exe") {
           # 兼容单文件模式
           Compress-Archive -Path "dist/biliup.exe" -DestinationPath $archiveName
