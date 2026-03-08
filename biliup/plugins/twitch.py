@@ -1,4 +1,4 @@
-﻿import io
+﻿锘縤mport io
 import random
 import re
 import socket
@@ -57,7 +57,7 @@ class TwitchVideos(DownloadBase):
                         TwitchUtils.invalid_auth_token(self.config)
                         continue
                     else:
-                        logger.warning(f"{self.url}锛氳幏鍙栭敊璇?, exc_info=True)
+                        logger.warning(f"{self.url}閿涙俺骞忛崣鏍晩鐠?, exc_info=True)
                 return False
 
     def download_success_callback(self):
@@ -101,7 +101,7 @@ class Twitch(DownloadBase, BatchCheck):
             'variables': {'channel_name': channel_name}
         }, self.config)).get('data', {}).get('user')
         if not user:
-            logger.warning(f"{Twitch.__name__}: {self.url}: 获取错误", exc_info=True)
+            logger.warning(f"{Twitch.__name__}: {self.url}: 鑾峰彇閿欒", exc_info=True)
             return False
         elif not user['stream'] or user['stream']['type'] != 'live':
             return False
@@ -118,18 +118,18 @@ class Twitch(DownloadBase, BatchCheck):
 
             stream_shell = [
                 "streamlink",
-                "--player-external-http",  # 涓哄閮ㄧ▼搴忔彁渚涙祦濯掍綋数据
-                "--player-external-http-port", str(port),  # 瀵瑰閮ㄨ緭鍑烘祦鐨勭鍙?
+                "--player-external-http",  # 娑撳搫顦婚柈銊р柤鎼村繑褰佹笟娑欑ウ婵帊缍嬫暟鎹?
+                "--player-external-http-port", str(port),  # 鐎电懓顦婚柈銊ㄧ翻閸戠儤绁﹂惃鍕伂閸?
                 "--player-external-http-interface", "localhost",
-                # "--twitch-disable-ads",                     # 鍘诲箍鍛婏紝鍘绘帀銆佽烦杩囧祵鍏ョ殑骞垮憡娴?
-                # "--twitch-disable-hosting",               # 璇ュ弬鏁颁粠5.0璧峰凡琚鐢?
-                self.url, "best"  # 娴侀摼鎺?
+                # "--twitch-disable-ads",                     # 閸樿绠嶉崨濠忕礉閸樼粯甯€閵嗕浇鐑︽潻鍥хサ閸忋儳娈戦獮鍨啞濞?
+                # "--twitch-disable-hosting",               # 鐠囥儱寮弫棰佺矤5.0鐠у嘲鍑＄悮顐ゎ洣閻?
+                self.url, "best"  # 濞翠線鎽奸幒?
             ]
-            if self.twitch_disable_ads:  # 鍘诲箍鍛婏紝鍘绘帀銆佽烦杩囧祵鍏ョ殑骞垮憡娴?
+            if self.twitch_disable_ads:  # 閸樿绠嶉崨濠忕礉閸樼粯甯€閵嗕浇鐑︽潻鍥хサ閸忋儳娈戦獮鍨啞濞?
                 stream_shell.insert(1, "--twitch-disable-ads")
 
             auth_token = TwitchUtils.get_auth_token(self.config)
-            # 鍦ㄨ缃笖鏈夋晥鐨勬儏鍐典笅浣跨敤
+            # 閸︺劏顔曠純顔荤瑬閺堝鏅ラ惃鍕剰閸愬吀绗呮担璺ㄦ暏
             if auth_token:
                 stream_shell.insert(1, f"--twitch-api-header=Authorization=OAuth {auth_token}")
 
@@ -177,7 +177,7 @@ class Twitch(DownloadBase, BatchCheck):
         for index, data in enumerate(gql):
             user = data.get('data', {}).get('user')
             if not user:
-                logger.warning(f"{Twitch.__name__}: {check_urls[index]}: 获取错误")
+                logger.warning(f"{Twitch.__name__}: {check_urls[index]}: 鑾峰彇閿欒")
                 continue
             elif not user['stream'] or user['stream']['type'] != 'live':
                 continue
@@ -201,7 +201,7 @@ class Twitch(DownloadBase, BatchCheck):
 
 
 class TwitchUtils:
-    # Twitch宸插け鏁堢殑auth_token
+    # Twitch瀹告彃銇戦弫鍫㈡畱auth_token
     _invalid_auth_token = None
 
     @staticmethod
@@ -214,7 +214,7 @@ class TwitchUtils:
     @staticmethod
     def invalid_auth_token(config):
         TwitchUtils._invalid_auth_token = config.get('user', {}).get('twitch_cookie')
-        logger.warning("Twitch Cookie宸插け鏁堣鍙婃椂鏇存崲锛屽悗缁搷浣滃皢蹇界暐Twitch Cookie")
+        logger.warning("Twitch Cookie瀹告彃銇戦弫鍫ｎ嚞閸欏﹥妞傞弴瀛樺床閿涘苯鎮楃紒顓熸惙娴ｆ粌鐨㈣箛鐣屾殣Twitch Cookie")
 
     @staticmethod
     async def post_gql(ops, config):
@@ -232,11 +232,11 @@ class TwitchUtils:
             data = []
             for __ops in ops_list:
                 __data = await TwitchUtils.__post_gql(headers, __ops, config)
-                if __data: # 璁╂娴嬩笉鎶涘嚭寮傚父
+                if __data: # 鐠佲晜顥呭ù瀣╃瑝閹舵稑鍤鍌氱埗
                     data.extend(__data)
             return data
 
-        # 姝ｅ父下载鐢变笂灞傛柟娉曞鐞?
+        # 濮濓絽鐖朵笅杞介悽鍙樼瑐鐏炲倹鏌熷▔鏇烆槱閻?
         return await TwitchUtils.__post_gql(headers, ops, config)
 
     @staticmethod

@@ -1,4 +1,4 @@
-﻿import time
+﻿锘縤mport time
 import random
 
 import biliup.common.util
@@ -18,7 +18,7 @@ class Kuaishou(DownloadBase):
         try:
             room_d = get_kwaiId(self.url)
             if not room_d:
-                logger.warning(f"Kuaishou - {self.url}: 直播间地址错误")
+                logger.warning(f"Kuaishou - {self.url}: 鐩存挱闂村湴鍧€閿欒")
                 return False
         except Exception as e:
             logger.error(f"Kuaishou - {self.url}: {e}")
@@ -28,15 +28,15 @@ class Kuaishou(DownloadBase):
 
         # with requests.Session() as s:
         biliup.common.util.client.headers = self.fake_headers.copy()
-        # 首页浣庨控生成id
+        # 棣栭〉娴ｅ酣顥撴帶鐢熸垚id
         await biliup.common.util.client.get("https://live.kuaishou.com", timeout=5)
 
-        # 涓嶆殏鍋滀技涔庡鏄撻鎺?
+        # 娑撳秵娈忛崑婊€鎶€娑斿骸顔愰弰鎾活棑閹?
         times = 3 + random.random()
-        logger.debug(f"{plugin_msg}: 暂停 {times} 绉?)
+        logger.debug(f"{plugin_msg}: 鏆傚仠 {times} 缁?)
         time.sleep(times)
 
-        err_keys = ["错误浠ｇ爜22", "涓绘挱灏氭湭寮€鎾?]
+        err_keys = ["閿欒娴狅絿鐖?2", "娑撶粯鎸辩亸姘弓瀵偓閹?]
         html = (await biliup.common.util.client.get(f"https://live.kuaishou.com/u/{room_d}", timeout=5)).text
         for key in err_keys:
             if key in html:
@@ -48,10 +48,10 @@ class Kuaishou(DownloadBase):
             timeout=5)).json()['data']
 
         if room_info['result'] == 22:
-            logger.error(f"{plugin_msg}: 直播间地址错误")
+            logger.error(f"{plugin_msg}: 鐩存挱闂村湴鍧€閿欒")
             return False
         if room_info['result'] == 671:
-            logger.debug(f"{plugin_msg}: 直播闂存湭寮€鎾垨闈炵洿鎾?)
+            logger.debug(f"{plugin_msg}: 鐩存挱闂傚瓨婀鈧幘顓熷灗闂堢偟娲块幘?)
             return False
         if room_info['result'] != 1:
             logger.error(f"{plugin_msg}: {room_info}")
@@ -63,7 +63,7 @@ class Kuaishou(DownloadBase):
             return True
 
         if not self.room_title:
-            logger.warning(f"{plugin_msg}: 直播闂存爣棰樿幏鍙栧け璐ワ紝使用蹇墜ID浠ｆ浛")
+            logger.warning(f"{plugin_msg}: 鐩存挱闂傚瓨鐖ｆ０妯垮箯閸欐牕銇戠拹銉礉浣跨敤韫囶偅澧淚D娴狅絾娴?)
             self.room_title = room_d
         self.raw_stream_url = room_info['liveStream']['playUrls'][0]['adaptationSet']['representation'][-1]['url']
 

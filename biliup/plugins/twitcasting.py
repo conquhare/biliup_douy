@@ -1,4 +1,4 @@
-﻿import hashlib
+﻿锘縤mport hashlib
 
 import biliup.common.util
 from biliup.Danmaku import DanmakuClient
@@ -19,7 +19,7 @@ class Twitcasting(DownloadBase):
         self.twitcasting_cookie = config.get('user', {}).get('twitcasting_cookie')
         self.fake_headers['referer'] = "https://twitcasting.tv/"
 
-        # TODO 浼犻€掕繃浜庣箒鐞?
+        # TODO 娴肩娀鈧帟绻冩禍搴ｇ畳閻?
         self._movie_d = None
 
     async def acheck_stream(self, is_check=False):
@@ -33,10 +33,10 @@ class Twitcasting(DownloadBase):
 
         room_html = (await biliup.common.util.client.get(self.url, headers=self.fake_headers)).text
         if 'Enter the secret word to access' in room_html:
-            logger.warning(f"{Twitcasting.__name__}: {self.url}: 直播闂撮渶瑕佸瘑鐮?)
+            logger.warning(f"{Twitcasting.__name__}: {self.url}: 鐩存挱闂傛挳娓剁憰浣哥槕閻?)
             return False
 
-        # 灏哄涓嶅悎閫?
+        # 鐏忓搫顕稉宥呮値闁?
         # self.live_cover_url = match1(room_html, r'<meta property="og:image" content="([^"]*)"')
         self.room_title = match1(room_html, r'<meta name="twitter:title" content="([^"]*)"')
         uploader_d = match1(room_html, r'<meta name="twitter:creator" content="([^"]*)"')
@@ -45,20 +45,20 @@ class Twitcasting(DownloadBase):
             f'https://twitcasting.tv/streamserver.php?target={uploader_d}&mode=client&player=pc_web',
             headers=self.fake_headers)
         if response.status_code != 200:
-            logger.warning(f"{Twitcasting.__name__}: {self.url}: 获取错误锛屾湰次跳杩?)
+            logger.warning(f"{Twitcasting.__name__}: {self.url}: 鑾峰彇閿欒閿涘本婀版璺虫潻?)
             return False
         stream_info = response.json()
         if not stream_info:
-            logger.warning(f"{Twitcasting.__name__}: {self.url}: 直播间地址错误")
+            logger.warning(f"{Twitcasting.__name__}: {self.url}: 鐩存挱闂村湴鍧€閿欒")
             return False
         if not stream_info['movie']['live']:
-            logger.debug(f"{Twitcasting.__name__}: {self.url}: 未开鎾?)
+            logger.debug(f"{Twitcasting.__name__}: {self.url}: 鏈紑閹?)
             return False
 
         self._movie_d = stream_info['movie']['d']
 
         if not stream_info.get("tc-hls", {}).get("streams"):
-            logger.error(f"{Twitcasting.__name__}: {self.url}: 鏈幏鍙栧埌鍒扮洿鎾祦 => {stream_info}")
+            logger.error(f"{Twitcasting.__name__}: {self.url}: 閺堫亣骞忛崣鏍у煂閸掓壆娲块幘顓熺ウ => {stream_info}")
             return False
 
         stream_url = None
@@ -79,7 +79,7 @@ class Twitcasting(DownloadBase):
             stream_url = next(iter(streams.values()))
 
         if not stream_url:
-            logger.error(f"{Twitcasting.__name__}: {self.url}: 鏈煡鎵惧埌直播娴?=> {stream_info}")
+            logger.error(f"{Twitcasting.__name__}: {self.url}: 閺堫亝鐓￠幍鎯у煂鐩存挱濞?=> {stream_info}")
             return False
 
         self.raw_stream_url = stream_url
@@ -127,10 +127,10 @@ class Twitcasting(DownloadBase):
 #         _hash_str = salt + timestamp + method + pathname + search + sessiond
 #         return str(timestamp + "." + TwitcastingUtils.hashlib.sha256(_hash_str.encode()).hexdigest())
 # '''
-# X-Web-Authorizekey 鍙湪 PlayerPage2.js 文件涓?
-# 閫氳繃 return ""[u(413)](m, ".")[u(413)](f) 鎵€鍦ㄧ殑鏂规硶璁＄畻鑰屽嚭
-# 鐢?salt + 10浣?timestamp + 鎺ュ彛Method澶у啓 + 鎺ュ彛pathname + 鎺ュ彛search + web-authorize-session-d 鎷兼帴鍚?
-# 鍐嶇粡杩?SHA-256 处理锛屾渶鍚庡湪字符涓插墠闈㈡嫾鎺ヤ笂 10浣?timestamp 鍜?dot 寰楀埌
+# X-Web-Authorizekey 閸欘垰婀?PlayerPage2.js 鏂囦欢娑?
+# 闁俺绻?return ""[u(413)](m, ".")[u(413)](f) 閹碘偓閸︺劎娈戦弬瑙勭《鐠侊紕鐣婚懓灞藉毉
+# 閻?salt + 10娴?timestamp + 閹恒儱褰汳ethod婢堆冨晸 + 閹恒儱褰沺athname + 閹恒儱褰泂earch + web-authorize-session-d 閹峰吋甯撮崥?
+# 閸愬秶绮℃潻?SHA-256 澶勭悊閿涘本娓堕崥搴℃躬瀛楃娑撴彃澧犻棃銏″閹恒儰绗?10娴?timestamp 閸?dot 瀵版鍩?
 # '''
 # __n = int(time.time() * 1000)
 # _salt = "d6g97jormun44naq"

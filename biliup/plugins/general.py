@@ -1,4 +1,4 @@
-﻿from threading import Event
+﻿锘縡rom threading import Event
 from ykdl.common import url_to_module
 import yt_dlp
 
@@ -16,7 +16,7 @@ class YDownload(DownloadBase):
             self.get_sinfo()
             return True
         except yt_dlp.utils.DownloadError:
-            logger.debug('%s未开鎾垨璇诲彇下载信息失败' % self.fname)
+            logger.debug('%s鏈紑閹绢厽鍨ㄧ拠璇插絿涓嬭浇淇℃伅澶辫触' % self.fname)
             return False
 
     def get_sinfo(self):
@@ -25,7 +25,7 @@ class YDownload(DownloadBase):
             if self.url:
                 info = ydl.extract_info(self.url, download=False)
             else:
-                logger.debug('%s涓嶅瓨鍦? % self.__class__.__name__)
+                logger.debug('%s娑撳秴鐡ㄩ崷? % self.__class__.__name__)
                 return
             for i in info['formats']:
                 info_list.append(i['format_id'])

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+﻿锘?!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import logging
@@ -15,7 +15,7 @@ logger = logging.getLogger('biliup.engine.sync_downloader')
 
 def pad_file_to_size(filename, min_file_size):
     """
-    鑻ユ枃浠跺ぇ灏忎笉瓒?min_file_size锛屽垯鍦ㄦ枃浠舵湯灏惧～鍏?0x00 鑷崇洰鏍囧ぇ灏忋€?
+    閼汇儲鏋冩禒璺恒亣鐏忓繋绗夌搾?min_file_size閿涘苯鍨崷銊︽瀮娴犺埖婀亸鎯э綖閸?0x00 閼峰磭娲伴弽鍥с亣鐏忓繈鈧?
     """
     if not os.path.exists(filename):
         return
@@ -23,20 +23,20 @@ def pad_file_to_size(filename, min_file_size):
     current_size = os.path.getsize(filename)
     if current_size < min_file_size:
         need_pad = min_file_size - current_size
-        print(f"[pad_file_to_size] 琛ラ綈文件 {filename}锛?
-              f"濉厖 {need_pad} 瀛楄妭 0x00 浣垮叾杈惧埌 {min_file_size} 瀛楄妭")
+        print(f"[pad_file_to_size] 鐞涖儵缍堟枃浠?{filename}閿?
+              f"婵夘偄鍘?{need_pad} 鐎涙濡?0x00 娴ｅ灝鍙炬潏鎯у煂 {min_file_size} 鐎涙濡?)
         with open(filename, "ab") as f:
             f.write(b"\x00" * need_pad)
 
 
 class SyncDownloader:
     """
-    鍚屾下载-鍒囩墖绫?
-    说明锛?
-      1. 鍦?run() 鏂规硶涓紝鍗曠嚎绋嬪惊鐜墽琛屽綍鍒堕€昏緫锛?
-      2. 姣忔启动涓€娈?ffmpeg 褰曞埗锛屽苟璇诲彇 streamlink stdout 浣滀负杈撳叆锛?
-      3. 褰?ffmpeg 褰曞埗结束鍚庯紝鏉€鎺夊綋鍓嶇殑 streamlink 杩涚▼骞惰ˉ榻愭枃浠跺ぇ灏忥紱
-      4. 鑻ヤ腑閫斿彂鐜?streamlink 鏃犳暟鎹彲璇伙紙EOF锛夛紝鍒欒鏄庢病鏈夋洿澶氬唴瀹瑰彲下载锛岀粨鏉熸暣涓▼搴忋€?
+    閸氬本顒炰笅杞?閸掑洨澧栫猾?
+    璇存槑閿?
+      1. 閸?run() 閺傝纭舵稉顓ㄧ礉閸楁洜鍤庣粙瀣儕閻滎垱澧界悰灞界秿閸掑爼鈧槒绶敍?
+      2. 濮ｅ繑顐煎惎鍔ㄦ稉鈧▓?ffmpeg 瑜版洖鍩楅敍灞借嫙鐠囪褰?streamlink stdout 娴ｆ粈璐熸潏鎾冲弳閿?
+      3. 瑜?ffmpeg 瑜版洖鍩楃粨鏉熼崥搴礉閺夆偓閹哄缍嬮崜宥囨畱 streamlink 鏉╂稓鈻奸獮鎯八夋鎰瀮娴犺泛銇囩亸蹇ョ幢
+      4. 閼汇儰鑵戦柅鏂垮絺閻?streamlink 閺冪姵鏆熼幑顔煎讲鐠囦紮绱橢OF閿涘绱濋崚娆掝嚛閺勫孩鐥呴張澶嬫纯婢舵艾鍞寸€圭懓褰蹭笅杞介敍宀€绮ㄩ弶鐔告殻娑擃亞鈻兼惔蹇嬧偓?
     """
 
     def __init__(self,
@@ -47,12 +47,12 @@ class SyncDownloader:
                  output_prefix="segment_",
                  video_queue=None):
         """
-        :param stream_url:   鎷夋祦鍦板潃
+        :param stream_url:   閹峰绁﹂崷鏉挎絻
 
-        :param segment_duration: 姣忔褰曞埗鏃堕暱锛堢锛夛紙暂时涓嶇敤锛?
-        :param max_file_size:     文件鏈€灏忓ぇ灏忥紝涓嶈冻鏃惰繘琛?0x00 濉厖 鍗曚綅 MB
-        :param read_block_size:   浠?streamlink stdout 璇诲彇数据鏃剁殑鍗曟鍧楀ぇ灏?
-        :param output_prefix:     杈撳嚭文件鍚嶅墠缂€
+        :param segment_duration: 濮ｅ繑顔岃ぐ鏇炲煑閺冨爼鏆遍敍鍫㈩潡閿涘绱欐殏鏃舵稉宥囨暏閿?
+        :param max_file_size:     鏂囦欢閺堚偓鐏忓繐銇囩亸蹇ョ礉娑撳秷鍐婚弮鎯扮箻鐞?0x00 婵夘偄鍘?閸楁洑缍?MB
+        :param read_block_size:   娴?streamlink stdout 鐠囪褰囨暟鎹弮鍓佹畱閸楁洘顐奸崸妤€銇囩亸?
+        :param output_prefix:     鏉堟挸鍤枃浠堕崥宥呭缂傗偓
         """
         self.stream_url = stream_url
         self.quality = "best"
@@ -67,43 +67,43 @@ class SyncDownloader:
 
     def run_ffmpeg_with_url(self, ffmpeg_cmd, output_filename):
         with subprocess.Popen(ffmpeg_cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE) as ffmpeg_proc:
-            logger.info("[run] 启动 ffmpeg...")
+            logger.info("[run] 鍚姩 ffmpeg...")
             if output_filename == "-":
-                data = ffmpeg_proc.stdout.read(self.read_block_size)  # 璇诲彇绗竴涓?data
-                if not data:  # 濡傛灉绗竴涓?data 涓虹┖
-                    logger.info("[run] ffmpeg 没有杈撳嚭数据锛岃繑鍥?False")
+                data = ffmpeg_proc.stdout.read(self.read_block_size)  # 鐠囪褰囩粭顑跨娑?data
+                if not data:  # 婵″倹鐏夌粭顑跨娑?data 娑撹櫣鈹?
+                    logger.info("[run] ffmpeg 娌℃湁鏉堟挸鍤暟鎹敍宀冪箲閸?False")
                     err = ffmpeg_proc.stderr.read()
                     if err:
                         logger.error("[run] ffmpeg err " + err.decode("utf-8", errors="replace"))
                     return False
-                self.video_queue.put(data)  # 灏嗙涓€涓暟鎹斁鍏ラ槦鍒?
+                self.video_queue.put(data)  # 鐏忓棛顑囨稉鈧稉顏呮殶閹诡喗鏂侀崗銉╂Е閸?
                 while True:
                     data = ffmpeg_proc.stdout.read(self.read_block_size)
                     if not data:
-                        logger.info("[run] ffmpeg stdout 宸插埌杈?EOF銆傜粨鏉熸湰娈靛啓鍏ャ€?)
+                        logger.info("[run] ffmpeg stdout 瀹告彃鍩屾潏?EOF閵嗗倻绮ㄩ弶鐔告拱濞堥潧鍟撻崗銉ｂ偓?)
                         break
                     self.video_queue.put(data)
             ffmpeg_proc.wait()
-            # 杈撳嚭 ffmpeg 鐨勯敊璇俊鎭紙濡傛灉鏈夌殑璇濓級
+            # 鏉堟挸鍤?ffmpeg 閻ㄥ嫰鏁婄拠顖欎繆閹垽绱欐俊鍌涚亯閺堝娈戠拠婵撶礆
             # err = ffmpeg_proc.stderr.read()
             # if err:
             #     logger.error("[run] ffmpeg err " + err.decode("utf-8", errors="replace"))
-        return True  # 濡傛灉姝ｅ父鎵ц锛岃繑鍥?True
+        return True  # 婵″倹鐏夊锝呯埗閹笛嗩攽閿涘矁绻戦崶?True
 
     def run_streamlink_with_ffmpeg(self, streamlink_cmd, ffmpeg_cmd, output_filename):
         with subprocess.Popen(streamlink_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as streamlink_proc:
-            logger.info("[run] 启动 streamlink...")
+            logger.info("[run] 鍚姩 streamlink...")
             with subprocess.Popen(ffmpeg_cmd, stdin=streamlink_proc.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as ffmpeg_proc:
-                logger.info("[run] 启动 ffmpeg...")
+                logger.info("[run] 鍚姩 ffmpeg...")
                 if output_filename == "-":
-                    logger.info("[run] 璇诲彇 ffmpeg stdout...")
-                    # 璇诲彇绗竴涓暟鎹?
+                    logger.info("[run] 鐠囪褰?ffmpeg stdout...")
+                    # 鐠囪褰囩粭顑跨娑擃亝鏆熼幑?
                     data = ffmpeg_proc.stdout.read(self.read_block_size)
-                    if not data:  # 濡傛灉绗竴涓暟鎹负绌?
-                        logger.info("[run] ffmpeg 没有杈撳嚭数据锛岃繑鍥?False")
-                        streamlink_proc.kill()  # 缁堟 streamlink 杩涚▼
-                        ffmpeg_proc.kill()  # 缁堟 ffmpeg 杩涚▼
-                        # 鎵撳嵃错误杈撳嚭
+                    if not data:  # 婵″倹鐏夌粭顑跨娑擃亝鏆熼幑顔昏礋缁?
+                        logger.info("[run] ffmpeg 娌℃湁鏉堟挸鍤暟鎹敍宀冪箲閸?False")
+                        streamlink_proc.kill()  # 缂佸牊顒?streamlink 鏉╂稓鈻?
+                        ffmpeg_proc.kill()  # 缂佸牊顒?ffmpeg 鏉╂稓鈻?
+                        # 閹垫挸宓冮敊璇潏鎾冲毉
                         ffmpeg_err = ffmpeg_proc.stderr.read()
                         if ffmpeg_err:
                             logger.error("[run] ffmpeg err " + ffmpeg_err.decode("utf-8", errors="replace"))
@@ -112,38 +112,38 @@ class SyncDownloader:
                             logger.error("[run] streamlink err " + streamlink_err.decode("utf-8", errors="replace"))
                         return False
 
-                    self.video_queue.put(data)  # 灏嗙涓€涓暟鎹斁鍏ラ槦鍒?
-                    # 缁х画璇诲彇鍓╀綑数据
+                    self.video_queue.put(data)  # 鐏忓棛顑囨稉鈧稉顏呮殶閹诡喗鏂侀崗銉╂Е閸?
+                    # 缂佈呯敾鐠囪褰囬崜鈺€缍戞暟鎹?
                     while True:
                         data = ffmpeg_proc.stdout.read(self.read_block_size)
                         if not data:
-                            logger.info("[run] ffmpeg stdout 宸插埌杈?EOF銆傜粨鏉熸湰娈靛啓鍏ャ€?)
+                            logger.info("[run] ffmpeg stdout 瀹告彃鍩屾潏?EOF閵嗗倻绮ㄩ弶鐔告拱濞堥潧鍟撻崗銉ｂ偓?)
                             break
                         self.video_queue.put(data)
 
                 ffmpeg_proc.wait()
-                logger.info("[run] ffmpeg 宸插埌杈捐緭鍑哄ぇ灏忓苟閫€鍑恒€傜粨鏉熸湰娈靛啓鍏ャ€?)
-                # 鎵撳嵃 ffmpeg 瀛愯繘绋嬬殑错误杈撳嚭
+                logger.info("[run] ffmpeg 瀹告彃鍩屾潏鎹愮翻閸戝搫銇囩亸蹇撹嫙闁偓閸戞亽鈧倻绮ㄩ弶鐔告拱濞堥潧鍟撻崗銉ｂ偓?)
+                # 閹垫挸宓?ffmpeg 鐎涙劘绻樼粙瀣畱閿欒鏉堟挸鍤?
                 # ffmpeg_err = ffmpeg_proc.stderr.read()
                 # if ffmpeg_err:
                 # logger.error("[run] ffmpeg err " + ffmpeg_err.decode("utf-8", errors="replace"))
-            # 鎵撳嵃 streamlink 瀛愯繘绋嬬殑错误杈撳嚭
+            # 閹垫挸宓?streamlink 鐎涙劘绻樼粙瀣畱閿欒鏉堟挸鍤?
             # streamlink_err = streamlink_proc.stderr.read()
             # if streamlink_err:
             #     logger.error("[run] streamlink err " + streamlink_err.decode("utf-8", errors="replace"))
-        return True  # 濡傛灉涓€鍒囨甯革紝杩斿洖 True
+        return True  # 婵″倹鐏夋稉鈧崚鍥劀鐢潻绱濇潻鏂挎礀 True
 
     def build_ffmpeg_cmd(self, input_source, output_filename, headers, segment_duration):
         cmd = [
             "ffmpeg",
             "-loglevel", "error",
-            # "-"  # 瑕嗙洊杈撳嚭文件
+            # "-"  # 鐟曞棛娲婃潏鎾冲毉鏂囦欢
         ]
         if headers:
             cmd += ["-headers", ''.join(f'{key}: {value}\r\n' for key, value in headers.items())]
         for i in [
             "-fflags", "+genpts",
-            "-i", input_source,  # 杈撳叆婧?
+            "-i", input_source,  # 鏉堟挸鍙嗗┃?
             # "-t", str(segment_duration),
             "-fs", f"{self.max_file_size}M",
             "-c:v", "copy",
@@ -159,14 +159,14 @@ class SyncDownloader:
 
     def run(self):
         """
-        涓婚€昏緫锛氬惊鐜繘琛屽垎娈靛綍鍒躲€?
-        - 姣忔褰曞埗锛?
-          1) 启动 streamlink锛涜嫢 EOF 鍒欓€€鍑恒€?
-          2) 启动 ffmpeg (甯?-fs 参数限制杈撳嚭大小)锛?
-          3) 浠?streamlink stdout 璇绘暟鎹紝鍐欑粰 ffmpeg stdin锛?
-          4) ffmpeg 鍒版椂闀垮悗閫€鍑猴紝鐒跺悗鏉€鎺?streamlink锛?
-          5) 杩涘叆涓嬩竴娈碉紝濡傛寰€澶嶃€?
-        - 鑻ヤ腑閫斿彂鐜?streamlink 鏃犳暟鎹紙EOF锛夊垯璺冲嚭寰幆銆?
+        娑撳鈧槒绶敍姘儕閻滎垵绻樼悰灞藉瀻濞堥潧缍嶉崚韬测偓?
+        - 濮ｅ繑顔岃ぐ鏇炲煑閿?
+          1) 鍚姩 streamlink閿涙稖瀚?EOF 閸掓瑩鈧偓閸戞亽鈧?
+          2) 鍚姩 ffmpeg (鐢?-fs 鍙傛暟闄愬埗鏉堟挸鍤ぇ灏?閿?
+          3) 娴?streamlink stdout 鐠囩粯鏆熼幑顕嗙礉閸愭瑧绮?ffmpeg stdin閿?
+          4) ffmpeg 閸掔増妞傞梹鍨倵闁偓閸戠尨绱濋悞璺烘倵閺夆偓閹?streamlink閿?
+          5) 鏉╂稑鍙嗘稉瀣╃濞堢绱濇俊鍌涱劃瀵扳偓婢跺秲鈧?
+        - 閼汇儰鑵戦柅鏂垮絺閻?streamlink 閺冪姵鏆熼幑顕嗙礄EOF閿涘鍨捄鍐插毉瀵邦亞骞嗛妴?
         """
 
         file_index = 1
@@ -175,18 +175,18 @@ class SyncDownloader:
             if self.stop_event.is_set():
                 break
             if retry_count >= 5:
-                logger.info("杩欎釜直播娴佸凡缁忓け鏁堬紝鍋滄下载鍣?)
+                logger.info("鏉╂瑤閲滅洿鎾ù浣稿嚒缂佸繐銇戦弫鍫礉閸嬫粍顒涗笅杞介崳?)
                 return
 
             output_filename = f"{self.output_prefix}{file_index:03d}.mkv"
-            # print(f"\n[run] ========== 鍑嗗褰曞埗绗?{file_index} 娈碉細{output_filename} ==========")
-            # logging.info(f"\n[run] == 褰撳墠下载娴佸湴鍧€锛歿self.stream_url} ==")
-            logger.info(f"\n[run] == 鍑嗗褰曞埗绗?{file_index} 娈碉細{output_filename} ==")
+            # print(f"\n[run] ========== 閸戝棗顦ぐ鏇炲煑缁?{file_index} 濞堢绱皗output_filename} ==========")
+            # logging.info(f"\n[run] == 瑜版挸澧犱笅杞藉ù浣告勾閸р偓閿涙self.stream_url} ==")
+            logger.info(f"\n[run] == 閸戝棗顦ぐ鏇炲煑缁?{file_index} 濞堢绱皗output_filename} ==")
             output_filename = "-"
             is_hls = '.m3u8' in urlparse(self.stream_url).path
             if not is_hls:
-                # print("[run] 杈撳叆婧愪笉鏄?HLS 鍦板潃锛屽皢鐩存帴浣跨敤 ffmpeg 杩涜褰曞埗銆?, self.stream_url)
-                logger.info("[run] 杈撳叆婧愪笉鏄?HLS 鍦板潃锛屽皢鐩存帴浣跨敤 ffmpeg 杩涜褰曞埗銆?)
+                # print("[run] 鏉堟挸鍙嗗┃鎰瑝閺?HLS 閸︽澘娼冮敍灞界殺閻╁瓨甯存担璺ㄦ暏 ffmpeg 鏉╂稖顢戣ぐ鏇炲煑閵?, self.stream_url)
+                logger.info("[run] 鏉堟挸鍙嗗┃鎰瑝閺?HLS 閸︽澘娼冮敍灞界殺閻╁瓨甯存担璺ㄦ暏 ffmpeg 鏉╂稖顢戣ぐ鏇炲煑閵?)
                 ffmpeg_cmd = self.build_ffmpeg_cmd(self.stream_url, output_filename,
                                                    self.headers, self.segment_duration)
                 if not self.run_ffmpeg_with_url(ffmpeg_cmd, output_filename):
@@ -194,8 +194,8 @@ class SyncDownloader:
                     time.sleep(1)
                     continue
             else:
-                # print("[run] 杈撳叆婧愭槸 HLS 鍦板潃锛屽皢浣跨敤 streamlink + ffmpeg 杩涜褰曞埗銆?)
-                logger.info("[run] 杈撳叆婧愭槸 HLS 鍦板潃锛屽皢浣跨敤 streamlink + ffmpeg 杩涜褰曞埗銆?)
+                # print("[run] 鏉堟挸鍙嗗┃鎰Ц HLS 閸︽澘娼冮敍灞界殺娴ｈ法鏁?streamlink + ffmpeg 鏉╂稖顢戣ぐ鏇炲煑閵?)
+                logger.info("[run] 鏉堟挸鍙嗗┃鎰Ц HLS 閸︽澘娼冮敍灞界殺娴ｈ法鏁?streamlink + ffmpeg 鏉╂稖顢戣ぐ鏇炲煑閵?)
                 if self.headers:
                     headers = []
                     for key, value in self.headers.items():
@@ -217,9 +217,9 @@ class SyncDownloader:
                     time.sleep(1)
                     continue
 
-            # 6. 杩涘叆涓嬩竴娈?
+            # 6. 鏉╂稑鍙嗘稉瀣╃濞?
             # if file_index != 1:
-            self.video_queue.put(None)  # 閫氱煡娑堣垂鑰呯嚎绋嬫湰娈靛綍鍒剁粨鏉?
+            self.video_queue.put(None)  # 闁氨鐓″☉鍫ｅ瀭閼板懐鍤庣粙瀣拱濞堥潧缍嶉崚鍓佺波閺?
             file_index += 1
 
 
@@ -231,41 +231,41 @@ def main():
         output_prefix="segment_"
     )
 
-    # ====銆愬彲閫夈€戞秷璐硅€呯嚎绋嬬ず渚嬶紝婕旂ず濡備綍鎷垮埌 video_queue 鐨勬暟鎹?===
+    # ====閵嗘劕褰查柅澶堚偓鎴炵Х鐠愮鈧懐鍤庣粙瀣仛娓氬绱濆鏃傘仛婵″倷缍嶉幏鍨煂 video_queue 閻ㄥ嫭鏆熼幑?===
     def consumer():
         file_index = 1
         while True:
             data_count = 0
             with open(f"output_{file_index}.mkv", "wb") as f:
                 while True:
-                    data = slicer.video_queue.get()  # 闃诲寮忚幏鍙?
+                    data = slicer.video_queue.get()  # 闂冭顢ｅ蹇氬箯閸?
                     if data is None:
                         break
                     f.write(data)
                     data_count += len(data)
-                    # print(f"[consumer] 写入文件 output_{file_index}.mkv锛屽ぇ灏忥細{data_count} 瀛?)
-            print(f"[consumer] 写入文件 output_{file_index}.mkv锛屽ぇ灏忥細{data_count} 瀛?)
+                    # print(f"[consumer] 鍐欏叆鏂囦欢 output_{file_index}.mkv閿涘苯銇囩亸蹇ョ窗{data_count} 鐎?)
+            print(f"[consumer] 鍐欏叆鏂囦欢 output_{file_index}.mkv閿涘苯銇囩亸蹇ョ窗{data_count} 鐎?)
 
             if data_count < 100:
-                print(f"[consumer] 鏃犳晥文件锛屽垹闄?output_{file_index}.mkv")
+                print(f"[consumer] 閺冪姵鏅ユ枃浠堕敍灞藉灩闂?output_{file_index}.mkv")
                 os.remove(f"output_{file_index}.mkv")
                 slicer.stop_event.set()
                 break
 
-            pad_file_to_size(f"output_{file_index}.mkv", 100 * 1024 * 1024)  # 琛ラ綈文件大小
+            pad_file_to_size(f"output_{file_index}.mkv", 100 * 1024 * 1024)  # 鐞涖儵缍堟枃浠跺ぇ灏?
             file_index += 1
             # if slicer.stop_event.is_set():
             # break
-            # 鍦ㄨ繖閲屽彲浠ュ data 鍋氳繘涓€姝ュ鐞嗭紝姣斿鍐嶆帹鍒板埆鐨勫湴鏂?
+            # 閸︺劏绻栭柌灞藉讲娴犮儱顕?data 閸嬫俺绻樻稉鈧銉ヮ槱閻炲棴绱濆В鏂款洤閸愬秵甯归崚鏉垮焼閻ㄥ嫬婀撮弬?
 
-    # 启动娑堣垂鑰呯嚎绋?
+    # 鍚姩濞戝牐鍨傞懓鍛殠缁?
     t = threading.Thread(target=consumer, daemon=True)
     t.start()
 
-    # 启动下载褰曞埗涓婚€昏緫
+    # 鍚姩涓嬭浇瑜版洖鍩楁稉濠氣偓鏄忕帆
     slicer.run()
 
-    # 鍋滄娑堣垂鑰咃紙濡傚綍鍒跺畬姣曞悗鍙墽琛岋級
+    # 閸嬫粍顒涘☉鍫ｅ瀭閼板拑绱欐俊鍌氱秿閸掕泛鐣В鏇炴倵閸欘垱澧界悰宀嬬礆
     # slicer.video_queue.put(None)
 
     # t.join()
