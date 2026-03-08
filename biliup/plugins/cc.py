@@ -1,4 +1,4 @@
-﻿锘縡rom biliup.common.util import client
+from biliup.common.util import client
 from . import logger, match1
 from ..engine.decorators import Plugin
 from ..engine.download import DownloadBase
@@ -18,7 +18,7 @@ class CC(DownloadBase):
             headers=self.fake_headers
         )).json()
         if len(room_info["data"][rid]) <= 1:
-            logger.debug(f"{self.plugin_msg}: 鏈紑閹?)
+            logger.debug(f"{self.plugin_msg}: 未开播")
             return False
 
         if is_check:

@@ -1,4 +1,4 @@
-﻿锘縤mport time
+import time
 from typing import Optional, Dict
 
 import requests
@@ -27,11 +27,11 @@ class AfreecaTV(DownloadBase):
         try:
             username = match1(self.url, VALID_URL_BASE)
             if not username:
-                logger.warning(f"{AfreecaTV.__name__}: {self.url}: 鐩存挱闂村湴鍧€閿欒")
+                logger.warning(f"{AfreecaTV.__name__}: {self.url}: 直播间地址错误")
                 return False
 
             channel_info = (await biliup.common.util.client.post(CHANNEL_API_URL, data={
-                "bd": username,
+                "bid": username,
                 "bno": "",
                 "type": "live",
                 "pwd": "",
@@ -43,7 +43,7 @@ class AfreecaTV(DownloadBase):
             }, headers=self.fake_headers, timeout=5)).json()
 
             if channel_info["CHANNEL"]["RESULT"] == -6:
-                logger.warning(f"{AfreecaTV.__name__}: {self.url}: 妫€濞村銇戠拹?鐠囬攱顥呴弻銉ㄥ閸欏嘲鐦戦惍浣筋啎缂?)
+                logger.warning(f"{AfreecaTV.__name__}: {self.url}: 检测失败,请检查账号密码设置")
                 return False
 
             if channel_info["CHANNEL"]["RESULT"] != 1:
@@ -54,10 +54,10 @@ class AfreecaTV(DownloadBase):
             if is_check:
                 return True
 
-            ad_info = (await biliup.common.util.client.post(CHANNEL_API_URL, data={
-                "bd": username,
+            aid_info = (await biliup.common.util.client.post(CHANNEL_API_URL, data={
+                "bid": username,
                 "bno": channel_info["CHANNEL"]["BNO"],
-                "type": "ad",
+                "type": "aid",
                 "pwd": "",
                 "player_type": "html5",
                 "stream_type": "common",
@@ -71,9 +71,9 @@ class AfreecaTV(DownloadBase):
                 "broad_key": f'{channel_info["CHANNEL"]["BNO"]}-common-{QUALITIES[0]}-hls'
             }, headers=self.fake_headers, timeout=5)).json()
 
-            self.raw_stream_url = view_info["view_url"] + "?ad=" + ad_info["CHANNEL"]["AID"]
+            self.raw_stream_url = view_info["view_url"] + "?aid=" + aid_info["CHANNEL"]["AID"]
         except:
-            logger.warning(f"{AfreecaTV.__name__}: {self.url}: 鑾峰彇閿欒閿涘本婀版璺虫潻?)
+            logger.warning(f"{AfreecaTV.__name__}: {self.url}: 获取错误，本次跳过")
             return False
 
         return True
@@ -91,7 +91,7 @@ class AfreecaTVUtils:
                 if not username or not password:
                     return None
                 response = requests.post("https://login.afreecatv.com/app/LoginAction.php", data={
-                    "szUd": username,
+                    "szUid": username,
                     "szPassword": password,
                     "szWork": "login",
                     "szType": "json",

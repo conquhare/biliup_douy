@@ -1,4 +1,4 @@
-﻿锘縤mport biliup.common.util
+import biliup.common.util
 from . import match1, logger
 # from biliup.config import config
 from ..engine.decorators import Plugin
@@ -10,31 +10,31 @@ class Missevan(DownloadBase):
         super().__init__(fname, url, config, suffix)
 
     async def acheck_stream(self, is_check=False):
-        rd = 0
-        # 鐢ㄦ埛涓婚〉鑾峰彇鐩存挱闂村湴鍧€
+        rid = 0
+        # 用户主页获取直播间地址
         if self.url.split('www'):
             user_page = await biliup.common.util.client.get(self.url, timeout=30, headers=self.fake_headers)
-            # 閸欐牜鈥栫紪鐮侀崷銊х秹妞ら潧鍞撮惃鍕纯閹绢參妫块崣?
+            # 取硬编码在网页内的直播间号
             if user_page.status_code == 200:
-                start = user_page.text.find('data-d="') + 9
+                start = user_page.text.find('data-id="') + 9
                 end = user_page.text.find('"', start)
-                rd = user_page.text[start:end]
+                rid = user_page.text[start:end]
             else:
                 logger.debug(user_page.status_code)
         if self.url.split("live"):
-            rd = match1(self.url, r'/(\d+)')
+            rid = match1(self.url, r'/(\d+)')
 
-        room_info = (await biliup.common.util.client.get(f"https://fm.missevan.com/api/v2/live/{rd}", timeout=30, headers=self.fake_headers)).json()
+        room_info = (await biliup.common.util.client.get(f"https://fm.missevan.com/api/v2/live/{rid}", timeout=30, headers=self.fake_headers)).json()
 
-        # 閺冪姷娲块幘顓㈡？閻ㄥ嫭鍎忛崘?
+        # 无直播间的情况
         if room_info['code'] != 0:
             logger.debug(room_info['info'])
             return False
 
-        # 瀵偓閹绢厾濮搁幀?
+        # 开播状态
         if room_info['info']['room']['status']['open'] == 0:
             creator_username = room_info['info']['room']['creator_username']
-            logger.debug(f"娑撶粯鎸眥creator_username}鏈紑閹?)
+            logger.debug(f"主播{creator_username}未开播")
             return False
 
         self.room_title = room_info['info']['room']['name']

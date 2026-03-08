@@ -1,4 +1,4 @@
-﻿锘縤mport json
+import json
 import logging
 import zlib
 from struct import pack, unpack
@@ -30,13 +30,13 @@ class Bilibili:
     async def get_ws_info(url, content):
 
         uid = content['uid']
-        # 娴肩姴鍙嗛崘鍛啇娑擃叏绱濇俊鍌涚亯 uid 娑撳秳璐?0閿涘苯鍨?cookie 韫囧懐鍔у瓨鍦ㄩ敍灞肩瑬韫囧懐鍔ф稉楦款嚊缂佸棙膩瀵?
+        # 传入内容中，如果 uid 不为 0，则 cookie 必然存在，且必然为详细模式
         Bilibili.headers['cookie'] = f"buvid3={generate_fake_buvid3()};"
         if uid > 0:
             Bilibili.headers['cookie'] += content['cookie']
             
             
-        # 鑾峰彇瀵懓绠风拋銈堢槈淇℃伅
+        # 获取弹幕认证信息
         danmu_wss_url = 'wss://broadcastlv.chat.bilibili.com/sub'
         room_id = content.get('room_id')
         async with aiohttp.ClientSession(headers=Bilibili.headers) as session:
@@ -45,7 +45,7 @@ class Bilibili:
                                    timeout=5) as resp:
                     room_json = await resp.json()
                     room_id = room_json['data']['room_id']
-            # 2025-05-29 B缁旀瑦鏌婃搴㈠付闂団偓鐟曚箘BI
+            # 2025-05-29 B站新风控需要WBI
             params = {
                 'id': str(room_id),
                 'type': '0',
@@ -59,7 +59,7 @@ class Bilibili:
                 #print(danmu_info)
                 danmu_token = danmu_info['data']['token']
                 try:
-                    # 閸忎浇顔忓彲鑳借幏鍙栨稉宥呭煂鏉╂柨娲栭惃鍒猳st
+                    # 允许可能获取不到返回的host
                     danmu_host = danmu_info['data']['host_list'][0]
                     danmu_wss_url = f"wss://{danmu_host['host']}:{danmu_host['wss_port']}/sub"
                 except:
@@ -128,10 +128,10 @@ class Bilibili:
                         'WELCOME': 'enter',
                         'NOTICE_MSG': 'broadcast',
                         'SUPER_CHAT_MESSAGE': 'super_chat',
-                        'LIVE_INTERACTIVE_GAME': 'interactive_danmaku',  # 閺傛澘顤冩禍鎺戝З瀵懓绠烽敍宀€绮″ù瀣槸娑撳骸鑴婇獮鏇炲敶鐎归€涚閼?
+                        'LIVE_INTERACTIVE_GAME': 'interactive_danmaku',  # 新增互动弹幕，经测试与弹幕内容一致
                         'GUARD_BUY': 'guard_buy'
                     }.get(j.get('cmd'), 'other')
-                    # 2021-06-03 bilibili 鐎涙顔屾洿鏂? 瑜般垹顩?DANMU_MSG:4:0:2:2:2:0
+                    # 2021-06-03 bilibili 字段更新, 形如 DANMU_MSG:4:0:2:2:2:0
                     if msg.get('msg_type', 'UNKNOWN').startswith('DANMU_MSG'):
                         msg['msg_type'] = 'danmaku'
 
@@ -142,10 +142,10 @@ class Bilibili:
                         msg['content'] = j.get('info', ['', ''])[1]
                         msg["color"] = f"{j.get('info', '16777215')[0][3]}"
 
-                        # 閸栧搫鍨庨弰顖濄€冮幆鍛瘶鏉╂ɑ妲搁弲顕€鈧艾鑴婇獮?
+                        # 区分是表情包还是普通弹幕
                         msg_extra = json.loads(j.get('info', [['','','','','','','','','','','','','','','',{}]])[0][15].get("extra", "{}"))
                         if msg_extra.get("emoticon_unique", "") != "":
-                            msg['content'] = f"鐞涖劍鍎忛妴鎭祄sg_extra['emoticon_unique']}閵?
+                            msg['content'] = f"表情【{msg_extra['emoticon_unique']}】"
 
                     elif msg['msg_type'] == 'super_chat':
                         msg['name'] = j.get('data', {}).get('user_info', {}).get('uname', "")
@@ -153,7 +153,7 @@ class Bilibili:
                         msg['content'] = j.get('data', {}).get('message', '')
                         msg['price'] = int(j.get('data', {}).get('price', 0)) * 1000
                         msg['num'] = 1
-                        msg['gift_name'] = "闁辨帞娲伴悾娆掆枅"
+                        msg['gift_name'] = "醒目留言"
 
                     elif msg['msg_type'] == "guard_buy":
                         msg['name'] = j.get('data', {}).get('username', '')
@@ -161,7 +161,7 @@ class Bilibili:
                         msg['gift_name'] = j.get('data', {}).get('gift_name', '')
                         msg['price'] = j.get('data', {}).get('price', '')
                         msg['num'] = j.get('data', {}).get('num', '')
-                        msg['content'] = f"{msg['name']}娑撳﹣绨msg['num']}娑擃亝婀€{msg['gift_name']}"
+                        msg['content'] = f"{msg['name']}上了{msg['num']}个月{msg['gift_name']}"
 
                     elif msg['msg_type'] == 'gift':
                         msg['name'] = j.get('data', {}).get('uname', '')
@@ -169,7 +169,7 @@ class Bilibili:
                         msg['gift_name'] = j.get('data', {}).get('giftName', '')
                         msg['price'] = j.get('data', {}).get('price', '')
                         msg['num'] = j.get('data', {}).get('num', '')
-                        msg['content'] = f"{msg['name']}閹舵洖鏉烘禍鍞焟sg['num']}娑撶崊msg['gift_name']}"
+                        msg['content'] = f"{msg['name']}投喂了{msg['num']}个{msg['gift_name']}"
 
                     elif msg['msg_type'] == 'interactive_danmaku':
                         msg['name'] = j.get('data', {}).get('uname', '')
@@ -191,5 +191,5 @@ class Bilibili:
                     msg['raw_data'] = ""
                 msgs.append(msg)
             except Exception as Error:
-                logger.warning(f"{Bilibili.__name__}: 瀵懓绠烽幒銉︽暪瀵倸鐖?- {Error}")
+                logger.warning(f"{Bilibili.__name__}: 弹幕接收异常 - {Error}")
         return msgs

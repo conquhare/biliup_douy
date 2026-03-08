@@ -1,4 +1,4 @@
-﻿锘縤mport json
+import json
 
 from biliup.common.util import client
 from . import match1, logger
@@ -44,15 +44,15 @@ class Kilakila(DownloadBase):
                     REMOVE_ROOM: 19
                 },
                 '''
-                logger.debug(f"{self.plugin_msg}: 鏈紑閹?)
+                logger.debug(f"{self.plugin_msg}: 未开播")
                 return False
             self.room_title = r['b']['title']
 
             if is_check:
-                logger.info(f"{self.plugin_msg}: 鐩存挱閼冲本娅欓崶楣冩懠閹? {r['b']['defaultBackgroundPicUrl']}")
+                logger.info(f"{self.plugin_msg}: 直播背景图链接: {r['b']['defaultBackgroundPicUrl']}")
                 return True
 
-            # 鐩存挱鐟欏棝顣跺ù浣疯礋 320*240 姒涙垼澹婇懗灞炬珯閿涘苯褰查幖顓㈠帳閼冲本娅欓崶楣冨櫢閺傛澘甯囬崚鎯邦潒妫?
+            # 直播视频流为 320*240 黑色背景，可搭配背景图重新压制视频
             # self.background_pic_url = r['b']['defaultBackgroundPicUrl']
             self.live_cover_url = r['b']['backPic']
             if self.kila_protocol == 'flv':
@@ -62,6 +62,6 @@ class Kilakila(DownloadBase):
         except json.JSONDecodeError:
             logger.error(f"{self.plugin_msg}: {r.text}")
         except:
-            logger.error(f"{self.plugin_msg}: 鑾峰彇閹村潡妫夸俊鎭け璐?, exc_info=True)
+            logger.error(f"{self.plugin_msg}: 获取房间信息失败", exc_info=True)
 
         return True

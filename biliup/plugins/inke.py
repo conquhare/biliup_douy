@@ -1,4 +1,4 @@
-﻿锘縤mport json
+import json
 import re
 
 import biliup.common.util
@@ -24,12 +24,12 @@ class Inke(DownloadBase):
         jsons = json.loads(r1.text)
         if jsons:
             if jsons.get('error_code') != 0:
-                logger.error("鐩存挱闂傛潙婀撮崸鈧敊璇?)
+                logger.error("直播间地址错误")
                 return False
             if jsons['data']['status']:
                 self.room_title = jsons['data']['live_name']
                 self.raw_stream_url = jsons['data']['live_addr'][0]['stream_addr']
                 return True
 
-        logger.debug("娑撶粯鎸辨湭寮€閹?)
+        logger.debug("主播未开播")
         return False

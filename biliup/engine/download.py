@@ -1,4 +1,4 @@
-﻿锘縤mport copy
+import copy
 import inspect
 import json
 import logging
@@ -37,9 +37,9 @@ class DownloadBase(ABC):
             opt_args = []
         self.fname = fname
         self.url = url
-        # 瑜版洖鍩楅崥搴濈箽鐎涙ɑ鏋冩禒鑸电壐瀵繗鈧矂娼┃鎰ウ鏍煎紡 鐎电懓绨查崢鐔煎帳缂冾喗鏋冩禒绉刼rmat 娴犲崝fmpeg閸欏treamlink閻㈢喐鏅?
+        # 录制后保存文件格式而非源流格式 对应原配置文件format 仅ffmpeg及streamlink生效
         if not suffix:
-            logger.error(f'妫€濞村鍩宻uffix娑撳秴鐡ㄩ崷顭掔礉鐠囩柉藟閸忓懎鎮楃紓鈧?)
+            logger.error(f'检测到suffix不存在，请补充后缀')
         else:
             self.suffix = suffix.lower()
         self.live_cover_path = None
@@ -49,8 +49,8 @@ class DownloadBase(ABC):
         # -c copy -bsf:a aac_adtstoasc -movflags +faststart output.mp4
         self.raw_stream_url = None
 
-        # 娑撶粯鎸遍崡鏇犲娴肩姴寮导姘愁洬閻╂牕鍙忕仦鈧缃妴鍌欑伐婵″倹鏌婃晶鐐扮啊娑撯偓娑擃亜鍙忕仦鈧惃鍒lename_prefix鍙傛暟閿涘苯婀稉瀣桨濞ｈ濮瀞elf.filename_prefix = config.get('filename_prefix'),
-        # 閸楀啿褰查柅姘崇箖self.filename_prefix閸︺劋绗呮潪鑺ュ灗閼板懍绗傛导鐘虫閸婃瑤绱堕柅鎺嶅瘜閹绢厼宕熼悪顒傛畱璁剧疆鍙傛暟閻劋绨拫鍐暏閿涘牆顩ч弸婊嗩嚉娑撶粯鎸遍張澶庮啎缂冾喖宕熼悪顒€寮弫甯礉鐏忓棔绱版导妯哄帥娴ｈ法鏁ら崡鏇犲鍙傛暟閿涙稑顩ч弮鐙呯礉閸掓瑤绱版导妯哄帥娴ｇ姷鏁ら崗銊ョ湰鍙傛暟閵嗗偊绱?
+        # 主播单独传参会覆盖全局设置。例如新增了一个全局的filename_prefix参数，在下面添加self.filename_prefix = config.get('filename_prefix'),
+        # 即可通过self.filename_prefix在下载或者上传时候传递主播单独的设置参数用于调用（如果该主播有设置单独参数，将会优先使用单独参数；如无，则会优先你用全局参数。）
         self.filename_prefix = config.get('filename_prefix')
         self.use_live_cover = config.get('use_live_cover', False)
         self.opt_args = opt_args
@@ -67,16 +67,16 @@ class DownloadBase(ABC):
         # self.excluded_keywords = config.get('excluded_keywords')
         self.file_size = config.get('file_size')
 
-        # 閺勵垰鎯侀弰顖欑瑓鏉炶姤膩瀵?璺宠繃娑撳鎸辨濞?
+        # 是否是下载模式 跳过下播检测
         self.is_download = False
 
-        # 鍒嗘閸氬骸顦╅悶?
+        # 分段后处理
         # self.segment_processor = config.get('segment_processor')
         self.segment_processor_thread = []
-        # 鍒嗘閸氬骸顦╅悶鍡楄嫙鐞?
+        # 分段后处理并行
         self.segment_processor_parallel = config.get('segment_processor_parallel', False)
 
-        # 瀵懓绠风€广垺鍩涚粩?
+        # 弹幕客户端
         self.danmaku: Optional[IDanmakuClient] = None
 
         self.platform = self.__class__.__name__
@@ -85,17 +85,17 @@ class DownloadBase(ABC):
 
     @abstractmethod
     async def acheck_stream(self, is_check=False):
-        # is_check 閺勵垰鎯侀弰顖涱梾濞村膩瀵?妫€濞村膩瀵繐褰叉禒銉ユ嫹閻ｃ儱褰ч張澶夌瑓鏉炶姤妞傞棁鈧憰浣烘畱閼版妞傞幙宥勭稊
+        # is_check 是否是检测模式 检测模式可以忽略只有下载时需要的耗时操作
         raise NotImplementedError()
 
     def should_record(self):
-        # 妫€閺屻儲鍩ч梻鏉戞倳
+        # 检查房间名
         keywords = self.config['streamers'].get(self.fname, {}).get('excluded_keywords')
         if self.room_title and keywords:
             if any(k.strip() in self.room_title for k in keywords):
                 return False
 
-        # 妫€閺屻儲妞傞梻纾嬪瘱閸?
+        # 检查时间范围
         if not check_timerange(self.fname):
             return False
 
@@ -107,11 +107,11 @@ class DownloadBase(ABC):
         logger.debug(f"{self.plugin_msg}: Plugin settings - {self.__dict__}")
         # logger.info(f"{self.plugin_msg}: Request headers - {self.fake_headers}")
         logger.info(f"{self.plugin_msg}: Request url - {self.raw_stream_url}")
-        # 鐠嬪啳鐦担璺ㄦ暏鏉堢懓缍嶆潏閫涚瑐娴肩姴濮涢懗?
+        # 调试使用边录边上传功能
         # self.downloader = 'sync-downloader'
         if self.is_download:
             if not shutil.which("ffmpeg"):
-                logger.error("閺堫亜鐣ㄧ憗?FFMpeg 閹存牔绗夊瓨鍦ㄦ禍?PATH 閸?)
+                logger.error("未安装 FFMpeg 或不存在于 PATH 内")
                 logger.info("Current user's PATH is:" + os.getenv("PATH"))
                 return False
             else:
@@ -120,34 +120,34 @@ class DownloadBase(ABC):
         parsed_url_path = urlparse(self.raw_stream_url).path
         if self.downloader != 'stream-gears':
             if not shutil.which("ffmpeg"):
-                logger.error("閺堫亜鐣ㄧ憗?FFMpeg 閹存牔绗夊瓨鍦ㄦ禍?PATH 閸愬拑绱濋張顒侇偧涓嬭浇娴ｈ法鏁?stream-gears")
+                logger.error("未安装 FFMpeg 或不存在于 PATH 内，本次下载使用 stream-gears")
                 logger.info("Current user's PATH is:" + os.getenv("PATH"))
             else:
-                # 閸氬本顒炰笅杞戒笂浼犻崳?
+                # 同步下载上传器
                 if self.downloader == 'sync-downloader':
-                    logger.info(f"{self.plugin_msg}: 娴ｈ法鏁ら崥灞绢劄涓嬭浇閸?)
+                    logger.info(f"{self.plugin_msg}: 使用同步下载器")
                     stream_info = self.config.get('streamers', {}).get(self.fname, {})
                     stream_info.update({'name': self.fname})
                     min_size = 10 * 1024 * 1024
                     if not self.file_size:
                         self.file_size = 2 * 1024 * 1024 * 1024
-                    self.file_size = ((self.file_size + min_size - 1) // min_size) * min_size  # 閸氭垳绗傞崣鏍ㄦ殻
+                    self.file_size = ((self.file_size + min_size - 1) // min_size) * min_size  # 向上取整
                     sync_download(self.raw_stream_url, self.stream_headers,
                                 max_file_size=int(self.file_size / 1024 / 1024),
                                 output_prefix=self.gen_download_filename(True),
                                 stream_info=stream_info,
                                 file_name_callback=lambda file_name: self.__download_segment_callback(file_name), database_row_id=self.database_row_id)
                     return True
-                # streamlink鏃犳硶澶勭悊flv,閹碘偓娴犮儱娲栭柅鈧崚鐧磃mpeg
+                # streamlink无法处理flv,所以回退到ffmpeg
                 if self.downloader == 'streamlink' and '.flv' not in parsed_url_path:
                     return self.ffmpeg_download(use_streamlink=True)
                 return self.ffmpeg_download()
 
         if '.flv' in parsed_url_path:
-            # 閸嬪洤鐣緁lv濞?
+            # 假定flv流
             self.suffix = 'flv'
         else:
-            # 鍏朵粬濞翠够tream_gears娴兼碍瀵渉ls娣囨繂鐡ㄦ稉绨峴
+            # 其他流stream_gears会按hls保存为ts
             self.suffix = 'ts'
         stream_gears_download(self.raw_stream_url, self.stream_headers, self.gen_download_filename(),
                               self.segment_time,
@@ -156,13 +156,13 @@ class DownloadBase(ABC):
         return True
 
     def ffmpeg_segment_download(self):
-        # TODO 閺冪姵妫╄箛?
+        # TODO 无日志
         # , '-report'
-        # ffmpeg 鏉堟挸鍙嗗弬鏁?
+        # ffmpeg 输入参数
         input_args = [
             '-loglevel', 'quiet', '-y'
         ]
-        # ffmpeg 鏉堟挸鍤弬鏁?
+        # ffmpeg 输出参数
         output_args = [
             '-bsf:a', 'aac_adtstoasc'
         ]
@@ -182,7 +182,7 @@ class DownloadBase(ABC):
         if self.segment_time:
             output_args += ['-segment_time', self.segment_time]
         else:
-            # 闁灝鍘ら柅鍌炲帳娑撱倕顨?
+            # 避免适配两套
             output_args += ['-segment_time', '9999:00:00']
 
         output_args += ['-c', 'copy']
@@ -195,28 +195,28 @@ class DownloadBase(ABC):
                 try:
                     ffmpeg_file_name = line.rstrip().decode(errors='ignore')
                     time.sleep(1)
-                    # 鏂囦欢闁插秴鎳￠崥?
+                    # 文件重命名
                     self.download_file_rename(ffmpeg_file_name, f'{file_name}.{self.suffix}')
                     self.__download_segment_callback(f'{file_name}.{self.suffix}')
                     file_name = self.gen_download_filename(is_fmt=True)
                 except:
-                    logger.error(f'鍒嗘娴滃娆㈠け璐ラ敍姝縮elf.__class__.__name__} - {self.fname}', exc_info=True)
+                    logger.error(f'分段事件失败：{self.__class__.__name__} - {self.fname}', exc_info=True)
 
         return proc.returncode == 0
 
     def ffmpeg_download(self, use_streamlink=False):
-        # streamlink鏉╂稓鈻?
+        # streamlink进程
         streamlink_proc = None
         # updatedFileList = False
         try:
-            # 鏂囦欢閸氬秳绗夐崥顐㈡倵閹?
+            # 文件名不含后戳
             fmt_file_name = self.gen_download_filename(is_fmt=True)
-            # ffmpeg 鏉堟挸鍙嗗弬鏁?
+            # ffmpeg 输入参数
             input_args = [
                 # '-http_proxy', 'http://127.0.0.1:10808',
                 # "-fflags", "+genpts",
             ]
-            # ffmpeg 鏉堟挸鍤弬鏁?
+            # ffmpeg 输出参数
             output_args = [
                 '-c',
                 'copy',
@@ -233,7 +233,7 @@ class DownloadBase(ABC):
                 for key, value in self.stream_headers.items():
                     streamlink_cmd.extend(['--http-header', f'{key}={value}'])
                 if self.__class__.__name__ == 'Bililive':
-                    # Fix: segment 娑撳秵鎯＄敮锕€寮弫鐗堟 404
+                    # Fix: segment 不携带参数时 404
                     from urllib.parse import parse_qs
                     def parse_query_params(url: str) -> List[str]:
                         query_params = []
@@ -293,9 +293,9 @@ class DownloadBase(ABC):
                     logger.debug(decode_line)
 
             if proc.returncode == 0:
-                # 鏂囦欢闁插秴鎳￠崥?
+                # 文件重命名
                 self.download_file_rename(f'{fmt_file_name}.{self.suffix}.part', f'{fmt_file_name}.{self.suffix}')
-                # 鐟欙箑褰傚垎娈垫禍瀣╂
+                # 触发分段事件
                 self.__download_segment_callback(f'{fmt_file_name}.{self.suffix}')
                 return True
             else:
@@ -312,7 +312,7 @@ class DownloadBase(ABC):
 
     def __download_segment_callback(self, file_name: str):
         """
-        鍒嗘閸氬氦袝閸欐垼绻戦崶鐐叉儓閸氬孩鍩戦惃鍕瀮娴犺泛鎮?
+        分段后触发返回含后戳的文件名
         """
         exclude_ext_file_name = os.path.splitext(file_name)[0]
         danmaku_file_name = os.path.splitext(file_name)[0] + '.xml'
@@ -325,7 +325,7 @@ class DownloadBase(ABC):
 
 
     def download_cover(self, fmtname):
-        # 鑾峰彇鐣岄潰
+        # 获取封面
         if self.use_live_cover and self.live_cover_url is not None:
             try:
                 save_dir = f'cover/{self.__class__.__name__}/{self.fname}/'
@@ -359,12 +359,12 @@ class DownloadBase(ABC):
 
                     self.live_cover_path = live_cover_path
                     logger.info(
-                        f'{self.plugin_msg}: 鐣岄潰涓嬭浇鎴愬姛閿涘矁鐭惧鍕剁窗{os.path.abspath(self.live_cover_path)}')
+                        f'{self.plugin_msg}: 封面下载成功，路径：{os.path.abspath(self.live_cover_path)}')
                 else:
                     logger.warning(
-                        f'{self.plugin_msg}: 鐣岄潰娑撹桨绗夋敮鎸侀惃鍕壐瀵骏绱皗self.live_cover_url}')
+                        f'{self.plugin_msg}: 封面为不支持的格式：{self.live_cover_url}')
             except:
-                logger.exception(f'{self.plugin_msg}: 鐣岄潰涓嬭浇澶辫触')
+                logger.exception(f'{self.plugin_msg}: 封面下载失败')
 
     async def acheck_url_healthy(self, url):
         async def __client_get(url, stream: bool = False):
@@ -387,7 +387,7 @@ class DownloadBase(ABC):
                     url = m3u8_obj.playlists[0].uri
                     logger.info(f'{self.plugin_msg}: stream url: {url}')
                     r = await __client_get(url)
-            else:  # 澶勭悊 Flv
+            else:  # 处理 Flv
                 r = await __client_get(url, stream=True)
                 if r.headers.get('Location'):
                     url = r.headers['Location']
@@ -404,7 +404,7 @@ class DownloadBase(ABC):
         return None
 
     def gen_download_filename(self, is_fmt=False):
-        if self.filename_prefix:  # 閸掋倖鏌囬弰顖氭儊瀛樺湪閼奉亜鐣炬稊澶婄秿閹绢厼鎳￠崥宥堫啎缂?
+        if self.filename_prefix:  # 判断是否存在自定义录播命名设置
             filename = (self.filename_prefix.format(streamer=self.fname, title=self.room_title).encode(
                 'unicode-escape').decode()).encode().decode("unicode-escape")
         else:
@@ -429,9 +429,9 @@ class DownloadBase(ABC):
     def download_file_rename(old_file_name, file_name):
         try:
             os.rename(old_file_name, file_name)
-            logger.info(f'閺囨潙鎮?{old_file_name} 娑?{file_name}')
+            logger.info(f'更名 {old_file_name} 为 {file_name}')
         except:
-            logger.error(f'閺囨潙鎮?{old_file_name} 娑?{file_name} 澶辫触', exc_info=True)
+            logger.error(f'更名 {old_file_name} 为 {file_name} 失败', exc_info=True)
 
     def danmaku_init(self):
         pass
@@ -452,7 +452,7 @@ def stream_gears_download(url, headers, file_name, segment_time=None, file_size=
         segment.size = file_size
     if file_size is None and segment_time is None:
         segment.size = 8 * 1024 * 1024 * 1024
-    # FIXME: 涓嬭浇閺冭泛顩ч崙铏瑰箛403閿涘矁绻栭柌灞肩瑝娴兼艾娲栭崚棰佺瑐鐏炲倹鏌熷▔鏇″箯閸欐牗鏌婇柧鐐复
+    # FIXME: 下载时如出现403，这里不会回到上层方法获取新链接
     if file_name_callback:
         stream_gears.download_with_callback(
             url,
@@ -471,7 +471,7 @@ def stream_gears_download(url, headers, file_name, segment_time=None, file_size=
 
 
 def sync_download(stream_url, headers, segment_duration=60, max_file_size=100, output_prefix="segment", stream_info=None, file_name_callback: Callable[[str], None] = None, database_row_id=0):
-    logger.info(f"鍚姩閸氬本顒炰笅杞介崳?max_file_size {max_file_size}MB")
+    logger.info(f"启动同步下载器 max_file_size {max_file_size}MB")
     video_queue = queue.SimpleQueue()
 
     def upload(video_queue, stream_info, stop_event: threading.Event):
@@ -480,43 +480,43 @@ def sync_download(stream_url, headers, segment_duration=60, max_file_size=100, o
         data = {**data, "name": stream_info['name']}
         if "title" not in data:
             data["title"] = stream_info.get("title", "")
-        # 娴ｈ法鏁?fmt_title_and_desc 閻㈢喐鍨氭牸寮忛崠鏍ф倵閻ㄥ嫭鐖ｆ０妯烘嫲缁犫偓娴?
-        # fmt_title_and_desc 鏉╂柨娲?(data, context)閿涘苯鍙炬稉?context 娑擃厼瀵橀崥顐㈠嚒鏍煎紡閸栨牜娈?description
+        # 使用 fmt_title_and_desc 生成格式化后的标题和简介
+        # fmt_title_and_desc 返回 (data, context)，其中 context 中包含已格式化的 description
         data, context_fmt = fmt_title_and_desc(data)
 
-        # 鏇存柊閸╃儤婀颁俊鎭敍鍫濇儓 format_title閿?
+        # 更新基本信息（含 format_title）
         stream_info.update(data)
 
-        # 閼汇儱鐡ㄩ崷銊︾壐瀵繐瀵查崥搴ｆ畱缁犫偓娴犲绱濈亸鍡楀従鍐欏叆 stream_info閿涘奔绻氱拠浣告倵缂侇厺绗傛导鐘虫娴ｈ法鏁ゅ锝団€橀惃鍕暆娴?
+        # 若存在格式化后的简介，将其写入 stream_info，保证后续上传时使用正确的简介
         if context_fmt.get('description'):
             stream_info['description'] = context_fmt['description']
         logger.info(f"stream_info: {stream_info}")
-        # 鑾峰彇 BiliWebAsync.__init__ 閻ㄥ嫬寮弫鏉挎倳
+        # 获取 BiliWebAsync.__init__ 的参数名
         init_params = inspect.signature(BiliWebAsync.__init__).parameters
-        # 杩囨护 info 娑擃厾娈戦弮鐘插彠闁?
+        # 过滤 info 中的无关键
         filtered_info = {key: value for key, value in stream_info.items() if key in init_params}
 
         filtered_info['submit_api'] = config.get('submit_api')
         filtered_info['lines'] = config.get('lines', 'AUTO')
-        # 閺勭姴鐨?'uploader' 閸?'principal'
+        # 映射 'uploader' 到 'principal'
         filtered_info['principal'] = ""
         filtered_info["data"] = stream_info
         uploader = BiliWebAsync(**filtered_info, video_queue=video_queue)
         uploader.upload(total_size=max_file_size * 1024 * 1024,
                         stop_event=stop_event, output_prefix=output_prefix,
                         file_name_callback=file_name_callback, database_row_id=database_row_id)
-        # print("涓婁紶閸ｃ劎绮ㄩ弶?)
-        logger.info(f"{stream_info['name']} 涓婁紶閸ｃ劎绮ㄩ弶?)
+        # print("上传器结束")
+        logger.info(f"{stream_info['name']} 上传器结束")
         # video_queue = queue.SimpleQueue()
 
     downloader = SyncDownloader(stream_url, headers, segment_duration, max_file_size, output_prefix, video_queue)
 
-    # 鍚姩涓婁紶閸?
+    # 启动上传器
     upload_thread = threading.Thread(target=upload, args=(video_queue, stream_info, downloader.stop_event), daemon=True)
     upload_thread.start()
 
     downloader.run()
-    logger.info(f"{stream_info['name']} 涓嬭浇閸ｃ劎绮ㄩ弶?)
+    logger.info(f"{stream_info['name']} 下载器结束")
 
 
 def get_valid_filename(name):
@@ -529,12 +529,12 @@ def get_valid_filename(name):
     >>> get_valid_filename("{self.fname}%Y-%m-%dT%H_%M_%S")
     '{self.fname}%Y-%m-%dT%H_%M_%S'
     """
-    # s = str(name).strip().replace(" ", "_") #閸ョ姳璐熼張澶夌昂娴滆桨绱伴崷銊ゅ瘜閹绢厼鎮曟稉顓㈡？閸旂姴鍙嗙粚鐑樼壐閿涘奔璐熸禍鍡涗缉閸忓秴鎷拌ぐ鏇熸尡鐎瑰本鐦懛顏勫З閺€鐟版倳閸愯尙鐛婇敍灞惧娴犮儲鏁為柌濠冨竴
-    s = re.sub(r"(?u)[^-\w.%{}\[\]閵嗘劑鈧垯鈧被鈧稄绱欓敍澶堝厯鎺抽妴浣碘偓?\s]", "", str(name))
+    # s = str(name).strip().replace(" ", "_") #因为有些人会在主播名中间加入空格，为了避免和录播完毕自动改名冲突，所以注释掉
+    s = re.sub(r"(?u)[^-\w.%{}\[\]【】「」（）・°、。+\s]", "", str(name))
     if s in {"", ".", ".."}:
         raise RuntimeError("Could not derive file name from '%s'" % name)
 
-    # 澶勭悊%閻ф儳鍨庨崣?
+    # 处理%百分号
     directives = {
         'a', 'A', 'w', 'd', 'b', 'B', 'm', 'y', 'Y',
         'H', 'I', 'p', 'M', 'S', 'f', 'z', 'Z',
@@ -547,8 +547,8 @@ def get_valid_filename(name):
 
 def get_duration(segment_time_str, time_range_str):
     """
-    鐠侊紕鐣昏ぐ鎾冲鏃堕棿閸掓壆绮扮€规氨绮ㄩ弶鐔告闂傚娈戦弮璺烘▕
-    婵″倹鐏夌拋锛勭暬閻ㄥ嫭妞傚顔笺亣娴滃窏egment_time閿涘苯鍨潻鏂挎礀segment_time閵?
+    计算当前时间到给定结束时间的时差
+    如果计算的时差大于segment_time，则返回segment_time。
     """
     try:
         time_range = json.loads(time_range_str)
@@ -562,7 +562,7 @@ def get_duration(segment_time_str, time_range_str):
     now_sec = now.hour * 3600 + now.minute * 60 + now.second
     end_sec = end_time.hour * 3600 + end_time.minute * 60 + end_time.second
 
-    # 鐠侊紕鐣婚崚鎵波閺夌喐妞傞梻瀵告畱缁夋帗鏆?
+    # 计算到结束时间的秒数
     diff = end_sec - now_sec if end_sec >= now_sec else (24 * 3600 - now_sec + end_sec)
 
     try:
@@ -586,6 +586,6 @@ class BatchCheck(ABC):
     @abstractmethod
     async def abatch_check(check_urls: List[str]) -> AsyncGenerator[str, None]:
         """
-        閹靛綊鍣烘濞村娲块幘顓熷灗涓嬭浇閻樿埖鈧?
-        鏉╂柨娲栭惃鍕Цurl_list
+        批量检测直播或下载状态
+        返回的是url_list
         """
