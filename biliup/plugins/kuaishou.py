@@ -16,39 +16,39 @@ class Kuaishou(DownloadBase):
 
     async def acheck_stream(self, is_check=False):
         try:
-            room_id = get_kwaiId(self.url)
-            if not room_id:
-                logger.warning(f"Kuaishou - {self.url}: 直播闂村湴鍧€错误")
+            room_d = get_kwaiId(self.url)
+            if not room_d:
+                logger.warning(f"Kuaishou - {self.url}: 直播间地址错误")
                 return False
         except Exception as e:
             logger.error(f"Kuaishou - {self.url}: {e}")
             return False
 
-        plugin_msg = f"Kuaishou - {room_id}"
+        plugin_msg = f"Kuaishou - {room_d}"
 
         # with requests.Session() as s:
         biliup.common.util.client.headers = self.fake_headers.copy()
-        # 棣栭〉浣庨鎺х敓鎴恉id
+        # 首页浣庨控生成id
         await biliup.common.util.client.get("https://live.kuaishou.com", timeout=5)
 
         # 涓嶆殏鍋滀技涔庡鏄撻鎺?
         times = 3 + random.random()
-        logger.debug(f"{plugin_msg}: 鏆傚仠 {times} 绉?)
+        logger.debug(f"{plugin_msg}: 暂停 {times} 绉?)
         time.sleep(times)
 
         err_keys = ["错误浠ｇ爜22", "涓绘挱灏氭湭寮€鎾?]
-        html = (await biliup.common.util.client.get(f"https://live.kuaishou.com/u/{room_id}", timeout=5)).text
+        html = (await biliup.common.util.client.get(f"https://live.kuaishou.com/u/{room_d}", timeout=5)).text
         for key in err_keys:
             if key in html:
                 logger.debug(f"{plugin_msg}: {key}")
                 return False
 
         room_info = (await biliup.common.util.client.get(
-            f"https://live.kuaishou.com/live_api/liveroom/livedetail?principalId={room_id}",
+            f"https://live.kuaishou.com/live_api/liveroom/livedetail?principalId={room_d}",
             timeout=5)).json()['data']
 
         if room_info['result'] == 22:
-            logger.error(f"{plugin_msg}: 直播闂村湴鍧€错误")
+            logger.error(f"{plugin_msg}: 直播间地址错误")
             return False
         if room_info['result'] == 671:
             logger.debug(f"{plugin_msg}: 直播闂存湭寮€鎾垨闈炵洿鎾?)
@@ -63,8 +63,8 @@ class Kuaishou(DownloadBase):
             return True
 
         if not self.room_title:
-            logger.warning(f"{plugin_msg}: 直播闂存爣棰樿幏鍙栧け璐ワ紝浣跨敤蹇墜ID浠ｆ浛")
-            self.room_title = room_id
+            logger.warning(f"{plugin_msg}: 直播闂存爣棰樿幏鍙栧け璐ワ紝使用蹇墜ID浠ｆ浛")
+            self.room_title = room_d
         self.raw_stream_url = room_info['liveStream']['playUrls'][0]['adaptationSet']['representation'][-1]['url']
 
         return True

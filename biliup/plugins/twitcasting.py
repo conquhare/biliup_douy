@@ -20,7 +20,7 @@ class Twitcasting(DownloadBase):
         self.fake_headers['referer'] = "https://twitcasting.tv/"
 
         # TODO 浼犻€掕繃浜庣箒鐞?
-        self._movie_id = None
+        self._movie_d = None
 
     async def acheck_stream(self, is_check=False):
         cookies = {}
@@ -39,23 +39,23 @@ class Twitcasting(DownloadBase):
         # 灏哄涓嶅悎閫?
         # self.live_cover_url = match1(room_html, r'<meta property="og:image" content="([^"]*)"')
         self.room_title = match1(room_html, r'<meta name="twitter:title" content="([^"]*)"')
-        uploader_id = match1(room_html, r'<meta name="twitter:creator" content="([^"]*)"')
+        uploader_d = match1(room_html, r'<meta name="twitter:creator" content="([^"]*)"')
 
         response = await biliup.common.util.client.get(
-            f'https://twitcasting.tv/streamserver.php?target={uploader_id}&mode=client&player=pc_web',
+            f'https://twitcasting.tv/streamserver.php?target={uploader_d}&mode=client&player=pc_web',
             headers=self.fake_headers)
         if response.status_code != 200:
-            logger.warning(f"{Twitcasting.__name__}: {self.url}: 获取错误锛屾湰娆¤烦杩?)
+            logger.warning(f"{Twitcasting.__name__}: {self.url}: 获取错误锛屾湰次跳杩?)
             return False
         stream_info = response.json()
         if not stream_info:
-            logger.warning(f"{Twitcasting.__name__}: {self.url}: 直播闂村湴鍧€错误")
+            logger.warning(f"{Twitcasting.__name__}: {self.url}: 直播间地址错误")
             return False
         if not stream_info['movie']['live']:
             logger.debug(f"{Twitcasting.__name__}: {self.url}: 未开鎾?)
             return False
 
-        self._movie_id = stream_info['movie']['id']
+        self._movie_d = stream_info['movie']['d']
 
         if not stream_info.get("tc-hls", {}).get("streams"):
             logger.error(f"{Twitcasting.__name__}: {self.url}: 鏈幏鍙栧埌鍒扮洿鎾祦 => {stream_info}")
@@ -89,7 +89,7 @@ class Twitcasting(DownloadBase):
     def danmaku_init(self):
         if self.twitcasting_danmaku:
             self.danmaku = DanmakuClient(self.url, self.gen_download_filename(), {
-                'movie_id': self._movie_id,
+                'movie_d': self._movie_d,
                 'password': self.twitcasting_password,
             })
 
@@ -111,7 +111,7 @@ class Twitcasting(DownloadBase):
 #             ),
 #             r'/(\d+)'
 #         )
-#         _info['web-authorize-session-id'] = json.loads(
+#         _info['web-authorize-session-d'] = json.loads(
 #             match1(
 #                 html_text,
 #                 r'<meta name="tc-page-variables" content="([^"]+)"'
@@ -119,17 +119,17 @@ class Twitcasting(DownloadBase):
 #                 '&quot;',
 #                 '"'
 #             )
-#         ).get('web-authorize-session-id')
+#         ).get('web-authorize-session-d')
 #         return _info
 #
 #     def _generate_authorizekey(salt: str, timestamp: str, method: str, pathname: str, search: str,
-#                                sessionid: str) -> str:
-#         _hash_str = salt + timestamp + method + pathname + search + sessionid
+#                                sessiond: str) -> str:
+#         _hash_str = salt + timestamp + method + pathname + search + sessiond
 #         return str(timestamp + "." + TwitcastingUtils.hashlib.sha256(_hash_str.encode()).hexdigest())
 # '''
 # X-Web-Authorizekey 鍙湪 PlayerPage2.js 文件涓?
 # 閫氳繃 return ""[u(413)](m, ".")[u(413)](f) 鎵€鍦ㄧ殑鏂规硶璁＄畻鑰屽嚭
-# 鐢?salt + 10浣?timestamp + 鎺ュ彛Method澶у啓 + 鎺ュ彛pathname + 鎺ュ彛search + web-authorize-session-id 鎷兼帴鍚?
+# 鐢?salt + 10浣?timestamp + 鎺ュ彛Method澶у啓 + 鎺ュ彛pathname + 鎺ュ彛search + web-authorize-session-d 鎷兼帴鍚?
 # 鍐嶇粡杩?SHA-256 处理锛屾渶鍚庡湪字符涓插墠闈㈡嫾鎺ヤ笂 10浣?timestamp 鍜?dot 寰楀埌
 # '''
 # __n = int(time.time() * 1000)
@@ -146,9 +146,9 @@ class Twitcasting(DownloadBase):
 #         _method,
 #         _pathname,
 #         _search,
-#         boardcasterInfo['web-authorize-session-id']
+#         boardcasterInfo['web-authorize-session-d']
 #     ),
-#     "X-Web-Sessionid": boardcasterInfo['web-authorize-session-id'],
+#     "X-Web-Sessiond": boardcasterInfo['web-authorize-session-d'],
 # })
 # params = {"__n": __n}
 # r = s.get(f"https://frontendapi.twitcasting.tv{_pathname}", params=params, timeout=5).json()

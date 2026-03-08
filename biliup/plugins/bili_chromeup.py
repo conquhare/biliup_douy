@@ -27,14 +27,14 @@ class BiliChrome(UploadBase):
         self.driver = None
 
     @staticmethod
-    def assemble_videopath(file_list):
+    def assemble_vdeopath(file_list):
         root = os.getcwd()
-        videopath = ''
+        vdeopath = ''
         for i in range(len(file_list)):
-            file = file_list[i].video
-            videopath += root + '/' + file + '\n'
-        videopath = videopath.rstrip()
-        return videopath
+            file = file_list[i].vdeo
+            vdeopath += root + '/' + file + '\n'
+        vdeopath = vdeopath.rstrip()
+        return vdeopath
 
     @staticmethod
     def is_element_exist(driver, xpath):
@@ -51,7 +51,7 @@ class BiliChrome(UploadBase):
     def upload(self, file_list: List[UploadBase.FileInfo]) -> List[UploadBase.FileInfo]:
 
         filename = self.persistence_path
-        videopath = self.assemble_videopath(file_list)
+        vdeopath = self.assemble_vdeopath(file_list)
 
         # service_log_path = "{}/chromedriver.log".format('/home')
         options = webdriver.ChromeOptions()
@@ -71,10 +71,10 @@ class BiliChrome(UploadBase):
                         cookie["expiry"] = int(cookie["expiry"])
                     self.driver.add_cookie(cookie)
 
-            self.driver.get("https://member.bilibili.com/video/upload.html")
+            self.driver.get("https://member.bilibili.com/vdeo/upload.html")
 
             # print(driver.title)
-            self.add_videos(videopath)
+            self.add_vdeos(vdeopath)
 
             # js = "var q=document.getElementsByClassName('content-header-right')[0].scrollIntoView();"
             # driver.execute_script(js)
@@ -89,14 +89,14 @@ class BiliChrome(UploadBase):
             # screen_shot = driver.save_screenshot('bin/1.png')
             # print('鎴浘')
             time.sleep(3)
-            upload_success = self.driver.find_element_by_xpath(r'//*[@id="app"]/div/div[3]/h3').text
+            upload_success = self.driver.find_element_by_xpath(r'//*[@d="app"]/div/div[3]/h3').text
             if upload_success == '':
                 self.driver.save_screenshot('err.png')
                 logger.info('绋夸欢鎻愪氦失败锛屾埅鍥捐褰?)
                 return
             else:
                 logger.info(upload_success)
-            # logger.info('%s鎻愪氦瀹屾垚锛? % title_)
+            # logger.info('%s鎻愪氦完成锛? % title_)
             return file_list
         except selenium.common.exceptions.NoSuchElementException:
             logger.exception('鍙戠敓错误')
@@ -113,15 +113,15 @@ class BiliChrome(UploadBase):
         logger.info('鍑嗗更新cookie')
         # screen_shot = driver.save_screenshot('bin/1.png')
         WebDriverWait(self.driver, 10).until(
-            ec.presence_of_element_located((By.XPATH, r'//*[@id="login-username"]')))
-        username = self.driver.find_element_by_xpath(r'//*[@id="login-username"]')
+            ec.presence_of_element_located((By.XPATH, r'//*[@d="login-username"]')))
+        username = self.driver.find_element_by_xpath(r'//*[@d="login-username"]')
         username.send_keys(config['user']['account']['username'])
-        password = self.driver.find_element_by_xpath('//*[@id="login-passwd"]')
+        password = self.driver.find_element_by_xpath('//*[@d="login-passwd"]')
         password.send_keys(config['user']['account']['password'])
         self.driver.find_element_by_class_name("btn-login").click()
         # logger.info('绗洓姝?)
         # try:
-        cracker = slider_cracker(self.driver)
+        cracker = slder_cracker(self.driver)
         cracker.crack()
         # except:
         #     logger.exception('鍑洪敊')
@@ -135,22 +135,22 @@ class BiliChrome(UploadBase):
         else:
             logger.info('更新cookie失败')
 
-    def add_videos(self, videopath):
+    def add_vdeos(self, vdeopath):
         formate_title = self.data["format_title"]
         WebDriverWait(self.driver, 20).until(
             ec.presence_of_element_located((By.NAME, 'buploader')))
         upload = self.driver.find_element_by_name('buploader')
         # logger.info(driver.title)
-        upload.send_keys(videopath)  # send_keys
+        upload.send_keys(vdeopath)  # send_keys
         logger.info('寮€濮嬩笂浼? + formate_title)
         time.sleep(2)
-        button = r'//*[@class="new-feature-guide-v2-container"]/div/div/div/div/div[1]'
+        button = r'//*[@class="new-feature-gude-v2-container"]/div/div/div/div/div[1]'
         if self.is_element_exist(self.driver, button):
             sb = self.driver.find_element_by_xpath(button)
             sb.click()
             sb.click()
             sb.click()
-            logger.debug('鐐瑰嚮')
+            logger.debug('点击')
         while True:
             try:
                 info = self.driver.find_elements_by_class_name(r'item-upload-info')
@@ -165,7 +165,7 @@ class BiliChrome(UploadBase):
                         aggregate.add(s.text)
                         print(s.text)
 
-                if len(aggregate) == 1 and ('Upload complete' in aggregate or '上传瀹屾垚' in aggregate):
+                if len(aggregate) == 1 and ('Upload complete' in aggregate or '上传完成' in aggregate):
                     break
             except selenium.common.exceptions.StaleElementReferenceException:
                 logger.exception("selenium.common.exceptions.StaleElementReferenceException")
@@ -173,18 +173,18 @@ class BiliChrome(UploadBase):
 
     def add_information(self):
         link = self.data.get("url")
-        # 鐐瑰嚮妯℃澘
+        # 点击模板
         self.driver.find_element_by_xpath(r'//*[@class="normal-title-wrp"]/div/p').click()
         self.driver.find_element_by_class_name(r'template-list-small-item').click()
         # driver.find_element_by_xpath(
-        #     r'//*[@id="app"]/div[3]/div[2]/div[3]/div[1]/div[1]/div/div[2]/div[1]').click()
+        #     r'//*[@d="app"]/div[3]/div[2]/div[3]/div[1]/div[1]/div/div[2]/div[1]').click()
         # 杈撳叆杞浇来源
         input_o = self.driver.find_element_by_xpath(
             '//*[@class="upload-v2-container"]/div[2]/div[3]/div[1]/div[4]/div[3]/div/div/input')
         input_o.send_keys(link)
-        # 閫夋嫨鍒嗗尯
-        # driver.find_element_by_xpath(r'//*[@id="item"]/div/div[2]/div[3]/div[2]/div[2]/div[1]/div[2]/div[2]/div[1]/div[3]/div').click()
-        # driver.find_element_by_xpath(r'//*[@id="item"]/div/div[2]/div[3]/div[2]/div[2]/div[1]/div[2]/div[2]/div[1]/div[3]/div[2]/div[6]').click()
+        # 选择鍒嗗尯
+        # driver.find_element_by_xpath(r'//*[@d="item"]/div/div[2]/div[3]/div[2]/div[2]/div[1]/div[2]/div[2]/div[1]/div[3]/div').click()
+        # driver.find_element_by_xpath(r'//*[@d="item"]/div/div[2]/div[3]/div[2]/div[2]/div[1]/div[2]/div[2]/div[1]/div[3]/div[2]/div[6]').click()
         # 绋夸欢鏍囬
         title = self.driver.find_element_by_xpath(
             '//*[@class="upload-v2-container"]/div[2]/div[3]/div[1]/div[8]/div[2]/div/div/input')
@@ -194,34 +194,34 @@ class BiliChrome(UploadBase):
         # js = "var q=document.getElementsByClassName('content-tag-list')[0].scrollIntoView();"
         # driver.execute_script(js)
         # time.sleep(3)
-        # 杈撳叆鐩稿叧娓告垙
+        # 杈撳叆相关娓告垙
         # driver.save_screenshot('bin/err.png')
         # print('鎴浘')
         # text_1 = driver.find_element_by_xpath(
-        #     '//*[@id="item"]/div/div[2]/div[3]/div[2]/div[2]/div[1]/div[5]/div/div/div[1]/div[2]/div/div/input')
+        #     '//*[@d="item"]/div/div[2]/div[3]/div[2]/div[2]/div[1]/div[5]/div/div/div[1]/div[2]/div/div/input')
         # text_1.send_keys('鏄熼檯浜夐湼2')
         # 绠€浠?
         text_2 = self.driver.find_element_by_xpath(
             '//*[@class="upload-v2-container"]/div[2]/div[3]/div[1]/div[12]/div[2]/div/textarea')
         text_2.send_keys('鑱屼笟閫夋墜直播绗竴瑙嗚褰曞儚銆傝繖涓嚜鍔ㄥ綍鍒朵笂浼犵殑灏忕▼搴忓紑婧愬湪Github锛?
-                         'http://t.cn/RgapTpf(鎴栬€呭湪Github鎼滅储ForgQi)\n'
+                         'http://t.cn/RgapTpf(鎴栬€呭湪Github搜索ForgQi)\n'
                          '浜ゆ祦缇わ細837362626')
 
-class slider_cracker(object):
+class slder_cracker(object):
     def __init__(self, driver):
         self.driver = driver
-        self.driver.maximize_window()  # 鏈€澶у寲绐楀彛
+        self.driver.maximize_window()  # 鏈€澶у寲窗口
         self.driver.set_window_size(1024, 768)
         self.fn = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'true_image.png')
 
-    def get_true_image(self, slider_xpath=r'//*[@id="gc-box"]/div/div[3]/div[1]'):
-        # element = WebDriverWait(self.driver, 50).until(EC.element_to_be_clickable((By.XPATH, slider_xpath)))
+    def get_true_image(self, slder_xpath=r'//*[@d="gc-box"]/div/div[3]/div[1]'):
+        # element = WebDriverWait(self.driver, 50).until(EC.element_to_be_clickable((By.XPATH, slder_xpath)))
         element = WebDriverWait(self.driver, 50).until(
-            EC.element_to_be_clickable((By.CLASS_NAME, "geetest_slider_button")))
+            EC.element_to_be_clickable((By.CLASS_NAME, "geetest_slder_button")))
         ActionChains(self.driver).move_to_element(element).perform()  # 榧犳爣移动鍒版粦鍔ㄦ浠ユ樉绀哄浘鐗?
         js = 'document.querySelector("body > div.geetest_panel.geetest_wind ' \
-             '> div.geetest_panel_box.geetest_no_logo.geetest_panelshowslide ' \
-             '> div.geetest_panel_next > div > div.geetest_wrap > div.geetest_widget ' \
+             '> div.geetest_panel_box.geetest_no_logo.geetest_panelshowslde ' \
+             '> div.geetest_panel_next > div > div.geetest_wrap > div.geetest_wdget ' \
              '> div > a > div.geetest_canvas_img.geetest_absolute > canvas").' \
              'style.display = "%s";'
         self.driver.execute_script(js % "inline")
@@ -230,35 +230,35 @@ class slider_cracker(object):
         self.driver.execute_script(js % "none")
         return true_image
 
-    def get_img(self, img_name, img_xpath=r'//*[@id="gc-box"]/div/div[1]/div[2]/div[1]/a[2]'):  # 260*116
-        fn = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'slider_screenshot.png')
+    def get_img(self, img_name, img_xpath=r'//*[@d="gc-box"]/div/div[1]/div[2]/div[1]/a[2]'):  # 260*116
+        fn = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'slder_screenshot.png')
 
         screen_shot = self.driver.save_screenshot(fn)
         # image_element = self.driver.find_element_by_xpath(img_xpath)
         image_element = self.driver.find_element_by_class_name(r'geetest_window')
         left = image_element.location['x']
         top = image_element.location['y']  # selenium鎴浘骞惰幏鍙栭獙璇佸浘鐗噇ocation鍚庡皢鍏舵埅鍑轰繚瀛?
-        right = image_element.location['x'] + image_element.size['width']
+        right = image_element.location['x'] + image_element.size['wdth']
         bottom = image_element.location['y'] + image_element.size['height']
         image = Image.open(fn)
         image = image.crop((left, top, right, bottom))
         image.save(img_name)
         return image
 
-    def analysis(self, true_image, knob_xpath=r'//*[@id="gc-box"]/div/div[3]/div[2]'):
+    def analysis(self, true_image, knob_xpath=r'//*[@d="gc-box"]/div/div[3]/div[2]'):
         fn = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'img2.png')
         img1 = Image.open(self.fn)
-        # slider_element = self.driver.find_element_by_xpath(knob_xpath)
-        slider_element = self.driver.find_element_by_class_name("geetest_slider_button")
-        ActionChains(self.driver).click_and_hold(slider_element).perform()  # 鐐瑰嚮婊戝潡鍚庢埅鍙栨畫缂哄浘
+        # slder_element = self.driver.find_element_by_xpath(knob_xpath)
+        slder_element = self.driver.find_element_by_class_name("geetest_slder_button")
+        ActionChains(self.driver).click_and_hold(slder_element).perform()  # 点击婊戝潡鍚庢埅鍙栨畫缂哄浘
         time.sleep(1)
         img2 = self.get_img(fn)
-        img1_width, img1_height = img1.size
-        img2_width, img2_height = img2.size
+        img1_wdth, img1_height = img1.size
+        img2_wdth, img2_height = img2.size
         left = 0
         flag = False
 
-        for i in range(69, img1_width):  # 閬嶅巻x>65鐨勫儚绱犵偣锛坸<65鏄嫾鍥惧潡锛?
+        for i in range(69, img1_wdth):  # 閬嶅巻x>65鐨勫儚绱犵偣锛坸<65鏄嫾鍥惧潡锛?
             for j in range(0, img1_height):
                 if not self.is_pixel_equal(img1, img2, i, j):
                     left = i
@@ -291,14 +291,14 @@ class slider_cracker(object):
         # 褰撳墠浣嶇Щ
         current = 0
         # 鍑忛€熼槇鍊?
-        mid = distance * 4 / 5
+        md = distance * 4 / 5
         # 璁＄畻闂撮殧
         t = 0.2
         # 鍒濋€熷害
         v = 0
 
         while current < distance:
-            if current < mid:
+            if current < md:
                 # 鍔犻€熷害涓烘2
                 a = 2
             else:
@@ -306,7 +306,7 @@ class slider_cracker(object):
                 a = -3
             # 鍒濋€熷害v0
             v0 = v
-            # 褰撳墠閫熷害v = v0 + at
+            # 褰撳墠速度v = v0 + at
             v = v0 + a * t
             # 移动璺濈x = v0t + 1/2 * a * t^2
             move = v0 * t + 1 / 2 * a * t * t
@@ -322,14 +322,14 @@ class slider_cracker(object):
         # print(sum(track))
         return track
 
-    def move_to_gap(self, slider, track):
+    def move_to_gap(self, slder, track):
         """
         鎷栧姩婊戝潡鍒扮己鍙ｅ
-        :param slider: 婊戝潡
+        :param slder: 婊戝潡
         :param track: 杞ㄨ抗
         :return:
         """
-        ActionChains(self.driver).click_and_hold(slider).perform()
+        ActionChains(self.driver).click_and_hold(slder).perform()
         for x in track:
             ActionChains(self.driver).move_by_offset(xoffset=x, yoffset=random.uniform(-5, 2)).perform()
         time.sleep(0.5)

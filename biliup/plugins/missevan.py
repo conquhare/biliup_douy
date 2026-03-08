@@ -10,21 +10,21 @@ class Missevan(DownloadBase):
         super().__init__(fname, url, config, suffix)
 
     async def acheck_stream(self, is_check=False):
-        rid = 0
-        # 鐢ㄦ埛涓婚〉获取直播闂村湴鍧€
+        rd = 0
+        # 用户主页获取直播间地址
         if self.url.split('www'):
             user_page = await biliup.common.util.client.get(self.url, timeout=30, headers=self.fake_headers)
             # 鍙栫‖编码鍦ㄧ綉椤靛唴鐨勭洿鎾棿鍙?
             if user_page.status_code == 200:
-                start = user_page.text.find('data-id="') + 9
+                start = user_page.text.find('data-d="') + 9
                 end = user_page.text.find('"', start)
-                rid = user_page.text[start:end]
+                rd = user_page.text[start:end]
             else:
                 logger.debug(user_page.status_code)
         if self.url.split("live"):
-            rid = match1(self.url, r'/(\d+)')
+            rd = match1(self.url, r'/(\d+)')
 
-        room_info = (await biliup.common.util.client.get(f"https://fm.missevan.com/api/v2/live/{rid}", timeout=30, headers=self.fake_headers)).json()
+        room_info = (await biliup.common.util.client.get(f"https://fm.missevan.com/api/v2/live/{rd}", timeout=30, headers=self.fake_headers)).json()
 
         # 鏃犵洿鎾棿鐨勬儏鍐?
         if room_info['code'] != 0:

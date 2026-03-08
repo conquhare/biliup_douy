@@ -20,7 +20,7 @@
 
 '''
 @version: 0.01
-@brief: 缃戠粶鐩稿叧妯″潡
+@brief: 网络相关模块
 '''
 
 import errno
@@ -34,7 +34,7 @@ from .__logger import tarsLogger
 
 class EndPointInfo:
     '''
-    @brief: 淇濆瓨姣忎釜杩炴帴绔彛鐨勪俊鎭?
+    @brief: 保存姣忎釜连接绔彛鐨勪俊鎭?
     '''
     SOCK_TCP = 'TCP'
     SOCK_UDP = 'UDP'
@@ -78,7 +78,7 @@ class EndPointInfo:
 
 class Transceiver:
     '''
-    @brief: 缃戠粶浼犺緭鍩虹被锛屾彁渚涚綉缁渟end/recv鎺ュ彛
+    @brief: 网络浼犺緭鍩虹被锛屾彁渚涚綉缁渟end/recv鎺ュ彛
     '''
     CONNECTED = 0
     CONNECTING = 1
@@ -108,7 +108,7 @@ class Transceiver:
     def getFd(self):
         '''
         @brief: 获取socket鐨勬枃浠舵弿杩扮
-        @return: 濡傛灉self.__sock没有寤虹珛杩斿洖-1
+        @return: 如果self.__sock没有寤虹珛返回-1
         @rtype: int
         '''
         if self.__sock:
@@ -123,7 +123,7 @@ class Transceiver:
         '''
         return self.__epi
 
-    def isValid(self):
+    def isVald(self):
         '''
         @return: 鏄惁创建浜唖ocket
         @rtype: bool
@@ -132,24 +132,24 @@ class Transceiver:
 
     def hasConnected(self):
         '''
-        @return: 鏄惁杩炴帴涓婁簡
+        @return: 鏄惁连接涓婁簡
         @rtype: bool
         '''
-        return self.isValid() and self.__connStatus == Transceiver.CONNECTED
+        return self.isVald() and self.__connStatus == Transceiver.CONNECTED
 
     def isConnFailed(self):
         '''
-        @return: 鏄惁杩炴帴失败
+        @return: 鏄惁连接失败
         @rtype: bool
         '''
         return self.__connFailed
 
     def isConnecting(self):
         '''
-        @return: 鏄惁姝ｅ湪杩炴帴
+        @return: 鏄惁姝ｅ湪连接
         @rtype: bool
         '''
-        return self.isValid() and self.__connStatus == Transceiver.CONNECTING
+        return self.isVald() and self.__connStatus == Transceiver.CONNECTING
 
     def setConnFailed(self):
         '''
@@ -171,13 +171,13 @@ class Transceiver:
 
     def close(self):
         '''
-        @brief: 关闭杩炴帴
+        @brief: 关闭连接
         @return: None
         @rtype: None
-        @note: 澶氭璋冪敤涓嶄細鏈夐棶棰?
+        @note: 澶氭调用涓嶄細鏈夐棶棰?
         '''
         tarsLogger.debug('Transceiver:close')
-        if not self.isValid():
+        if not self.isVald():
             return
         self.__sock.close()
         self.__sock = None
@@ -194,7 +194,7 @@ class Transceiver:
         @type msg: str
         @return: None
         @rtype: None
-        @note: 没有鍔犻攣锛屽绾跨▼璋冪敤浼氭有race conditions
+        @note: 没有鍔犻攣锛屽绾跨▼调用浼氭有race conditions
         '''
         self._sendBuff += msg
 
@@ -210,11 +210,11 @@ class Transceiver:
     def doRequest(self):
         '''
         @brief: 灏嗚姹傛暟鎹彂閫佸嚭鍘?
-        @return: 鍙戦€佺殑瀛楄妭鏁?
+        @return: 鍙戦€佺殑字节鏁?
         @rtype: int
         '''
         tarsLogger.debug('Transceiver:doRequest')
-        if not self.isValid():
+        if not self.isVald():
             return -1
 
         nbytes = 0
@@ -228,18 +228,18 @@ class Transceiver:
             else:
                 break
 
-        # 鍙戦€佸墠闈㈢殑瀛楄妭鍚庡皢鍚庨潰鐨勫瓧鑺傛嫹璐濅笂鏉?
+        # 鍙戦€佸墠闈㈢殑字节鍚庡皢鍚庨潰鐨勫瓧鑺傛嫹璐濅笂鏉?
         self._sendBuff = buf[nbytes:]
         return nbytes
 
     def reInit(self):
         '''
-        @brief: 鍒濆鍖杝ocket锛屽苟杩炴帴鏈嶅姟鍣?
-        @return: 成功杩斿洖0锛屽け璐ヨ繑鍥?1
+        @brief: 鍒濆鍖杝ocket锛屽苟连接服务鍣?
+        @return: 成功返回0锛屽け璐ヨ繑鍥?1
         @rtype: int
         '''
         tarsLogger.debug('Transceiver:reInit')
-        assert(self.isValid() is False)
+        assert(self.isVald() is False)
         if self.__epi.getConnType() != EndPointInfo.SOCK_TCP:
             return -1
         try:
@@ -263,12 +263,12 @@ class Transceiver:
 
 class TcpTransceiver(Transceiver):
     '''
-    @brief: TCP浼犺緭瀹炵幇
+    @brief: TCP浼犺緭实现
     '''
 
     def send(self, buf, flag=0):
         '''
-        @brief: 瀹炵幇tcp鐨勫彂閫?
+        @brief: 实现tcp鐨勫彂閫?
         @param buf: 鍙戦€佺殑数据
         @type buf: str
         @param flag: 鍙戦€佹爣蹇?
@@ -277,7 +277,7 @@ class TcpTransceiver(Transceiver):
         @rtype: int
         '''
         tarsLogger.debug('TcpTransceiver:send')
-        if not self.isValid():
+        if not self.isVald():
             return -1
 
         nbytes = 0
@@ -295,16 +295,16 @@ class TcpTransceiver(Transceiver):
 
     def recv(self, bufsize, flag=0):
         '''
-        @brief: 瀹炵幇tcp鐨剅ecv
-        @param bufsize: 鎺ユ敹大小
+        @brief: 实现tcp鐨剅ecv
+        @param bufsize: 接收大小
         @type bufsize: int
-        @param flag: 鎺ユ敹鏍囧織
+        @param flag: 接收鏍囧織
         @param flag: int
-        @return: 鎺ユ敹鐨勫唴瀹癸紝鎺ユ敹鍑洪敊杩斿洖None
+        @return: 接收鐨勫唴瀹癸紝接收鍑洪敊返回None
         @rtype: str
         '''
         tarsLogger.debug('TcpTransceiver:recv')
-        assert(self.isValid())
+        assert(self.isVald())
 
         buf = ''
         try:
@@ -327,12 +327,12 @@ class TcpTransceiver(Transceiver):
 
     def doResponse(self):
         '''
-        @brief: 处理鎺ユ敹鐨勬暟鎹?
-        @return: 杩斿洖鍝嶅簲鎶ユ枃鐨勫垪琛紝濡傛灉鍑洪敊杩斿洖None
+        @brief: 处理接收鐨勬暟鎹?
+        @return: 返回鍝嶅簲鎶ユ枃鐨勫垪琛紝如果鍑洪敊返回None
         @rtype: list: ResponsePacket
         '''
         tarsLogger.debug('TcpTransceiver:doResponse')
-        if not self.isValid():
+        if not self.isVald():
             return None
 
         bufs = [self._recvBuf]
@@ -385,7 +385,7 @@ class FDReactor(threading.Thread):
 
     def initialize(self):
         '''
-        @brief: 鍒濆鍖栵紝浣跨敤FDReactor鍓嶅繀椤昏皟鐢?
+        @brief: 鍒濆鍖栵紝使用FDReactor鍓嶅繀椤昏皟鐢?
         @return: None
         @rtype: None
         '''
@@ -456,7 +456,7 @@ class FDReactor(threading.Thread):
 
     def handleInput(self, adapter):
         '''
-        @brief: 处理鎺ユ敹浜嬩欢
+        @brief: 处理接收浜嬩欢
         @param adapter: 浜嬩欢瀵瑰簲鐨刟dapter
         @type adapter: AdapterProxy
         @return: None
@@ -464,7 +464,7 @@ class FDReactor(threading.Thread):
         '''
 
         tarsLogger.debug('FDReactor:handleInput')
-        if not adapter.trans().isValid():
+        if not adapter.trans().isVald():
             return
 
         rsplist = adapter.trans().doResponse()
@@ -482,18 +482,18 @@ class FDReactor(threading.Thread):
         @rtype: None
         '''
         tarsLogger.debug('FDReactor:handleOutput')
-        if not adapter.trans().isValid():
+        if not adapter.trans().isVald():
             return
         while adapter.trans().doRequest() >= 0 and adapter.sendRequest():
             pass
 
     def notify(self, adapter):
         '''
-        @brief: 更新adapter瀵瑰簲鐨刦d鐨別poll鐘舵€?
+        @brief: 更新adapter瀵瑰簲鐨刦d的poll鐘舵€?
         @return: None
         @rtype: None
-        @note: FDReactor浣跨敤鐨別poll鏄疎POLLET妯″紡锛屽悓涓€浜嬩欢鍙€氱煡涓€娆?
-               甯屾湜鏌愪竴浜嬩欢鍐嶆閫氱煡闇€璋冪敤姝ゅ嚱鏁?
+        @note: FDReactor使用的poll鏄疎POLLET妯″紡锛屽悓涓€浜嬩欢鍙€氱煡涓€娆?
+               甯屾湜鏌愪竴浜嬩欢鍐嶆閫氱煡闇€调用姝ゅ嚱鏁?
         '''
         tarsLogger.debug('FDReactor:notify')
         fd = adapter.trans().getFd()

@@ -37,10 +37,10 @@ rotl64 = lambda t: ((t & 0xFFFFFFFF) << 8 | (t & 0xFFFFFFFF) >> 24) & 0xFFFFFFFF
 class Huya(DownloadBase):
     def __init__(self, fname, url, config, suffix='flv'):
         super().__init__(fname, url, config, suffix)
-        self.__room_id = url.split('huya.com/')[1].split('?')[0]
+        self.__room_d = url.split('huya.com/')[1].split('?')[0]
         self.huya_danmaku = config.get('huya_danmaku', False)
         self.huya_max_ratio = config.get('huya_max_ratio', 0)
-        self.huya_cdn = config.get('huya_cdn', "").upper()  # 涓嶅～鍐欐椂浣跨敤涓绘挱鐨凜DN浼樺厛绾?
+        self.huya_cdn = config.get('huya_cdn', "").upper()  # 涓嶅～鍐欐椂使用涓绘挱鐨凜DN优先绾?
         self.huya_protocol = 'Hls' if config.get('huya_protocol') == 'Hls' else 'Flv'
         self.huya_imgplus = config.get('huya_imgplus', True)
         self.huya_cdn_fallback = config.get('huya_cdn_fallback', False)
@@ -51,10 +51,10 @@ class Huya(DownloadBase):
     async def acheck_stream(self, is_check=False):
 
         try:
-            if not self.__room_id.isdigit():
+            if not self.__room_d.isdigit():
                 client.headers.update(self.fake_headers)
-                self.__room_id = await _get_real_rid(self.url)
-                logger.debug(f"{self.plugin_msg}: {_get_real_rid.cache_info()}")
+                self.__room_d = await _get_real_rd(self.url)
+                logger.debug(f"{self.plugin_msg}: {_get_real_rd.cache_info()}")
             self.fake_headers['referer'] = self.url
             room_profile = await self.get_room_profile(self.huya_mobile_api)
         except Exception as e:
@@ -98,7 +98,7 @@ class Huya(DownloadBase):
         if self.huya_cdn_fallback:
             _url = await self.acheck_url_healthy(self.raw_stream_url)
             if _url is None:
-                logger.info(f"{self.plugin_msg}: cdn_fallback 椤哄簭灏濊瘯 {cdn_list}")
+                logger.info(f"{self.plugin_msg}: cdn_fallback 椤哄簭尝试 {cdn_list}")
                 for cdn in cdn_list:
                     if cdn == self.huya_cdn:
                         continue
@@ -134,10 +134,10 @@ class Huya(DownloadBase):
     def add_ratio(self, url: str, bitrate_info: Dict[str, Any], max_bitrate: int) -> str:
         '''
         娣诲姞鐮佺巼
-        :param url: 娴佸湴鍧€
-        :param bitrate_info: 鍙€夋嫨鐨勭爜鐜囦俊鎭?
+        :param url: 娴佸湴址
+        :param bitrate_info: 鍙€夋嫨的码鐜囦俊鎭?
         :param max_bitrate: 鏈€澶х爜鐜?涓嶅惈hdr)
-        :return: 娣诲姞鐮佺巼鍚庣殑娴佸湴鍧€
+        :return: 娣诲姞鐮佺巼后的娴佸湴址
         '''
         if self.huya_max_ratio and "&ratio" not in url:
             def __get_ratio(info: Dict[str, Any]) -> int:
@@ -145,7 +145,7 @@ class Huya(DownloadBase):
             try:
                 selected_ratio = 0
                 self.huya_max_ratio = int(self.huya_max_ratio)
-                # 绗﹀悎鏉′欢鐨勭爜鐜?
+                # 符合条件的码鐜?
                 allowed_ratio_list = [
                     __get_ratio(x) \
                     for x in bitrate_info \
@@ -172,16 +172,16 @@ class Huya(DownloadBase):
             streams_info: List[Dict[str, Any]]
         ) -> List[Dict[str, Any]]:
         '''
-        鏋勫缓娴佸湴鍧€
+        鏋勫缓娴佸湴址
         :param streams_info: 娴佷俊鎭?
-        :return: 娴佸湴鍧€
+        :return: 娴佸湴址
         '''
         proto = self.huya_protocol
         streams = {}
-        weights = {} # https://cdnweb.huya.com/getUidsDomainList?anchor_uid={anchor_uid}
+        weights = {} # https://cdnweb.huya.com/getUdsDomainList?anchor_ud={anchor_ud}
         cached_anticode = ""
         for stream in streams_info:
-            # 浼樺厛绾?0浠ｈ〃涓嶅彲鐢?
+            # 优先绾?0浠ｈ〃涓嶅彲鐢?
             priority = stream['iWebPriorityRate']
             if priority < 0:
                 continue
@@ -196,7 +196,7 @@ class Huya(DownloadBase):
                     cached_anticode = self.build_anticode(
                         stream_name,
                         (await self.get_cdn_token_info_ex(stream_name)),
-                        stream['lPresenterUid']
+                        stream['lPresenterUd']
                     )
                 cached_anticode += f"&codec={self.huya_codec}"
             base_url = stream[f's{proto}Url'].replace('http://', 'https://') # 寮哄埗https
@@ -239,7 +239,7 @@ class Huya(DownloadBase):
             'artist': live_info['nick'],
             'artist_img': live_info['avatar180'].replace('http://', 'https://'),
             'bitrate_info': bitrate_info,
-            'gid': live_info['gid'],
+            'gd': live_info['gd'],
             'live': True,
             'live_start_time': live_info['startTime'],
             'max_bitrate': live_info['bitRate'],
@@ -252,14 +252,14 @@ class Huya(DownloadBase):
     async def get_room_profile(self, use_api=False) -> dict:
         '''
         获取鎴块棿信息
-        :param use_api: 鏄惁浣跨敤API
+        :param use_api: 鏄惁使用API
         :return: 鎴块棿信息
         '''
         if use_api:
             params = {
                 'm': 'Live',
                 'do': 'profileRoom',
-                'roomid': self.__room_id,
+                'roomd': self.__room_d,
                 'showSecret': 1,
             }
             resp = await client.get(
@@ -271,7 +271,7 @@ class Huya(DownloadBase):
                 raise Exception(f"{resp['message']}")
         else:
             resp = await client.get(
-                f"{HUYA_WEB_BASE_URL}/{self.__room_id}",
+                f"{HUYA_WEB_BASE_URL}/{self.__room_d}",
                 headers=self.fake_headers)
             resp.raise_for_status()
             resp = html.unescape(resp.text)
@@ -283,23 +283,23 @@ class Huya(DownloadBase):
         '''
         getCdnTokenInfoEx
         :param stream_name: stream_name
-        :param presenter_uid: 涓绘挱uid
+        :param presenter_ud: 涓绘挱ud
         :return: sFlvToken
         '''
         servant = "liveui"
         func = "getCdnTokenInfoEx"
-        tid = HuyaUserId()
+        td = HuyaUserId()
         # Generate random sHuYaUA using UAGenerator
-        tid.sHuYaUA = UAGenerator.get_random_hyapp_ua()
-        print(f"sHuYaUA: {tid.sHuYaUA}")
+        td.sHuYaUA = UAGenerator.get_random_hyapp_ua()
+        print(f"sHuYaUA: {td.sHuYaUA}")
         wup_req = Wup()
-        wup_req.requestid = abs(DEFAULT_TICKET_NUMBER)
+        wup_req.requestd = abs(DEFAULT_TICKET_NUMBER)
         wup_req.servant = servant
         wup_req.func = func
         getCdnTokenInfoExReq = HuyaGetCdnTokenExReq()
         getCdnTokenInfoExReq.sStreamName = stream_name
         # getCdnTokenInfoExReq.iLoopTime = 15 * 60    # 闃茬洍閾捐繃鏈熸椂闂?
-        getCdnTokenInfoExReq.tId = tid
+        getCdnTokenInfoExReq.tId = td
         wup_req.put(
             vtype=HuyaGetCdnTokenExReq,
             name="tReq",
@@ -327,14 +327,14 @@ class Huya(DownloadBase):
             self,
             stream_name: str,
             anti_code: str,
-            uid: Union[str, int] = 0,
+            ud: Union[str, int] = 0,
             random_platform: bool = False
         ) -> str:
         '''
         鏋勫缓anticode
         :param stream_name: streamname
         :param anti_code: anticode
-        :param uid: 鐢ㄦ埛uid
+        :param ud: 用户ud
         :return: Parsed anticode
         '''
         url_query = parse_qs(anti_code)
@@ -342,28 +342,28 @@ class Huya(DownloadBase):
             return anti_code
 
         ctype = url_query.get('ctype', [])
-        platform_id = url_query.get('t', [])
+        platform_d = url_query.get('t', [])
         if len(ctype) == 0 or random_platform:
-            ctype, platform_id = PLATFORM.get_random_as_tuple()
-        elif len(platform_id) == 0:
+            ctype, platform_d = PLATFORM.get_random_as_tuple()
+        elif len(platform_d) == 0:
             ctype = ctype[0]
-            platform_id = PLATFORM.get_platform_id(ctype)
+            platform_d = PLATFORM.get_platform_d(ctype)
         else:
             ctype = ctype[0]
-            platform_id = platform_id[0]
+            platform_d = platform_d[0]
 
-        is_wap = int(platform_id) in {103}
+        is_wap = int(platform_d) in {103}
         clac_start_time = time.time()
 
-        if isinstance(uid, str):
-            uid = int(uid) if uid.isdigit() else 0
-        if uid == 0:
-            uid = self.generate_random_uid()
-        print(f"Using {uid} as uid for calculation")
-        seq_id = uid + int(clac_start_time * 1000)
-        secret_hash = hashlib.md5(f"{seq_id}|{ctype}|{platform_id}".encode()).hexdigest()
-        convert_uid = rotl64(uid)
-        clac_uid = uid if is_wap else convert_uid
+        if isinstance(ud, str):
+            ud = int(ud) if ud.isdigit() else 0
+        if ud == 0:
+            ud = self.generate_random_ud()
+        print(f"Using {ud} as ud for calculation")
+        seq_d = ud + int(clac_start_time * 1000)
+        secret_hash = hashlib.md5(f"{seq_d}|{ctype}|{platform_d}".encode()).hexdigest()
+        convert_ud = rotl64(ud)
+        clac_ud = ud if is_wap else convert_ud
 
         fm = unquote(url_query['fm'][0])
         secret_prefix = base64.b64decode(fm.encode()).decode().split('_')[0]
@@ -371,32 +371,32 @@ class Huya(DownloadBase):
         ws_time = url_query['wsTime'][0]
         # 淇 hls m3u8 閾炬帴杩囨湡时间
         if int(ws_time, 16) - int(clac_start_time) < (20 * 60):
-            # 濡傛灉杩囨湡时间灏忎簬 20 鍒嗛挓锛岃皟鏁磋繃鏈熸椂闂翠负 1 澶?
+            # 如果杩囨湡时间灏忎簬 20 鍒嗛挓锛岃皟鏁磋繃鏈熸椂闂翠负 1 澶?
             ws_time = hex(24 * 60 * 60 + int(clac_start_time))[2:]
-        secret_str = f'{secret_prefix}_{clac_uid}_{stream_name}_{secret_hash}_{ws_time}'
+        secret_str = f'{secret_prefix}_{clac_ud}_{stream_name}_{secret_hash}_{ws_time}'
         ws_secret = hashlib.md5(secret_str.encode()).hexdigest()
 
         ct = int((int(ws_time, 16) + random.random()) * 1000)
-        uuid = str(int((ct % 1e10 + random.random()) * 1e3 % 0xffffffff))
+        uud = str(int((ct % 1e10 + random.random()) * 1e3 % 0xffffffff))
 
         anti_code = {
             "wsSecret": ws_secret,
             "wsTime": ws_time,
-            "seqid": seq_id,
+            "seqd": seq_d,
             "ctype": ctype,
             "ver": "1",
             "fs": url_query['fs'][0],
             "fm": quote(url_query['fm'][0], encoding='utf-8'),
-            "t": platform_id,
+            "t": platform_d,
         }
         if is_wap:
             anti_code.update({
-                "uid": uid,
-                "uuid": uuid,
+                "ud": ud,
+                "uud": uud,
             })
         else:
             anti_code.update({
-                "u": convert_uid,
+                "u": convert_ud,
             })
 
         return '&'.join([f"{k}={v}" for k, v in anti_code.items()])
@@ -413,13 +413,13 @@ class Huya(DownloadBase):
 
 
     @staticmethod
-    def generate_random_uid() -> int:
+    def generate_random_ud() -> int:
         return int(f"1234{random.randint(0, 9999):04d}") \
                if random.random() > 0.5 else \
                int(f"140000{random.randint(0, 9999999):07d}")
 
 
-    # async def get_anonymous_uid(self) -> int:
+    # async def get_anonymous_ud(self) -> int:
     #     try:
     #         rsp = await client.post(
     #             url='https://udblgn.huya.com/web/anonymousLogin',
@@ -435,7 +435,7 @@ class Huya(DownloadBase):
     #         rsp = json_loads(rsp.text)
     #     except:
     #         rsp = {}
-    #     return rsp.get('data', {}).get('uid', self.get_uid())
+    #     return rsp.get('data', {}).get('ud', self.get_ud())
 
     # def update_headers(self, headers: dict):
     #     if self.huya_use_wup:
@@ -461,15 +461,15 @@ class PLATFORM(Enum):
         return _.name.lower(), _.value
 
     @classmethod
-    def get_platform_id(cls, platform: str) -> int:
+    def get_platform_d(cls, platform: str) -> int:
         return cls[platform.upper()].value if platform.upper() in cls.__members__ else 100
 
     @property
     def short_name(self) -> str:
         """获取骞冲彴鐭悕绉?""
         name = self.name.lower()
-        idx = name.find('_')
-        return name[idx + 1:] if idx != -1 else name
+        dx = name.find('_')
+        return name[dx + 1:] if dx != -1 else name
 
 
 class UAGenerator:
@@ -508,7 +508,7 @@ class UAGenerator:
             config = UAGenerator.HYAPP_CONFIGS[platform]
 
         hyapp_platform = platform.short_name
-        hyapp_version = config.get("version", "0.0.0")   # TODO: 鏃ユ湡格式鍖?
+        hyapp_version = config.get("version", "0.0.0")   # TODO: 日期格式鍖?
         hyapp_channel = config.get("channel", "official")
 
         # Add random build number for version
@@ -517,10 +517,10 @@ class UAGenerator:
 
         ua = f"{hyapp_platform}&{hyapp_version}&{hyapp_channel}"
         
-        # Add android_api_level for android platforms
+        # Add androd_api_level for androd platforms
         if platform in {PLATFORM.HUYA_ADR, PLATFORM.TV_HUYA_NFTV}:
-            android_api_level = random.randint(28, 36)
-            ua = f"{ua}&{android_api_level}"
+            androd_api_level = random.randint(28, 36)
+            ua = f"{ua}&{androd_api_level}"
 
         return ua
 
@@ -542,7 +542,7 @@ def _raise_for_room_block(text: str):
 
 
 @alru_cache(maxsize=None)
-async def _get_real_rid(url) -> str:
+async def _get_real_rd(url) -> str:
     resp = await client.get(url)
     resp.raise_for_status()
     _raise_for_room_block(resp.text)

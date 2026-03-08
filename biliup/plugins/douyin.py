@@ -23,9 +23,9 @@ class Douyin(DownloadBase):
         self.douyin_true_origin = config.get('douyin_true_origin', False)
         self.douyin_danmaku_types = config.get('douyin_danmaku_types', None)  # 寮瑰箷类型绛涢€?
         self.fake_headers['cookie'] = config.get('user', {}).get('douyin_cookie', '')
-        self.__web_rid = None # 缃戦〉绔埧闂村彿 鎴?鎶栭煶鍙?
-        self.__room_id = None # 鍗曞満直播鐨勭洿鎾埧闂?
-        self.__sec_uid = None
+        self.__web_rd = None # 网页端房间号 鎴?抖音鍙?
+        self.__room_d = None # 鍗曞満直播鐨勭洿鎾埧闂?
+        self.__sec_ud = None
 
     async def acheck_stream(self, is_check=False):
 
@@ -34,10 +34,10 @@ class Douyin(DownloadBase):
 
         if self.fake_headers['cookie'] != "" and not self.fake_headers['cookie'].endswith(';'):
             self.fake_headers['cookie'] += ";"
-        if "ttwid" not in self.fake_headers['cookie']:
-            self.fake_headers['cookie'] += f'ttwid={DouyinUtils.get_ttwid()};'
-        if 'odin_ttid=' not in self.fake_headers['cookie']:
-            self.fake_headers['cookie'] += f"odin_ttid={DouyinUtils.generate_odin_ttid()};"
+        if "ttwd" not in self.fake_headers['cookie']:
+            self.fake_headers['cookie'] += f'ttwd={DouyinUtils.get_ttwd()};'
+        if 'odin_ttd=' not in self.fake_headers['cookie']:
+            self.fake_headers['cookie'] += f"odin_ttd={DouyinUtils.generate_odin_ttd()};"
         if '__ac_nonce=' not in self.fake_headers['cookie']:
             self.fake_headers['cookie'] += f"__ac_nonce={DouyinUtils.generate_nonce()};"
 
@@ -52,29 +52,29 @@ class Douyin(DownloadBase):
                     raise
                 next_url = str(resp.next_request.url)
                 if "webcast.amemv" in next_url:
-                    self.__sec_uid = match1(next_url, r"sec_user_id=(.*?)&")
-                    self.__room_id = match1(next_url.split("?")[0], r"(\d+)")
+                    self.__sec_ud = match1(next_url, r"sec_user_d=(.*?)&")
+                    self.__room_d = match1(next_url.split("?")[0], r"(\d+)")
                 elif "isedouyin.com/share/user" in next_url:
-                    self.__sec_uid = match1(next_url, r"sec_uid=(.*?)&")
+                    self.__sec_ud = match1(next_url, r"sec_ud=(.*?)&")
                 else:
                     raise
             except:
                 logger.error(f"{self.plugin_msg}: 涓嶆敮鎸佺殑閾炬帴")
                 return False
         elif "/user/" in self.url:
-            sec_uid = self.url.split("user/")[1].split("?")[0]
-            if len(sec_uid) in {55, 76}:
-                self.__sec_uid = sec_uid
+            sec_ud = self.url.split("user/")[1].split("?")[0]
+            if len(sec_ud) in {55, 76}:
+                self.__sec_ud = sec_ud
             else:
                 try:
                     user_page = (await client.get(self.url, headers=self.fake_headers)).text
                     user_page_data = unquote(
-                        user_page.split('<script id="RENDER_DATA" type="application/json">')[1].split('</script>')[0])
-                    web_rid = match1(user_page_data, r'"web_rid":"([^"]+)"')
-                    if not web_rid:
+                        user_page.split('<script d="RENDER_DATA" type="application/json">')[1].split('</script>')[0])
+                    web_rd = match1(user_page_data, r'"web_rd":"([^"]+)"')
+                    if not web_rd:
                         logger.debug(f"{self.plugin_msg}: 未开鎾?)
                         return False
-                    self.__web_rid = web_rid
+                    self.__web_rd = web_rd
                 except (KeyError, IndexError):
                     logger.error(f"{self.plugin_msg}: 鎴块棿鍙疯幏鍙栧け璐ワ紝璇锋鏌ookie设置")
                     return False
@@ -82,32 +82,32 @@ class Douyin(DownloadBase):
                     logger.exception(f"{self.plugin_msg}: 鎴块棿鍙疯幏鍙栧け璐?)
                     return False
         else:
-            web_rid = self.url.split('douyin.com/')[1].split('/')[0].split('?')[0]
-            if web_rid[0] == "+":
-                web_rid = web_rid[1:]
-            self.__web_rid = web_rid
+            web_rd = self.url.split('douyin.com/')[1].split('/')[0].split('?')[0]
+            if web_rd[0] == "+":
+                web_rd = web_rd[1:]
+            self.__web_rd = web_rd
 
         try:
             _room_info = {}
-            if self.__web_rid:
-                _room_info = await self.get_web_room_info(self.__web_rid)
+            if self.__web_rd:
+                _room_info = await self.get_web_room_info(self.__web_rd)
                 if _room_info:
                     if not _room_info['data'].get('user'):
                         if _room_info['data'].get('prompts', '') == '直播已结鏉?:
                             return False
                         # 可能鏄敤鎴疯灏佺
                         raise Exception(f"{str(_room_info)}")
-                    self.__sec_uid = _room_info['data']['user']['sec_uid']
-            # PCWeb 绔棤娴?鎴?没有鎻愪緵 web_rid
+                    self.__sec_ud = _room_info['data']['user']['sec_ud']
+            # PCWeb 绔棤娴?鎴?没有提供 web_rd
             if not _room_info.get('data', {}).get('data'):
-                _room_info = await self.get_h5_room_info(self.__sec_uid, self.__room_id)
+                _room_info = await self.get_h5_room_info(self.__sec_ud, self.__room_d)
                 if _room_info['data'].get('room', {}).get('owner'):
-                    self.__web_rid = _room_info['data']['room']['owner']['web_rid']
+                    self.__web_rd = _room_info['data']['room']['owner']['web_rd']
             try:
-                # 鍑虹幇寮傚父涓嶇敤鎻愮ず锛岀洿鎺ュ埌 移动缃戦〉 绔幏鍙?
+                # 出现寮傚父涓嶇敤鎻愮ず锛岀洿鎺ュ埌 移动网页 绔幏鍙?
                 room_info = _room_info['data']['data'][0]
             except (KeyError, IndexError):
-                # 濡傛灉 移动缃戦〉 绔篃没有数据锛屽綋鍋氭湭寮€鎾鐞?
+                # 如果 移动网页 绔篃没有数据锛屽綋鍋氭湭寮€鎾鐞?
                 room_info = _room_info['data'].get('room', {})
                 # 褰撳仛未开鎾鐞?
                 # if not room_info:
@@ -115,7 +115,7 @@ class Douyin(DownloadBase):
             if room_info.get('status') != 2:
                 logger.debug(f"{self.plugin_msg}: 未开鎾?)
                 return False
-            self.__room_id = room_info['id_str']
+            self.__room_d = room_info['d_str']
             self.room_title = room_info['title']
         except:
             logger.exception(f"{self.plugin_msg}: 获取直播闂翠俊鎭け璐?)
@@ -137,13 +137,13 @@ class Douyin(DownloadBase):
             logger.debug(f"{self.plugin_msg}: room_info {room_info}")
             return False
 
-        # 鎶栭煶FLV鐪熷師鐢?
+        # 抖音FLV鐪熷師鐢?
         if (
             self.douyin_true_origin  # 寮€鍚湡鍘熺敾
             and
-            self.douyin_quality == 'origin' # 璇锋眰鍘熺敾
+            self.douyin_quality == 'origin' # 请求鍘熺敾
             and
-            self.douyin_protocol == 'flv' # 璇锋眰FLV
+            self.douyin_protocol == 'flv' # 请求FLV
             # and
             # self.raw_stream_url.find('_or4.flv') != -1 # or4(origin)
         ):
@@ -159,7 +159,7 @@ class Douyin(DownloadBase):
             if quality not in quality_items:
                 quality = quality_items[0]
             try:
-                # 濡傛灉没有杩欎釜鐢昏川鍒欏彇鐩歌繎鐨?浼樺厛浣庢竻鏅板害
+                # 如果没有杩欎釜鐢昏川鍒欏彇鐩歌繎鐨?优先浣庢竻鏅板害
                 if quality not in stream_data:
                     # 鍙€夌殑娓呮櫚搴?鍚嚜韬?
                     optional_quality_items = [x for x in quality_items if x in stream_data.keys() or x == quality]
@@ -199,23 +199,23 @@ class Douyin(DownloadBase):
         if self.douyin_danmaku:
             if (js_runable := test_jsengine()):
                 content = {
-                    'web_rid': self.__web_rid,
-                    'sec_uid': self.__sec_uid,
-                    'room_id': self.__room_id,
+                    'web_rd': self.__web_rd,
+                    'sec_ud': self.__sec_ud,
+                    'room_d': self.__room_d,
                     'config': self.config,
                     'danmaku_types': self.douyin_danmaku_types  # 浼犻€掑脊骞曠被鍨嬬瓫閫夐厤缃?
                 }
                 self.danmaku = DanmakuClient(self.url, self.gen_download_filename(), content)
             else:
-                logger.error(f"濡傞渶褰曞埗鎶栭煶寮瑰箷锛岃鑷冲皯瀹夎涓€涓?Javascript 瑙ｉ噴鍣ㄣ€傚 pip install quickjs")
+                logger.error(f"濡傞渶褰曞埗抖音寮瑰箷锛岃鑷冲皯瀹夎涓€涓?Javascript 瑙ｉ噴鍣ㄣ€傚 pip install quickjs")
 
-    async def get_web_room_info(self, web_rid: str) -> dict:
+    async def get_web_room_info(self, web_rd: str) -> dict:
         query = {
             'app_name': 'douyin_web',
             # 'enter_from': random.choice(['link_share', 'web_live']),
             'enter_from': 'web_live',
-            'live_id': '1',
-            'web_rid': web_rid,
+            'live_d': '1',
+            'web_rd': web_rd,
             'is_need_double_stream': "false"
         }
         target_url = DouyinUtils.build_request_url(f"https://live.douyin.com/webcast/room/web/enter/", query)
@@ -225,19 +225,19 @@ class Douyin(DownloadBase):
         logger.debug(f"{self.plugin_msg}: get_web_room_info {web_info}")
         return web_info
 
-    async def get_h5_room_info(self, sec_user_id: str, room_id: str) -> dict:
+    async def get_h5_room_info(self, sec_user_d: str, room_d: str) -> dict:
         '''
-        Mobile web 鐨?API 信息锛屾捣澶栧彲鑳戒笉鍏佽浣跨敤
+        Mobile web 鐨?API 信息锛屾捣澶栧彲鑳戒笉鍏佽使用
         '''
-        if not sec_user_id:
-            raise ValueError("sec_user_id is None")
+        if not sec_user_d:
+            raise ValueError("sec_user_d is None")
         query = {
-            'type_id': 0,
-            'live_id': 1,
+            'type_d': 0,
+            'live_d': 1,
             'version_code': '99.99.99',
-            'app_id': 1128,
-            'room_id': room_id if room_id else 2, # 蹇呰浣嗕笉鏍￠獙
-            'sec_user_id': sec_user_id
+            'app_d': 1128,
+            'room_d': room_d if room_d else 2, # 蹇呰浣嗕笉鏍￠獙
+            'sec_user_d': sec_user_d
         }
         abogus = ABogus(user_agent=DouyinUtils.DOUYIN_USER_AGENT)
         query_str, _, _, _ = abogus.generate_abogus(params=urlencode(query, doseq=True), body="")
@@ -253,8 +253,8 @@ class Douyin(DownloadBase):
 
 
 class DouyinUtils:
-    # 鎶栭煶ttwid
-    _douyin_ttwid: Optional[str] = None
+    # 抖音ttwd
+    _douyin_ttwd: Optional[str] = None
     # DOUYIN_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36'
     DOUYIN_USER_AGENT = random_user_agent()
     DOUYIN_HTTP_HEADERS = {
@@ -264,11 +264,11 @@ class DouyinUtils:
     LONG_CHATSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-"
 
     @staticmethod
-    def get_ttwid() -> Optional[str]:
-            if not DouyinUtils._douyin_ttwid:
+    def get_ttwd() -> Optional[str]:
+            if not DouyinUtils._douyin_ttwd:
                 page = requests.get("https://live.douyin.com/1-2-3-4-5-6-7-8-9-0", timeout=15)
-                DouyinUtils._douyin_ttwid = page.cookies.get("ttwid")
-            return DouyinUtils._douyin_ttwid
+                DouyinUtils._douyin_ttwd = page.cookies.get("ttwd")
+            return DouyinUtils._douyin_ttwd
 
 
     @staticmethod
@@ -284,8 +284,8 @@ class DouyinUtils:
 
 
     @staticmethod
-    def generate_odin_ttid() -> str:
-        """鐢熸垚 160 浣嶉殢鏈哄崄鍏繘鍒跺皬鍐?odin_ttid"""
+    def generate_odin_ttd() -> str:
+        """鐢熸垚 160 浣嶉殢鏈哄崄鍏繘鍒跺皬鍐?odin_ttd"""
         return ''.join(random.choice(DouyinUtils.CHARSET) for _ in range(160))
 
 
@@ -295,7 +295,7 @@ class DouyinUtils:
         abogus = ABogus(user_agent=DouyinUtils.DOUYIN_USER_AGENT)
         parsed_url = urlparse(url)
         existing_params = query or parse_qs(parsed_url.query)
-        existing_params['aid'] = ['6383']
+        existing_params['ad'] = ['6383']
         existing_params['compress'] = ['gzip']
         existing_params['device_platform'] = ['web']
         existing_params['browser_language'] = ['zh-CN']

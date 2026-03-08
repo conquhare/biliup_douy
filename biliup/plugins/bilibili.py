@@ -22,9 +22,9 @@ class Bililive(DownloadBase):
         self.bilibili_danmaku = config.get('bilibili_danmaku', False)
         self.bilibili_danmaku_detail = config.get('bilibili_danmaku_detail', False)
         self.bilibili_danmaku_raw = config.get('bilibili_danmaku_raw', False)
-        self.__real_room_id = None
-        self.__login_mid = 0
-        self.__anchor_mid = 0
+        self.__real_room_d = None
+        self.__login_md = 0
+        self.__anchor_md = 0
         self.bili_cookie = config.get('user', {}).get('bili_cookie')
         self.bili_cookie_file = config.get('user', {}).get('bili_cookie_file')
         self.bili_qn = int(config.get('bili_qn', 25000))
@@ -53,7 +53,7 @@ class Bililive(DownloadBase):
                 logger.error(f"{self.plugin_msg}: {e}")
                 return False
 
-        room_id: str = match1(self.url, r'bilibili.com/(\d+)')
+        room_d: str = match1(self.url, r'bilibili.com/(\d+)')
         if self.bili_cookie:
             self.fake_headers['cookie'] = self.bili_cookie
         if self.bili_cookie_file:
@@ -74,7 +74,7 @@ class Bililive(DownloadBase):
         # 获取直播鐘舵€佷笌鎴块棿鏍囬
         try:
             params = {
-                "room_id": room_id,
+                "room_d": room_d,
                 "web_location": WBI_WEB_LOCATION,
             }
             wbi.sign(params)
@@ -99,8 +99,8 @@ class Bililive(DownloadBase):
 
         self.live_cover_url = room_info['room_info']['cover']
         self.room_title = room_info['room_info']['title']
-        self.__real_room_id = room_info['room_info']['room_id']
-        self.__anchor_mid = room_info['room_info']['uid']
+        self.__real_room_d = room_info['room_info']['room_d']
+        self.__anchor_md = room_info['room_info']['ud']
         live_start_time = room_info['room_info']['live_start_time']
         special_type = room_info['room_info']['special_type'] # 0: 鍏紑直播, 1: 浠樿垂直播, 199: 绾噣椤甸潰
         if live_start_time > self.live_start_time:
@@ -112,7 +112,7 @@ class Bililive(DownloadBase):
         if is_check:
             return True
         else:
-            self.__login_mid = await self.check_login_status()
+            self.__login_md = await self.check_login_status()
 
         # 澶嶇敤鍘熺敾 m3u8 娴?
         if  self.raw_stream_url is not None \
@@ -131,7 +131,7 @@ class Bililive(DownloadBase):
         if not stream_urls:
             if self.bili_protocol == 'hls_fmp4':
                 if int(time.time()) - live_start_time <= self.bili_hls_timeout:
-                    logger.warning(f"{self.plugin_msg}: 鏆傛湭鎻愪緵 hls_fmp4 娴侊紝等待涓嬩竴娆℃娴?)
+                    logger.warning(f"{self.plugin_msg}: 暂未提供 hls_fmp4 流，等待下一娆℃娴?)
                     return False
                 else:
                     # 鍥為€€棣栦釜鍙敤格式
@@ -154,7 +154,7 @@ class Bililive(DownloadBase):
         if not stream_url:
             current_cdn, stream_info = next(iter(target_quality_stream.items()))
             stream_url = stream_info['url']
-            logger.debug(f"{self.plugin_msg}: 浣跨敤 {current_cdn} 娴?)
+            logger.debug(f"{self.plugin_msg}: 使用 {current_cdn} 娴?)
 
         self.raw_stream_url = f"{stream_url['host']}{stream_url['base_url']}{stream_url['extra']}"
 
@@ -187,11 +187,11 @@ class Bililive(DownloadBase):
         if self.bilibili_danmaku:
             self.danmaku = DanmakuClient(
                 self.url, self.gen_download_filename(), {
-                    'room_id': self.__real_room_id,
+                    'room_d': self.__real_room_d,
                     'cookie': self.fake_headers.get('cookie', ''),
                     'detail': self.bilibili_danmaku_detail,
                     'raw': self.bilibili_danmaku_raw,
-                    'uid': self.__login_mid
+                    'ud': self.__login_md
                 }
             )
 
@@ -200,11 +200,11 @@ class Bililive(DownloadBase):
         full_url = f"{api}/xlive/web-room/v2/index/getRoomPlayInfo"
         try:
             params = {
-                'room_id': str(self.__real_room_id),
+                'room_d': str(self.__real_room_d),
                 # 'no_playurl': '0',
                 # 'mask': '1',
                 'qn': str(qn),
-                'platform': 'html5',  # 骞冲彴鍚嶇О锛寃eb, html5, android, ios
+                'platform': 'html5',  # 骞冲彴鍚嶇О锛寃eb, html5, androd, ios
                 'protocol': '0,1',  # 娴佸崗璁紝0: http_stream(flv), 1: http_hls
                 'format': '0,1,2',  # 编码格式锛?: flv, 1: ts, 2: fmp4
                 'codec': '0',  # 编码鍣紝0: avc, 1: hevc, 2: av1
@@ -212,8 +212,8 @@ class Bililive(DownloadBase):
                 'dolby': '5', # 鏉滄瘮格式锛?: 鏉滄瘮闊抽
                 # 'panorama': '1', # 鍏ㄦ櫙(涓嶆敮鎸?html5)
                 # 'hdr_type': '0,1', # HDR类型(涓嶆敮鎸?html5)锛?: SDR, 1: PQ
-                # 'req_reason': '0', # 璇锋眰鍘熷洜锛?: Normal, 1: PlayError
-                # 'http': '1', # 浼樺厛 http 鍗忚
+                # 'req_reason': '0', # 请求鍘熷洜锛?: Normal, 1: PlayError
+                # 'http': '1', # 优先 http 鍗忚
                 'web_location': WBI_WEB_LOCATION,
             }
             wbi.sign(params)
@@ -222,11 +222,11 @@ class Bililive(DownloadBase):
             )
             api_res = json.loads(api_res.text)
             if api_res['code'] != 0:
-                logger.error(f"{self.plugin_msg}: {api} 杩斿洖鍐呭错误: {api_res}")
+                logger.error(f"{self.plugin_msg}: {api} 返回鍐呭错误: {api_res}")
                 return {}
             return api_res['data']
         except json.JSONDecodeError:
-            logger.error(f"{self.plugin_msg}: {api} 杩斿洖鍐呭错误: {api_res.text}")
+            logger.error(f"{self.plugin_msg}: {api} 返回鍐呭错误: {api_res.text}")
         except Exception as e:
             logger.error(f"{self.plugin_msg}: {api} 获取 play_info 失败 -> {e}", exc_info=True)
         return {}
@@ -234,8 +234,8 @@ class Bililive(DownloadBase):
     async def get_master_m3u8(self, api: str) -> dict:
         full_url = f"{api}/xlive/play-gateway/master/url"
         params = {
-            "cid": self.__real_room_id,
-            "mid": self.__login_mid or self.__anchor_mid,
+            "cd": self.__real_room_d,
+            "md": self.__login_md or self.__anchor_md,
             "pt": "web", # platform
             "p2p_type": "-1",
             "net": 0,
@@ -258,7 +258,7 @@ class Bililive(DownloadBase):
 
     async def aget_stream(self, qn: int = 10000, protocol: str = 'stream', special_type: int = 0) -> dict:
         """
-        :param qn: 鐩爣鐢昏川
+        :param qn: 目标鐢昏川
         :param protocol: 娴佸崗璁?
         :param special_type: 鐗规畩直播类型
         :return: 娴佷俊鎭?
@@ -267,12 +267,12 @@ class Bililive(DownloadBase):
         for api in self.bili_api_list:
             play_info = await self.get_play_info(api, qn)
             if not play_info or check_areablock(play_info):
-                # logger.error(f"{self.plugin_msg}: {api} 杩斿洖鍐呭错误: {play_info}")
+                # logger.error(f"{self.plugin_msg}: {api} 返回鍐呭错误: {play_info}")
                 continue
             streams = play_info['playurl_info']['playurl']['stream']
             if protocol == 'hls_fmp4':
                 if self.bili_anonymous_origin:
-                    if special_type in play_info['all_special_types'] and not self.__login_mid:
+                    if special_type in play_info['all_special_types'] and not self.__login_md:
                         logger.warn(f"{self.plugin_msg}: 鐗规畩直播{special_type}")
                     else:
                         stream_urls = await self.get_master_m3u8(api)
@@ -290,7 +290,7 @@ class Bililive(DownloadBase):
                 stream_urls = self.parse_stream_url(streams[0]['format'][0]['codec'][0])
             if stream_urls:
                 break
-        # 绌哄瓧鍏哥収甯歌繑鍥烇紝閲嶈瘯交给涓婂眰鏂规硶处理
+        # 绌哄瓧鍏哥収甯歌繑鍥烇紝重试交给涓婂眰鏂规硶处理
         return stream_urls
 
     async def get_user_status(self) -> dict:
@@ -335,13 +335,13 @@ class Bililive(DownloadBase):
     async def check_login_status(self) -> int:
         """
         检鏌绔欑櫥褰曠姸鎬?
-        :return: 褰撳墠鐧诲綍鐢ㄦ埛 mid
+        :return: 褰撳墠鐧诲綍用户 md
         """
         try:
             data = await self.get_user_status()
             if data.get('isLogin'):
-                logger.info(f"鐢ㄦ埛鍚嶏細{data['uname']}, mid: {data['mid']}")
-                return data['mid']
+                logger.info(f"用户鍚嶏細{data['uname']}, md: {data['md']}")
+                return data['md']
             else:
                 logger.warning(f"{self.plugin_msg}: 鏈櫥褰曪紝鎴栧皢鍙兘褰曞埗鍒版渶浣庣敾璐ㄣ€?)
         except Exception as e:
@@ -401,7 +401,7 @@ class Bililive(DownloadBase):
         result = {}
 
         if not lines[0].startswith('#EXTM3U'):
-            raise ValueError('Invalid m3u8 file')
+            raise ValueError('Invald m3u8 file')
 
         for line in lines:
             if line.startswith('#EXT-X-STREAM-INF:'):
@@ -428,7 +428,7 @@ def check_areablock(data):
     '''
     if not data['playurl_info']['playurl']:
         logger.error('Sorry, bilibili is currently not available in your country according to copyright restrictions.')
-        logger.error('闈炲父鎶辨瓑锛屾牴鎹増鏉冩柟瑕佹眰锛屾偍鎵€鍦ㄧ殑鍦板尯无法瑙傜湅鏈洿鎾?)
+        logger.error('闈炲父鎶辨瓑锛屾牴鎹増鏉冩柟要求锛屾偍鎵€鍦ㄧ殑鍦板尯无法瑙傜湅鏈洿鎾?)
         return True
     return False
 

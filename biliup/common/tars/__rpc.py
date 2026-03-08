@@ -20,7 +20,7 @@
 
 '''
 @version: 0.01
-@brief: rpc璋冪敤閫昏緫瀹炵幇
+@brief: rpc调用閫昏緫实现
 '''
 
 import argparse
@@ -73,7 +73,7 @@ class Communicator:
 
     def initialize(self):
         '''
-        @brief: 浣跨敤閫氳鍣ㄥ墠必须鍏堣皟鐢ㄦ鍑芥暟
+        @brief: 使用閫氳鍣ㄥ墠必须鍏堣皟鐢ㄦ鍑芥暟
         '''
         tarsLogger.debug('Communicator:initialize')
         if self.__initialize:
@@ -101,7 +101,7 @@ class Communicator:
 
     def terminate(self):
         '''
-        @brief: 涓嶅啀浣跨敤閫氳鍣ㄩ渶璋冪敤姝ゅ嚱鏁伴噴鏀捐祫婧?
+        @brief: 涓嶅啀使用閫氳鍣ㄩ渶调用姝ゅ嚱鏁伴噴鏀捐祫婧?
         '''
         tarsLogger.debug('Communicator:terminate')
 
@@ -126,9 +126,9 @@ class Communicator:
     def parseConnAddr(self, connAddr):
         '''
         @brief: 解析connAddr字符涓?
-        @param connAddr: 杩炴帴鍦板潃
+        @param connAddr: 连接鍦板潃
         @type connAddr: str
-        @return: 解析缁撴灉
+        @return: 解析结果
         @rtype: dict, key鏄痵tr锛寁al閲宯ame鏄痵tr锛?
                 timeout鏄痜loat锛宔ndpoint鏄疎ndPointInfo鐨刲ist
         '''
@@ -231,20 +231,20 @@ class Communicator:
 
     def updateConfig(self):
         '''
-        @brief: 閲嶆柊设置配置
+        @brief: 重新设置配置
         '''
 
     def stringToProxy(self, servantProxy, connAddr):
         '''
         @brief: 鍒濆鍖朣ervantProxy
-        @param connAddr: 鏈嶅姟鍣ㄥ湴鍧€信息
+        @param connAddr: 服务鍣ㄥ湴址信息
         @type connAddr: str
         @param servant: servant proxy
         @type servant: ServantProxy瀛愮被
         @return: 鏃?
         @rtype: None
-        @note: 濡傛灉connAddr鐨凷ervantObj杩炴帴杩囷紝杩斿洖杩炴帴杩囩殑ServantProxy
-               濡傛灉没有杩炴帴杩囷紝鐢ㄥ弬鏁皊ervant鍒濆鍖栵紝杩斿洖servant
+        @note: 如果connAddr鐨凷ervantObj连接杩囷紝返回连接杩囩殑ServantProxy
+               如果没有连接杩囷紝鐢ㄥ弬鏁皊ervant鍒濆鍖栵紝返回servant
         '''
         tarsLogger.debug('Communicator:stringToProxy')
 
@@ -296,10 +296,10 @@ class ObjectProxy:
 
     def initialize(self, comm, connInfo):
         '''
-        @brief: 鍒濆鍖栵紝浣跨敤ObjectProxy鍓嶅繀椤昏皟鐢?
+        @brief: 鍒濆鍖栵紝使用ObjectProxy鍓嶅繀椤昏皟鐢?
         @param comm: 閫氳鍣?
         @type comm: Communicator
-        @param connInfo: 杩炴帴信息
+        @param connInfo: 连接信息
         @type comm: dict
         @return: None
         @rtype: None
@@ -319,7 +319,7 @@ class ObjectProxy:
             'sync-invoke-timeout', float) / 1000
 
         # 閫氳繃Communicator鐨勯厤缃缃秴鏃?
-        # 涓嶅啀閫氳繃杩炴帴信息鐨?t鏉ヨ缃?
+        # 涓嶅啀閫氳繃连接信息鐨?t鏉ヨ缃?
         # if connInfo['timeout'] != -1:
         # self.__timeout = connInfo['timeout']
         eplist = connInfo['endpoint']
@@ -331,7 +331,7 @@ class ObjectProxy:
 
     def terminate(self):
         '''
-        @brief: 鍥炴敹璧勬簮锛屼笉鍐嶄娇鐢∣bjectProxy鏃惰皟鐢?
+        @brief: 鍥炴敹资源锛屼笉鍐嶄娇鐢∣bjectProxy鏃惰皟鐢?
         @return: None
         @rtype: None
         '''
@@ -386,16 +386,16 @@ class ObjectProxy:
 
     def invoke(self, reqmsg):
         '''
-        @brief: 杩滅▼杩囩▼璋冪敤
-        @param reqmsg: 璇锋眰鍝嶅簲鎶ユ枃
+        @brief: 杩滅▼杩囩▼调用
+        @param reqmsg: 请求鍝嶅簲鎶ユ枃
         @type reqmsg: ReqMessage
         @return: 错误鐮?
         @rtype:
         '''
         tarsLogger.debug('ObjectProxy:invoke, objname: %s, func: %s',
                          self.__name, reqmsg.request.sFuncName)
-        # 璐熻浇鍧囪　
-        # adapter = self.__adpmanager.getNextValidProxy()
+        # 负载均衡
+        # adapter = self.__adpmanager.getNextValdProxy()
         adapter = self.__adpmanager.selectAdapterProxy(reqmsg)
         if not adapter:
             tarsLogger.error("invoke %s, select adapter proxy return None",
@@ -406,12 +406,12 @@ class ObjectProxy:
         reqmsg.adapter = adapter
         return adapter.invoke(reqmsg)
 
-    # 寮瑰嚭璇锋眰鎶ユ枃
+    # 寮瑰嚭请求鎶ユ枃
     def popRequest(self):
         '''
-        @brief: 杩斿洖娑堟伅闃熷垪閲岀殑璇锋眰鍝嶅簲鎶ユ枃锛孎IFO
+        @brief: 返回娑堟伅闃熷垪閲岀殑请求鍝嶅簲鎶ユ枃锛孎IFO
                 涓嶅垹闄imeoutQueue閲岀殑数据锛屽搷搴旀椂瑕佺敤
-        @return: 璇锋眰鍝嶅簲鎶ユ枃
+        @return: 请求鍝嶅簲鎶ユ枃
         @rtype: ReqMessage
         '''
         return self.__timeoutQueue.pop(erase=False)
@@ -428,7 +428,7 @@ if __name__ == '__main__':
     try:
         rsp = servant.tars_invoke(
             ServantProxy.TARSNORMAL, "test", '', ServantProxy.mapcls_context(), None)
-        print('Servant invoke success, request id: %d, iRet: %d' % (
+        print('Servant invoke success, request d: %d, iRet: %d' % (
             rsp.iRequestId, rsp.iRet))
     except Exception as msg:
         print(msg)

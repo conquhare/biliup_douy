@@ -24,35 +24,35 @@ DOUYU_MOBILE_DOMAIN = "m.douyu.com"
 class Douyu(DownloadBase):
     def __init__(self, fname, url, config, suffix='flv'):
         super().__init__(fname, url, config, suffix)
-        self.room_id: str = ""
+        self.room_d: str = ""
         self.douyu_danmaku = config.get('douyu_danmaku', False)
         self.douyu_disable_interactive_game = config.get('douyu_disable_interactive_game', False)
         self.douyu_cdn = config.get('douyu_cdn', 'hw-h5')
         self.douyu_rate = config.get('douyu_rate', 0)
-        # 鏂板锛氭槸鍚﹀己鍒舵瀯寤?hs-h5 閾炬帴锛堝嵆浣?play_info 杩斿洖鐨?rtmp_cdn 宸茬粡鏄?hs-h5锛?
+        # 鏂板锛氭槸鍚﹀己鍒舵瀯寤?hs-h5 閾炬帴锛堝嵆浣?play_info 返回鐨?rtmp_cdn 宸茬粡鏄?hs-h5锛?
         self.douyu_force_hs = config.get('douyu_force_hs', False)
         self.__js_runable = test_jsengine()
 
 
     async def acheck_stream(self, is_check=False):
         if len(self.url.split("douyu.com/")) < 2:
-            logger.error(f"{self.plugin_msg}: 直播闂村湴鍧€错误")
+            logger.error(f"{self.plugin_msg}: 直播间地址错误")
             return False
 
         self.fake_headers['referer'] = f"https://{DOUYU_WEB_DOMAIN}"
 
         try:
-            self.room_id = str(match1(self.url, r'rid=(\d+)'))
-            if not self.room_id.isdigit():
-                self.room_id = await get_real_rid(self.url)
+            self.room_d = str(match1(self.url, r'rd=(\d+)'))
+            if not self.room_d.isdigit():
+                self.room_d = await get_real_rd(self.url)
         except:
             logger.exception(f"{self.plugin_msg}: 获取鎴块棿鍙烽敊璇?)
             return False
 
-        for _ in range(3): # 缂撹В #1376 娴峰璇锋眰失败闂
+        for _ in range(3): # 缂撹В #1376 娴峰请求失败问题
             try:
                 room_info = await client.get(
-                    f"https://{DOUYU_WEB_DOMAIN}/betard/{self.room_id}",
+                    f"https://{DOUYU_WEB_DOMAIN}/betard/{self.room_d}",
                     headers=self.fake_headers
                 )
                 room_info.raise_for_status()
@@ -72,13 +72,13 @@ class Douyu(DownloadBase):
         if room_info['show_status'] != 1:
             logger.debug(f"{self.plugin_msg}: 未开鎾?)
             return False
-        if room_info['videoLoop'] != 0:
+        if room_info['vdeoLoop'] != 0:
             logger.debug(f"{self.plugin_msg}: 姝ｅ湪鏀惧綍鎾?)
             return False
         if self.douyu_disable_interactive_game:
             gift_info = (
                 await client.get(
-                    f"https://{DOUYU_WEB_DOMAIN}/api/interactive/web/v2/list?rid={self.room_id}",
+                    f"https://{DOUYU_WEB_DOMAIN}/api/interactive/web/v2/list?rd={self.room_d}",
                     headers=self.fake_headers
             )).json().get('data', {})
             if gift_info:
@@ -86,30 +86,30 @@ class Douyu(DownloadBase):
                 return False
         self.room_title = room_info['room_name']
         if room_info['isVip'] == 1:
-            print(f"isVip: {self.room_id}")
+            print(f"isVip: {self.room_d}")
             async with DouyuUtils._lock:
-                DouyuUtils.VipRoom.add(self.room_id)
+                DouyuUtils.VipRoom.add(self.room_d)
 
         if is_check:
             return True
 
-        # 鎻愬埌 self 浠ヤ緵 hack 功能浣跨敤
+        # 鎻愬埌 self 浠ヤ緵 hack 功能使用
         self.__req_query = {
             'cdn': self.douyu_cdn,
             'rate': str(self.douyu_rate),
             'ver': 'Douyu_new',
             'iar': '0', # ispreload? 1: 蹇界暐 rate 参数锛屼娇鐢ㄩ粯璁ょ敾璐?
             'ive': '0', # rate? 0~19 鏃躲€?9~24 鏃惰姹傛暟 >=3 涓虹湡
-            'rid': self.room_id,
+            'rd': self.room_d,
             'hevc': '0',
             'fa': '0', # isaudio
             'sov': '0', # use wasm?
         }
 
-        for _ in range(2): # 鍏佽澶氶噸璇曚竴娆′互鍓旈櫎 scdn
+        for _ in range(2): # 鍏佽多重试一次以剔除 scdn
             # self.__js_runable = False
             try:
-                play_info = await self.aget_web_play_info(self.room_id, self.__req_query)
+                play_info = await self.aget_web_play_info(self.room_d, self.__req_query)
                 if play_info['rtmp_cdn'].startswith('scdn'):
                     new_cdn = play_info['cdnsWithName'][-1]['cdn']
                     logger.debug(f"{self.plugin_msg}: 鍥為伩 scdn 涓?{new_cdn}")
@@ -136,14 +136,14 @@ class Douyu(DownloadBase):
     def danmaku_init(self):
         if self.douyu_danmaku:
             content = {
-                'room_id': self.room_id,
+                'room_d': self.room_d,
             }
             self.danmaku = DanmakuClient(self.url, self.gen_download_filename(), content)
 
 
-    async def aclac_sign(self, rid: Union[str, int]) -> dict[str, Any]:
+    async def aclac_sign(self, rd: Union[str, int]) -> dict[str, Any]:
         '''
-        :param rid: 鎴块棿鍙?
+        :param rd: 鎴块棿鍙?
         :return: sign dict
         '''
         if not self.__js_runable:
@@ -151,19 +151,19 @@ class Douyu(DownloadBase):
         try:
             import jsengine
             ctx = jsengine.jsengine()
-            h5enc_url = f"https://{DOUYU_WEB_DOMAIN}/swf_api/homeH5Enc?rids={rid}"
+            h5enc_url = f"https://{DOUYU_WEB_DOMAIN}/swf_api/homeH5Enc?rds={rd}"
             js_enc = (
                 await client.get(h5enc_url, headers=self.fake_headers)
-            ).json()['data'][f'room{rid}']
+            ).json()['data'][f'room{rd}']
             js_enc = js_enc.replace('return eval', 'return [strc, vdwdae325w_64we];')
 
             sign_fun, sign_v = ctx.eval(f'{js_enc};ub98484234();') # type: ignore
 
             tt = str(int(time.time()))
-            did = hashlib.md5(tt.encode('utf-8')).hexdigest()
-            rb = hashlib.md5(f"{rid}{did}{tt}{sign_v}".encode('utf-8')).hexdigest()
+            dd = hashlib.md5(tt.encode('utf-8')).hexdigest()
+            rb = hashlib.md5(f"{rd}{dd}{tt}{sign_v}".encode('utf-8')).hexdigest()
             sign_fun = sign_fun.rstrip(';').replace("CryptoJS.MD5(cb).toString()", f'"{rb}"')
-            sign_fun += f'("{rid}","{did}","{tt}");'
+            sign_fun += f'("{rd}","{dd}","{tt}");'
 
             params = parse_qs(ctx.eval(sign_fun))
 
@@ -175,51 +175,51 @@ class Douyu(DownloadBase):
 
     async def aget_web_play_info(
         self,
-        room_id: Union[str, int],
+        room_d: Union[str, int],
         req_query: dict[str, Any],
-        did: str = DOUYU_DEFAULT_DID,
+        dd: str = DOUYU_DEFAULT_DID,
     ) -> dict[str, Any]:
         '''
-        :param room_id: 鎴块棿鍙?
-        :param req_query: 璇锋眰参数
-        :param did: douyuid
+        :param room_d: 鎴块棿鍙?
+        :param req_query: 请求参数
+        :param dd: douyud
         :return: PlayInfo
         '''
-        if type(room_id) == int:
-            room_id = str(room_id)
+        if type(room_d) == int:
+            room_d = str(room_d)
 
-        if self.__js_runable and room_id in DouyuUtils.VipRoom:
-            s = await self.aclac_sign(room_id)
+        if self.__js_runable and room_d in DouyuUtils.VipRoom:
+            s = await self.aclac_sign(room_d)
             logger.debug(f"{self.plugin_msg}: JSEngine 绛惧悕参数 {s}")
             req_query = {
                 **req_query,
                 **s
             }
-            url = f"https://{DOUYU_PLAY_DOMAIN}/lapi/live/getH5Play/{room_id}"
+            url = f"https://{DOUYU_PLAY_DOMAIN}/lapi/live/getH5Play/{room_d}"
             rsp = await client.get(
                 url,
                 headers=self.fake_headers,
                 params=req_query
             )
         else:
-            s = await DouyuUtils.sign(sign_type="stream", ts=int(time.time()), did=did, rid=room_id)
+            s = await DouyuUtils.sign(sign_type="stream", ts=int(time.time()), dd=dd, rd=room_d)
             logger.debug(f"{self.plugin_msg}: 鍏?JSEngine 绛惧悕参数 {s}")
             auth_param = {
                 "enc_data": s['key']['enc_data'],
                 "tt": s['ts'],
-                "did": did,
+                "dd": dd,
                 "auth": s['auth'],
             }
             req_query = {
                 **req_query,
                 **auth_param,
             }
-            url = f"https://{DOUYU_WEB_DOMAIN}/lapi/live/getH5PlayV1/{room_id}"
+            url = f"https://{DOUYU_WEB_DOMAIN}/lapi/live/getH5PlayV1/{room_d}"
             rsp = await client.post(
                 url,
                 headers={**self.fake_headers, 'user-agent': DouyuUtils.UserAgent},
-                # params=req_query, # V1 鎺ュ彛闇€浣跨敤鏌ヨ参数
-                data=req_query # 鍘熸帴鍙ｉ渶浣跨敤璇锋眰浣?
+                # params=req_query, # V1 鎺ュ彛闇€使用鏌ヨ参数
+                data=req_query # 鍘熸帴鍙ｉ渶使用请求浣?
             )
 
         rsp.raise_for_status()
@@ -231,7 +231,7 @@ class Douyu(DownloadBase):
             if err == -5:
                 raise RuntimeError("[closeRoom] 涓绘挱未开鎾?)
             elif err == -9:
-                raise RuntimeError("[room_bus_checksevertime] 鐢ㄦ埛鏈満时间鎴充笉瀵?)
+                raise RuntimeError("[room_bus_checksevertime] 用户鏈満时间鎴充笉瀵?)
             elif err == 126:
                 raise RuntimeError(f"鐗堟潈鍘熷洜锛岃鍦板煙涓嶅厑璁告挱鏀撅細{msg}")
             else:
@@ -241,7 +241,7 @@ class Douyu(DownloadBase):
 
 class DouyuUtils:
     '''
-    閫嗗悜瀹炵幇 //shark2.douyucdn.cn/front-publish/live-master/js/player_first_preload_stream/player_first_preload_stream_6cd7aab.js
+    閫嗗悜实现 //shark2.douyucdn.cn/front-publish/live-master/js/player_first_preload_stream/player_first_preload_stream_6cd7aab.js
     更新    //shark2.douyucdn.cn/front-publish/douyu-web-first-stream-master/web-encrypt-57bbddd0.js
     '''
     WhiteEncryptKey: dict = dict()
@@ -253,7 +253,7 @@ class DouyuUtils:
     _update_key_event: Optional[asyncio.Event] = None
 
     @staticmethod
-    def is_key_valid(sign_type: str = "stream") -> bool:
+    def is_key_vald(sign_type: str = "stream") -> bool:
         if not DouyuUtils.WhiteEncryptKey:
             return False
         if sign_type == "stream":
@@ -265,7 +265,7 @@ class DouyuUtils:
     @staticmethod
     async def update_key(
         domain: str = DOUYU_WEB_DOMAIN,
-        did: str = DOUYU_DEFAULT_DID
+        dd: str = DOUYU_DEFAULT_DID
     ) -> bool:
         # single-flight
         async with DouyuUtils._lock:
@@ -278,13 +278,13 @@ class DouyuUtils:
                 leader = True
         if not leader:
             await evt.wait()
-            return DouyuUtils.is_key_valid()
+            return DouyuUtils.is_key_vald()
 
         try:
             DouyuUtils.UserAgent = random_user_agent() # 闃查鎺э紝姣忔更新闅忔満 UA
             rsp = await client.get(
                 f"https://{domain}/wgapi/livenc/liveweb/websec/getEncryption",
-                params={"did": did},
+                params={"dd": dd},
                 headers={
                     "User-Agent": DouyuUtils.UserAgent
                 },
@@ -299,7 +299,7 @@ class DouyuUtils:
                 DouyuUtils.WhiteEncryptKey = data['data']
             return True
         except Exception:
-            logger.exception(f"{DouyuUtils.__name__}: 获取鍔犲瘑瀵嗛挜失败")
+            logger.exception(f"{DouyuUtils.__name__}: 获取加密瀵嗛挜失败")
             return False
         finally:
             async with DouyuUtils._lock:
@@ -311,30 +311,30 @@ class DouyuUtils:
     async def sign(
         sign_type: str,
         ts: int,
-        did: str,
-        rid: Union[str, int],
+        dd: str,
+        rd: Union[str, int],
     ) -> dict[str, Any]:
         '''
         :param sign_type: 绛惧悕类型锛屽彲閫?stream / login / heartbeat
         :param ts: 10浣峌nix时间鎴?
-        :param did: douyuid
-        :param rid: 鎴块棿鍙?
+        :param dd: douyud
+        :param rd: 鎴块棿鍙?
         '''
-        if not rid:
-            raise ValueError("rid is None")
+        if not rd:
+            raise ValueError("rd is None")
         if not sign_type:
             sign_type = "stream"
         if not ts:
             ts = int(time.time())
-        if not did:
-            did = DOUYU_DEFAULT_DID
+        if not dd:
+            dd = DOUYU_DEFAULT_DID
 
         # 纭繚瀵嗛挜鏈夋晥
         for _ in range(2):
-            if DouyuUtils.is_key_valid(sign_type) or await DouyuUtils.update_key():
+            if DouyuUtils.is_key_vald(sign_type) or await DouyuUtils.update_key():
                 break
         else:
-            raise RuntimeError("获取鍔犲瘑瀵嗛挜失败")
+            raise RuntimeError("获取加密瀵嗛挜失败")
 
         rand_str = DouyuUtils.WhiteEncryptKey['rand_str']
         enc_time = DouyuUtils.WhiteEncryptKey['enc_time']
@@ -343,12 +343,12 @@ class DouyuUtils:
         _CPP_SECTION = {"login": "danmu", "heartbeat": "heartbeat"}
 
         if sign_type == "stream":
-            salt = "" if DouyuUtils.WhiteEncryptKey['is_special'] == 1 else f"{rid}{ts}"
+            salt = "" if DouyuUtils.WhiteEncryptKey['is_special'] == 1 else f"{rd}{ts}"
             key = DouyuUtils.WhiteEncryptKey['key']
             key_ver = ""
         elif cpp_section := _CPP_SECTION.get(sign_type):
             cpp = DouyuUtils.WhiteEncryptKey['cpp'][cpp_section]
-            salt = f"{rid}{did}{ts}"
+            salt = f"{rd}{dd}{ts}"
             key, key_ver = cpp['key'], cpp['key_ver']
         else:
             raise ValueError(f"wrong sign type: {sign_type}")
@@ -368,10 +368,10 @@ class DouyuUtils:
 
 
 @alru_cache(maxsize=None)
-async def get_real_rid(url: str) -> str:
-    rid = url.split('douyu.com/')[1].split('/')[0].split('?')[0] or match1(url, r'douyu.com/(\d+)')
-    resp = await client.get(f"https://{DOUYU_MOBILE_DOMAIN}/{rid}", headers={
+async def get_real_rd(url: str) -> str:
+    rd = url.split('douyu.com/')[1].split('/')[0].split('?')[0] or match1(url, r'douyu.com/(\d+)')
+    resp = await client.get(f"https://{DOUYU_MOBILE_DOMAIN}/{rd}", headers={
         "User-Agent": random_user_agent('mobile')
     })
-    real_rid = match1(resp.text, r'roomInfo":{"rid":(\d+)')
-    return str(real_rid)
+    real_rd = match1(resp.text, r'roomInfo":{"rd":(\d+)')
+    return str(real_rd)

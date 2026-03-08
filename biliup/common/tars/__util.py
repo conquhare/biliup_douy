@@ -131,7 +131,7 @@ def configParse(filename):
     @brief: 解析tars配置文件
     @param filename: 文件鍚?
     @type filename: str
-    @return: 解析鍑烘潵鐨勯厤缃俊鎭?
+    @return: 解析出来鐨勯厤缃俊鎭?
     @rtype: dict
     '''
     tree = ET.parse(filename)
@@ -173,14 +173,14 @@ class LockGuard(object):
 class ConsistentHashNew(object):
     def __init__(self, nodes=None, nodeNumber=3):
         """
-        :param nodes:           鏈嶅姟鍣ㄧ殑鑺傜偣鐨別pstr鍒楄〃
-        :param n_number:        涓€涓妭鐐瑰搴旂殑铏氭嫙鑺傜偣鏁伴噺
+        :param nodes:           服务器的节点的pstr列表
+        :param n_number:        涓€涓妭鐐瑰搴旂殑铏氭嫙节点数量
         :return:
         """
         self.__nodes = nodes
-        self.__nodeNumber = nodeNumber  # 姣忎竴涓妭鐐瑰搴斿灏戜釜铏氭嫙鑺傜偣锛岃繖閲岄粯璁ゆ槸3涓?
-        self.__nodeDict = dict()  # 鐢ㄤ簬璁板綍铏氭嫙鑺傜偣鐨刪ash鍊间笌鏈嶅姟鍣╡pstr鐨勫搴斿叧绯?
-        self.__sortListForKey = []  # 鐢ㄤ簬瀛樻斁鎵€鏈夌殑铏氭嫙鑺傜偣鐨刪ash鍊硷紝杩欓噷闇€瑕佷繚鎸佹帓搴忥紝浠ユ壘鍑哄搴旂殑鏈嶅姟鍣?
+        self.__nodeNumber = nodeNumber  # 姣忎竴涓妭鐐瑰搴斿灏戜釜铏氭嫙节点锛岃繖閲岄粯璁ゆ槸3涓?
+        self.__nodeDict = dict()  # 鐢ㄤ簬璁板綍铏氭嫙节点鐨刪ash鍊间笌服务鍣╡pstr鐨勫搴斿叧绯?
+        self.__sortListForKey = []  # 鐢ㄤ簬瀛樻斁鎵€鏈夌殑铏氭嫙节点鐨刪ash鍊硷紝杩欓噷闇€瑕佷繚鎸佹帓搴忥紝浠ユ壘鍑哄搴旂殑服务鍣?
         if nodes:
             for node in nodes:
                 self.addNode(node)
@@ -195,9 +195,9 @@ class ConsistentHashNew(object):
 
     def addNode(self, node):
         """
-        娣诲姞node锛岄鍏堣鏍规嵁铏氭嫙鑺傜偣鐨勬暟鐩紝创建鎵€鏈夌殑铏氭嫙鑺傜偣锛屽苟灏嗗叾涓庡搴旂殑node瀵瑰簲璧锋潵
-        褰撶劧杩橀渶瑕佸皢铏氭嫙鑺傜偣鐨刪ash鍊兼斁鍒版帓搴忕殑閲岄潰
-        杩欓噷鍦ㄦ坊鍔犱簡鑺傜偣涔嬪悗锛岄渶瑕佷繚鎸佽櫄鎷熻妭鐐筯ash鍊肩殑椤哄簭
+        娣诲姞node锛岄鍏堣鏍规嵁铏氭嫙节点鐨勬暟鐩紝创建鎵€鏈夌殑铏氭嫙节点锛屽苟灏嗗叾涓庡搴旂殑node瀵瑰簲璧锋潵
+        褰撶劧杩橀渶瑕佸皢铏氭嫙节点鐨刪ash鍊兼斁鍒版帓搴忕殑閲岄潰
+        杩欓噷鍦ㄦ坊鍔犱簡节点涔嬪悗锛岄渶瑕佷繚鎸佽櫄鎷熻妭鐐筯ash鍊肩殑椤哄簭
         :param node:
         :return:
         """
@@ -210,7 +210,7 @@ class ConsistentHashNew(object):
 
     def removeNode(self, node):
         """
-        杩欓噷涓€涓妭鐐圭殑閫€鍑猴紝闇€瑕佸皢杩欎釜鑺傜偣鐨勬墍鏈夌殑铏氭嫙鑺傜偣閮藉垹闄?
+        杩欓噷涓€涓妭鐐圭殑閫€鍑猴紝闇€瑕佸皢杩欎釜节点鐨勬墍鏈夌殑铏氭嫙节点閮藉垹闄?
         :param node:
         :return:
         """
@@ -222,8 +222,8 @@ class ConsistentHashNew(object):
 
     def getNode(self, key):
         """
-        杩斿洖杩欎釜字符涓插簲璇ュ搴旂殑node锛岃繖閲屽厛姹傚嚭字符涓茬殑hash鍊硷紝鐒跺悗鎵惧埌绗竴涓皬浜庣瓑浜庣殑铏氭嫙鑺傜偣锛岀劧鍚庤繑鍥瀗ode
-        濡傛灉hash鍊煎ぇ浜庢墍鏈夌殑鑺傜偣锛岄偅涔堢敤绗竴涓櫄鎷熻妭鐐?
+        返回杩欎釜字符涓插簲璇ュ搴旂殑node锛岃繖閲屽厛姹傚嚭字符涓茬殑hash鍊硷紝鐒跺悗鎵惧埌绗竴涓皬浜庣瓑浜庣殑铏氭嫙节点锛岀劧鍚庤繑鍥瀗ode
+        如果hash鍊煎ぇ浜庢墍鏈夌殑节点锛岄偅涔堢敤绗竴涓櫄鎷熻妭鐐?
         :param : hashNum or keyStr
         :return:
         """

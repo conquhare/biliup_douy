@@ -11,18 +11,18 @@ class Bigo(DownloadBase):
 
     async def acheck_stream(self, is_check=False):
         try:
-            room_id = self.url.split('/')[-1].split('?')[0]
+            room_d = self.url.split('/')[-1].split('?')[0]
         except:
-            logger.warning(f"{Bigo.__name__}: {self.url}: 直播闂村湴鍧€错误")
+            logger.warning(f"{Bigo.__name__}: {self.url}: 直播间地址错误")
             return False
         try:
             room_info = (await biliup.common.util.client.post(f'https://ta.bigo.tv/official_website/studio/getInternalStudioInfo', timeout=10,
                                                              headers={**self.fake_headers, 'Accept': 'application/json'},
-                                                             data={"siteId": room_id})).json()
+                                                             data={"siteId": room_d})).json()
             if room_info['code'] != 0:
                 raise
         except:
-            logger.warning(f"{Bigo.__name__}: {self.url}: 获取错误锛屾湰娆¤烦杩?)
+            logger.warning(f"{Bigo.__name__}: {self.url}: 获取错误锛屾湰次跳杩?)
             return False
 
         try:

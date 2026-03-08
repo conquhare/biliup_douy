@@ -13,8 +13,8 @@ from . import logger
 from ..engine.decorators import Plugin
 from ..engine.download import DownloadBase
 
-VALID_URL_BASE = r'https?://(?:(?:www|m)\.)?youtube\.com/(?P<id>(?!.*?/live$).*?)\??(.*?)'
-VALID_URL_LIVE = r'https?://(?:(?:www|m)\.)?youtube\.com/(?P<id>.*?)/live'
+VALID_URL_BASE = r'https?://(?:(?:www|m)\.)?youtube\.com/(?P<d>(?!.*?/live$).*?)\??(.*?)'
+VALID_URL_LIVE = r'https?://(?:(?:www|m)\.)?youtube\.com/(?P<d>.*?)/live'
 
 # proxy = "http://127.0.0.1:7890"
 proxy = None
@@ -36,7 +36,7 @@ class YoutubeLive(DownloadBase):
             'proxy': proxy,
         }
         try:
-            # video_id = self.get_video_id_from_archive(f"{self.cache_dir}/archive.txt")
+            # vdeo_d = self.get_vdeo_d_from_archive(f"{self.cache_dir}/archive.txt")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(self.url, download=False)
             # if is_check:
@@ -46,18 +46,18 @@ class YoutubeLive(DownloadBase):
                 if info.get('live_status') != 'is_live':
                     logger.debug(f"{self.plugin_msg}: 直播未开启或已结束")
                     return False
-                # # 没有 video_id 鍒表绀鸿棰戜俊鎭湭缂入缓
-                # if not video_id:
-                #     # 主动存储锛岄槻姝笅杞借繘绋嬪啀娆℃彁鍙?
-                #     archive_id = ydl._make_archive_id(info)
+                # # 没有 vdeo_d 鍒表绀鸿棰戜俊鎭湭缂入缓
+                # if not vdeo_d:
+                #     # 主动存储锛岄槻姝笅杞借繘绋嬪啀次提鍙?
+                #     archive_d = ydl._make_archive_d(info)
                 #     with open(f"{self.cache_dir}/archive.txt", 'a', encoding='utf-8') as f:
-                #         f.write(f'{archive_id}\n')
-                #     video_id = info['id']
+                #         f.write(f'{archive_d}\n')
+                #     vdeo_d = info['d']
                 #     # 存储提取涔嬩俊鎭?
-                #     with open(f"{self.cache_dir}/{video_id}.json", 'w', encoding='utf-8') as f:
+                #     with open(f"{self.cache_dir}/{vdeo_d}.json", 'w', encoding='utf-8') as f:
                 #         json.dump(info, f, ensure_ascii=False, indent=4)
                 # return True
-                # with open(f"{self.cache_dir}/{video_id}.json", 'r', encoding='utf-8') as f:
+                # with open(f"{self.cache_dir}/{vdeo_d}.json", 'r', encoding='utf-8') as f:
                 #     info = json.load(f)
                 self.room_title = info['fulltitle']
                 self.live_cover_url = info['thumbnail']
@@ -88,7 +88,7 @@ class YoutubeLive(DownloadBase):
 
         # self.downloader = 'ytarchive'
 
-        # 检鏌?cache_dir 灞炴€ф槸鍚﹀瓨鍦紝濡傛灉涓嶅瓨鍦ㄥ垯创建
+        # 检鏌?cache_dir 灞炴€ф槸鍚﹀瓨鍦紝如果涓嶅瓨鍦ㄥ垯创建
         if not hasattr(self, 'cache_dir'):
             self.cache_dir = f"./cache/{self.__class__.__name__}/{self.fname}"
 
@@ -138,7 +138,7 @@ class YoutubeLive(DownloadBase):
                 )
                 for line in iter(proc.stdout.readline, b''):
                     decoded_line = line.decode('utf-8', errors='replace').rstrip()
-                    if 'Video Fragments:' in decoded_line:
+                    if 'Vdeo Fragments:' in decoded_line:
                         print(f'\r{decoded_line}', end='', flush=True)
                     else:
                         print(decoded_line)
@@ -179,7 +179,7 @@ class YoutubeLive(DownloadBase):
 
 
     @staticmethod
-    def get_video_id_from_archive(file_path):
+    def get_vdeo_d_from_archive(file_path):
         if not os.path.exists(file_path):
             return None
         with open(file_path, 'r+', encoding='utf-8') as f:
@@ -195,7 +195,7 @@ class Youtube(DownloadBase):
         self.youtube_prefer_vcodec = config.get('youtube_prefer_vcodec')
         self.youtube_prefer_acodec = config.get('youtube_prefer_acodec')
         self.youtube_max_resolution = config.get('youtube_max_resolution')
-        self.youtube_max_videosize = config.get('youtube_max_videosize')
+        self.youtube_max_vdeosize = config.get('youtube_max_vdeosize')
         self.youtube_before_date = config.get('youtube_before_date')
         self.youtube_after_date = config.get('youtube_after_date')
         self.youtube_enable_download_live = config.get('youtube_enable_download_live', True)
@@ -230,7 +230,7 @@ class Youtube(DownloadBase):
                 if type(entrie) is not dict:
                     return None
                 elif entrie.get('_type') == 'playlist':
-                    # 播放鍒楄〃递归
+                    # 播放列表递归
                     for e in entrie.get('entries'):
                         le = loop_entries(e)
                         if type(le) is dict:
@@ -251,12 +251,12 @@ class Youtube(DownloadBase):
                             return None
 
                     # 检娴嬫槸鍚﹀凡下载
-                    if ydl._make_archive_id(entrie) in ydl_archive:
-                        # 濡傛灉宸蹭笅杞戒絾鏄繕鍦ㄧ洿鎾垯涓嶇畻下载
+                    if ydl._make_archive_d(entrie) in ydl_archive:
+                        # 如果宸蹭笅杞戒絾鏄繕鍦ㄧ洿鎾垯涓嶇畻下载
                         if entrie.get('live_status') != 'is_live':
                             return None
 
-                    upload_date = cache.query(entrie.get('id'))
+                    upload_date = cache.query(entrie.get('d'))
                     if upload_date is None:
                         if entrie.get('upload_date') is not None:
                             upload_date = entrie['upload_date']
@@ -265,11 +265,11 @@ class Youtube(DownloadBase):
                             if type(entrie) is dict and entrie.get('upload_date') is not None:
                                 upload_date = entrie['upload_date']
 
-                        # 时间鏄繀鐒跺瓨鍦ㄧ殑濡傛灉涓嶅瓨鍦ㄨ鏄庡嚭浜嗛棶棰?暂时跳过
+                        # 时间鏄繀鐒跺瓨鍦ㄧ殑如果涓嶅瓨鍦ㄨ鏄庡嚭浜嗛棶棰?暂时跳过
                         if upload_date is None:
                             return None
                         else:
-                            cache.add(entrie.get('id'), upload_date)
+                            cache.add(entrie.get('d'), upload_date)
 
                     if self.youtube_after_date is not None and upload_date < self.youtube_after_date:
                         return 'stop'
@@ -310,15 +310,15 @@ class Youtube(DownloadBase):
                 'cookiefile': self.youtube_cookie,
                 'break_on_reject': True,
                 'download_archive': 'archive.txt',
-                'format': 'bestvideo',
+                'format': 'bestvdeo',
                 # 'proxy': proxyUrl,
             }
 
             if self.youtube_prefer_vcodec is not None:
                 ydl_opts['format'] += f"[vcodec~='^({self.youtube_prefer_vcodec})']"
-            if self.youtube_max_videosize is not None and self.is_download:
+            if self.youtube_max_vdeosize is not None and self.is_download:
                 # 直播鏃舵棤闇€限制文件大小
-                ydl_opts['format'] += f"[filesize<{self.youtube_max_videosize}]"
+                ydl_opts['format'] += f"[filesize<{self.youtube_max_vdeosize}]"
             if self.youtube_max_resolution is not None:
                 ydl_opts['format'] += f"[height<={self.youtube_max_resolution}]"
             ydl_opts['format'] += "+bestaudio"
@@ -361,10 +361,10 @@ class KVFileStore:
 
     def _ensure_file_and_folder_exists(self):
         folder_path = os.path.dirname(self.file_path)
-        # 濡傛灉文件澶逛笉存在锛屽垯创建文件澶?
+        # 如果文件澶逛笉存在锛屽垯创建文件澶?
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-        # 濡傛灉文件涓嶅瓨鍦紝鍒欏垱寤虹┖文件
+        # 如果文件涓嶅瓨鍦紝鍒欏垱寤虹┖文件
         if not os.path.exists(self.file_path):
             open(self.file_path, "w").close()
 

@@ -38,9 +38,9 @@ logger = logging.getLogger('biliup.engine.bili_web_sync')
 class BiliWebAsync(UploadBase):
     def __init__(
             self, principal, data, submit_api=None, copyright=2, postprocessor=None, dtime=None,
-            dynamic='', lines='AUTO', threads=3, tid=122, tags=None, cover_path=None, description='',
+            dynamic='', lines='AUTO', threads=3, td=122, tags=None, cover_path=None, description='',
             dolby=0, hires=0, no_reprint=0, is_only_self=0, charging_pay=0, credits=None,
-            user_cookie='cookies.json', copyright_source=None, extra_fields="", video_queue=None
+            user_cookie='cookies.json', copyright_source=None, extra_fields="", vdeo_queue=None
     ):
         super().__init__(principal, data, persistence_path='bili.cookie', postprocessor=postprocessor)
         if credits is None:
@@ -50,7 +50,7 @@ class BiliWebAsync(UploadBase):
         self.lines = lines
         self.submit_api = submit_api
         self.threads = threads
-        self.tid = tid
+        self.td = td
         self.tags = tags
         self.dtime = dtime
         if cover_path:
@@ -72,51 +72,51 @@ class BiliWebAsync(UploadBase):
         self.extra_fields = extra_fields
 
         self.user_cookie = user_cookie
-        self.video_queue: queue.SimpleQueue = video_queue
+        self.vdeo_queue: queue.SimpleQueue = vdeo_queue
 
-    def upload(self, total_size: int, stop_event: threading.Event, output_prefix: str, file_name_callback: Callable[[str], None] = None, database_row_id=0) -> List[UploadBase.FileInfo]:
+    def upload(self, total_size: int, stop_event: threading.Event, output_prefix: str, file_name_callback: Callable[[str], None] = None, database_row_d=0) -> List[UploadBase.FileInfo]:
         # print("寮€濮嬪悓姝ヤ笂浼?)
-        logger.info(f"寮€濮嬪悓姝ヤ笂浼?{database_row_id}")
+        logger.info(f"寮€濮嬪悓姝ヤ笂浼?{database_row_d}")
         file_index = 1
-        videos = Data()
-        bili = BiliBili(videos)
-        bili.database_row_id = database_row_id
+        vdeos = Data()
+        bili = BiliBili(vdeos)
+        bili.database_row_d = database_row_d
 
         bili.login(self.persistence_path, self.user_cookie)
-        videos.title = self.data["format_title"][:80]  # 绋夸欢鏍囬限制80瀛?
+        vdeos.title = self.data["format_title"][:80]  # 绋夸欢鏍囬限制80瀛?
         if self.credits:
-            videos.desc_v2 = self.creditsToDesc_v2()
+            vdeos.desc_v2 = self.creditsToDesc_v2()
         else:
-            videos.desc_v2 = [{
+            vdeos.desc_v2 = [{
                 "raw_text": self.desc,
-                "biz_id": "",
+                "biz_d": "",
                 "type": 1
             }]
-        videos.desc = self.desc
-        videos.copyright = self.copyright
+        vdeos.desc = self.desc
+        vdeos.copyright = self.copyright
         if self.copyright == 2:
-            videos.source = self.data["url"]  # 娣诲姞杞浇鍦板潃说明
+            vdeos.source = self.data["url"]  # 娣诲姞杞浇鍦板潃说明
         # 设置瑙嗛鍒嗗尯,榛樿涓?74 鐢熸椿锛屽叾浠栧垎鍖?
-        videos.tid = self.tid
-        videos.set_tag(self.tags)
+        vdeos.td = self.td
+        vdeos.set_tag(self.tags)
         if self.dtime:
-            videos.delay_time(int(time.time()) + self.dtime)
+            vdeos.delay_time(int(time.time()) + self.dtime)
         if self.cover_path:
-            videos.cover = bili.cover_up(self.cover_path).replace('http:', '')
+            vdeos.cover = bili.cover_up(self.cover_path).replace('http:', '')
 
         # 其他参数设置
-        videos.extra_fields = self.extra_fields
-        videos.dolby = self.dolby
-        videos.hires = self.hires
-        videos.no_reprint = self.no_reprint
-        videos.is_only_self = self.is_only_self
-        videos.charging_pay = self.charging_pay
+        vdeos.extra_fields = self.extra_fields
+        vdeos.dolby = self.dolby
+        vdeos.hires = self.hires
+        vdeos.no_reprint = self.no_reprint
+        vdeos.is_only_self = self.is_only_self
+        vdeos.charging_pay = self.charging_pay
 
         thread_list = []
         while True:
-            # 璋冭瘯浣跨敤 鍒唒 寮哄埗鍋滄
+            # 璋冭瘯使用 鍒唒 寮哄埗停止
             # if file_index > 10:
-            #     logger.info(f"[consumer debug] 鍋滄下载鍥炶皟")
+            #     logger.info(f"[consumer debug] 停止下载鍥炶皟")
             #     stop_event.set()
             #     break
 
@@ -125,35 +125,35 @@ class BiliWebAsync(UploadBase):
             # if file_name_callback:
             # file_name_callback(file_name)
             data_size = 0
-            video_upload_queue = queue.SimpleQueue()
+            vdeo_upload_queue = queue.SimpleQueue()
 
-            t = threading.Thread(target=bili.upload_stream, args=(video_upload_queue,
-                                 file_name, total_size, self.lines, videos, stop_event, file_name_callback), daemon=True, name=f"upload_{file_index}")
+            t = threading.Thread(target=bili.upload_stream, args=(vdeo_upload_queue,
+                                 file_name, total_size, self.lines, vdeos, stop_event, file_name_callback), daemon=True, name=f"upload_{file_index}")
             thread_list.append(t)
             t.start()
 
             while True:
                 try:
-                    data = self.video_queue.get(timeout=10)
+                    data = self.vdeo_queue.get(timeout=10)
                 except queue.Empty:
                     break
 
                 if data is None:
-                    video_upload_queue.put(None)
+                    vdeo_upload_queue.put(None)
                     break
 
-                video_upload_queue.put(data)
-                # print(video_upload_queue.empty())
+                vdeo_upload_queue.put(data)
+                # print(vdeo_upload_queue.empty())
                 data_size += len(data)
-            # print(f"[consumer] 璇诲彇 {file_name} {data_size} 瀛楄妭")
-            logger.info(f"[consumer] 璇诲彇 {file_name} {data_size} 瀛楄妭")
+            # print(f"[consumer] 读取 {file_name} {data_size} 字节")
+            logger.info(f"[consumer] 读取 {file_name} {data_size} 字节")
             file_index += 1
-            # print("[consumer] bili.video.videos", bili.video.videos)
-            logger.info(f"[consumer] bili.video.videos {bili.video.videos}")
+            # print("[consumer] bili.vdeo.vdeos", bili.vdeo.vdeos)
+            logger.info(f"[consumer] bili.vdeo.vdeos {bili.vdeo.vdeos}")
             if data_size < 100:
-                # print(f"[consumer] 鍋滄下载鍥炶皟")
-                # n = video_upload_queue.get()
-                logger.info(f"[consumer] 鍋滄下载鍥炶皟")
+                # print(f"[consumer] 停止下载鍥炶皟")
+                # n = vdeo_upload_queue.get()
+                logger.info(f"[consumer] 停止下载鍥炶皟")
                 stop_event.set()
                 break
 
@@ -166,7 +166,7 @@ class BiliWebAsync(UploadBase):
         file_list = []
         # if config.get('sync_save_dir', None):
         #     file_list = [os for file_name in os.listdir("sync_downloaded")]
-        # print("上传瀹屾垚", file_list)
+        # print("上传完成", file_list)
         return file_list
 
     def creditsToDesc_v2(self):
@@ -177,22 +177,22 @@ class BiliWebAsync(UploadBase):
                 num = desc_v2_tmp.index("@credit")
                 desc_v2.append({
                     "raw_text": " " + desc_v2_tmp[:num],
-                    "biz_id": "",
+                    "biz_d": "",
                     "type": 1
                 })
                 desc_v2.append({
                     "raw_text": credit["username"],
-                    "biz_id": str(credit["uid"]),
+                    "biz_d": str(credit["ud"]),
                     "type": 2
                 })
                 self.desc = self.desc.replace(
                     "@credit", "@" + credit["username"] + "  ", 1)
                 desc_v2_tmp = desc_v2_tmp[num + 7:]
             except IndexError:
-                logger.error('绠€浠嬩腑鐨凘credit鍗犱綅绗﹀皯浜巆redits鐨勬暟閲?鏇挎崲失败')
+                logger.error('绠€浠嬩腑鐨凘credit鍗犱綅绗﹀皯浜巆redits鐨勬暟閲?替换失败')
         desc_v2.append({
             "raw_text": " " + desc_v2_tmp,
-            "biz_id": "",
+            "biz_d": "",
             "type": 1
         })
         desc_v2[0]["raw_text"] = desc_v2[0]["raw_text"][1:]  # 寮€澶寸┖鏍间細瀵艰嚧璇嗗埆绠€浠嬭繃闀?
@@ -200,14 +200,14 @@ class BiliWebAsync(UploadBase):
 
 
 class BiliBili:
-    def __init__(self, video: 'Data'):
+    def __init__(self, vdeo: 'Data'):
         self.app_key = None
         self.appsec = None
         # if self.app_key is None or self.appsec is None:
         self.app_key = 'ae57252b0c09105d'
         self.appsec = 'c75875c596a69eb55bd119e74b07cfe3'
         self.__session = requests.Session()
-        self.video = video
+        self.vdeo = vdeo
         self.__session.mount('https://', HTTPAdapter(max_retries=Retry(total=5)))
         self.__session.headers.update({
             'user-agent': "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/63.0.3239.108",
@@ -227,7 +227,7 @@ class BiliBili:
         if self.save_dir and not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
 
-        self.database_row_id = 0
+        self.database_row_d = 0
 
     def myinfo(self, cookies: dict = None):
         if cookies:
@@ -238,7 +238,7 @@ class BiliBili:
     def login(self, persistence_path, user_cookie):
         self.persistence_path = user_cookie
         if os.path.isfile(user_cookie):
-            print('浣跨敤鎸佷箙鍖栧唴瀹逛笂浼?)
+            print('使用鎸佷箙鍖栧唴瀹逛笂浼?)
             self.load()
         if self.cookies:
             try:
@@ -268,7 +268,7 @@ class BiliBili:
                        }, f)
 
     def login_by_password(self, username, password):
-        print('浣跨敤璐﹀彿上传')
+        print('使用璐﹀彿上传')
         key_hash, pub_key = self.get_key()
         encrypt_password = base64.b64encode(rsa.encrypt(f'{key_hash}{password}'.encode(), pub_key))
         payload = {
@@ -279,15 +279,15 @@ class BiliBili:
             "challenge": '',
             "channel": 'bili',
             "device": 'phone',
-            "mobi_app": 'android',
+            "mobi_app": 'androd',
             "password": encrypt_password,
             "permission": 'ALL',
-            "platform": 'android',
+            "platform": 'androd',
             "seccode": "",
-            "subid": 1,
+            "subd": 1,
             "ts": int(time.time()),
             "username": username,
-            "validate": "",
+            "valdate": "",
         }
         response = self.__session.post("https://passport.bilibili.com/x/passport-login/oauth2/login", timeout=5,
                                        data={**payload, 'sign': self.sign(parse.urlencode(payload))})
@@ -314,7 +314,7 @@ class BiliBili:
         data = self.__session.get("https://api.bilibili.com/x/web-interface/nav", timeout=5).json()
         if data["code"] != 0:
             raise Exception(data)
-        print('浣跨敤cookies上传')
+        print('使用cookies上传')
 
     def sign(self, param):
         return hashlib.md5(f"{param}{self.appsec}".encode()).hexdigest()
@@ -359,7 +359,7 @@ class BiliBili:
             file_name,
             total_size,
             lines='AUTO',
-            videos: 'Data' = None,
+            vdeos: 'Data' = None,
             stop_event: threading.Event = None,
             file_name_callback: Callable[[str], None] = None,
             submit_api: Callable[[str], None] = None
@@ -375,16 +375,16 @@ class BiliBili:
         if not self._auto_os:
             if lines in cs_upcdn:
                 self._auto_os = {"os": "upos", "query": f"upcdn={lines}&probe_version=20221109",
-                                 "probe_url": f"//upos-cs-upcdn{lines}.bilivideo.com/OK"}
+                                 "probe_url": f"//upos-cs-upcdn{lines}.bilivdeo.com/OK"}
                 preferred_upos_cdn = lines
             elif lines in jd_upcdn:
                 lines = lines.split('-')[1]
                 self._auto_os = {"os": "upos", "query": f"upcdn={lines}&probe_version=20221109",
-                                 "probe_url": f"//upos-jd-upcdn{lines}.bilivideo.com/OK"}
+                                 "probe_url": f"//upos-jd-upcdn{lines}.bilivdeo.com/OK"}
                 preferred_upos_cdn = lines
             else:
                 self._auto_os = self.probe()
-            logger.info(f"绾胯矾閫夋嫨 => {self._auto_os['os']}: {self._auto_os['query']}. time: {self._auto_os.get('cost')}")
+            logger.info(f"绾胯矾选择 => {self._auto_os['os']}: {self._auto_os['query']}. time: {self._auto_os.get('cost')}")
         if self._auto_os['os'] == 'upos':
             upload = self.upos_stream
         else:
@@ -409,7 +409,7 @@ class BiliBili:
             return
         logger.debug(f"preupload: {ret}")
         if preferred_upos_cdn:
-            # 濡傛灉杩斿洖鐨別ndpoint涓嶅湪probe_url涓紝鍒欏皾璇曞湪endpoints涓牎楠宲robe_url鏄惁鍙敤
+            # 如果返回的ndpoint涓嶅湪probe_url涓紝鍒欏皾璇曞湪endpoints涓牎楠宲robe_url鏄惁鍙敤
             if ret['endpoint'] not in self._auto_os['probe_url']:
                 for endpoint in ret['endpoints']:
                     if endpoint in self._auto_os['probe_url']:
@@ -417,31 +417,31 @@ class BiliBili:
                         logger.info(f"淇敼endpoint: {ret['endpoint']}")
                         break
                 else:
-                    logger.warning(f"閫夋嫨鐨勭嚎璺?{self._auto_os['os']} 没有杩斿洖瀵瑰簲 endpoint锛屼笉鍋氫慨鏀?)
-        video_part = asyncio.run(upload(stream_queue, file_name, total_size, ret))
-        if video_part is None:
+                    logger.warning(f"选择鐨勭嚎璺?{self._auto_os['os']} 没有返回瀵瑰簲 endpoint锛屼笉鍋氫慨鏀?)
+        vdeo_part = asyncio.run(upload(stream_queue, file_name, total_size, ret))
+        if vdeo_part is None:
             stop_event.set()
             # print("寮傚父娴?鐩存帴閫€鍑?)
             return
-        video_part['title'] = video_part['title'][:80]
+        vdeo_part['title'] = vdeo_part['title'][:80]
 
-        if str(self.database_row_id) in context["sync_downloader_map"]:
-            context_data = context["sync_downloader_map"][str(self.database_row_id)].copy()
+        if str(self.database_row_d) in context["sync_downloader_map"]:
+            context_data = context["sync_downloader_map"][str(self.database_row_d)].copy()
             context_data.pop('subtitle', None)
-            videos = Data(**context_data)
+            vdeos = Data(**context_data)
 
-        videos.append(video_part)  # 娣诲姞宸茬粡上传鐨勮棰?
-        edit = False if videos.aid is None else True
-        ret = self.submit(submit_api=submit_api, edit=edit, videos=videos)
+        vdeos.append(vdeo_part)  # 娣诲姞宸茬粡上传鐨勮棰?
+        edit = False if vdeos.ad is None else True
+        ret = self.submit(submit_api=submit_api, edit=edit, vdeos=vdeos)
         # logger.info(f"上传成功: {ret}")
         if edit:
-            logger.info(f"缂栬緫娣诲姞成功: {ret}")
+            logger.info(f"编辑娣诲姞成功: {ret}")
         else:
             logger.info(f"上传成功: {ret}")
-        aid = ret['data']['aid']
-        videos.aid = aid
-        context['sync_downloader_map'][str(self.database_row_id)] = videos.__dict__
-        logger.info(f"上传瀹屾垚 {file_name} {context['sync_downloader_map'][str(self.database_row_id)] }")
+        ad = ret['data']['ad']
+        vdeos.ad = ad
+        context['sync_downloader_map'][str(self.database_row_d)] = vdeos.__dict__
+        logger.info(f"上传完成 {file_name} {context['sync_downloader_map'][str(self.database_row_d)] }")
         if file_name_callback:
             file_name_callback(self.save_path)
 
@@ -450,25 +450,25 @@ class BiliBili:
         chunk_size = ret['chunk_size']
         auth = ret["auth"]
         endpoint = ret["endpoint"]
-        biz_id = ret["biz_id"]
+        biz_d = ret["biz_d"]
         upos_uri = ret["upos_uri"]
         url = f"https:{endpoint}/{upos_uri.replace('upos://', '')}"  # 瑙嗛上传璺緞
         headers = {
             "X-Upos-Auth": auth
         }
-        # 鍚戜笂浼犲湴鍧€鐢宠上传锛屽緱鍒颁笂浼爄d绛変俊鎭?
-        upload_id = self.__session.post(f'{url}?uploads&output=json', timeout=15,
-                                        headers=headers).json()["upload_id"]
+        # 鍚戜笂浼犲湴址鐢宠上传锛屽緱鍒颁笂浼爄d绛変俊鎭?
+        upload_d = self.__session.post(f'{url}?uploads&output=json', timeout=15,
+                                        headers=headers).json()["upload_d"]
         # 寮€濮嬩笂浼?
         parts = []  # 鍒嗗潡信息
-        chunks = math.ceil(total_size / chunk_size)  # 获取鍒嗗潡鏁伴噺
+        chunks = math.ceil(total_size / chunk_size)  # 获取鍒嗗潡数量
 
         start = time.perf_counter()
 
         # print("-----------")
-        # print(upload_id, chunks, chunk_size, total_size)
+        # print(upload_d, chunks, chunk_size, total_size)
         logger.info(
-            f"{file_name} - upload_id: {upload_id}, chunks: {chunks}, chunk_size: {chunk_size}, total_size: {total_size}")
+            f"{file_name} - upload_d: {upload_d}, chunks: {chunks}, chunk_size: {chunk_size}, total_size: {total_size}")
         n = 0
         st = time.perf_counter()
         max_workers = 3
@@ -483,7 +483,7 @@ class BiliBili:
                 logger.info(f"{file_name} - chunks-({index+1}/{chunks}) - down - speed: {speed:.2f}Mbps")
                 n += len(chunk)
                 params = {
-                    'uploadId': upload_id,
+                    'uploadId': upload_d,
                     'chunks': chunks,
                     'total': total_size,
                     'chunk': index,
@@ -504,7 +504,7 @@ class BiliBili:
                     if f.done():
                         futures.remove(f)
 
-                # 等待鎵€鏈夊垎鐗囦笂浼犲畬鎴愶紝骞舵寜椤哄簭鏀堕泦缁撴灉
+                # 等待鎵€鏈夊垎鐗囦笂浼犲畬鎴愶紝骞舵寜椤哄簭鏀堕泦结果
             for future in concurrent.futures.as_completed(futures):
                 pass
 
@@ -520,13 +520,13 @@ class BiliBili:
         cost = time.perf_counter() - start
         p = {
             'name': file_name,
-            'uploadId': upload_id,
-            'biz_id': biz_id,
+            'uploadId': upload_d,
+            'biz_d': biz_d,
             'output': 'json',
             'profile': 'ugcupos/bup'
         }
         attempt = 1
-        while attempt <= 3:  # 涓€鏃︽斁寮冨氨浼氫涪澶卞墠闈㈡墍鏈夌殑杩涘害锛屽璇曞嚑娆″惂
+        while attempt <= 3:  # 涓€鏃︽斁寮冨氨浼氫涪澶卞墠闈㈡墍鏈夌殑杩涘害锛屽璇曞嚑娆″吧
             try:
                 r = self.__session.post(url, params=p, json={"parts": parts}, headers=headers, timeout=15).json()
                 if r.get('OK') == 1:
@@ -534,7 +534,7 @@ class BiliBili:
                     return {"title": splitext(file_name)[0], "filename": splitext(basename(upos_uri))[0], "desc": ""}
                 raise IOError(r)
             except IOError:
-                logger.info(f"璇锋眰鍚堝苟鍒嗙墖 {file_name} 鏃跺嚭鐜伴棶棰橈紝灏濊瘯閲嶈繛锛屾鏁帮細" + str(attempt))
+                logger.info(f"请求合并分片 {file_name} 鏃跺嚭鐜伴棶棰橈紝尝试閲嶈繛锛屾鏁帮細" + str(attempt))
                 attempt += 1
                 time.sleep(10)
         pass
@@ -546,7 +546,7 @@ class BiliBili:
             try:
                 r = requests.put(url=url, params=params_clone, data=chunk, headers=headers)
 
-                # 濡傛灉上传成功锛岄€€鍑洪噸璇曞惊鐜?
+                # 如果上传成功锛岄€€鍑洪噸璇曞惊鐜?
                 if r.status_code == 200:
                     const_time = time.perf_counter() - st
                     speed = len(chunk) * 8 / 1024 / 1024 / const_time
@@ -558,13 +558,13 @@ class BiliBili:
                         "eTag": "etag"
                     }
 
-                # 濡傛灉上传失败锛屼絾鏈揪鍒版渶澶ч噸璇曟鏁帮紝等待涓€娈垫椂闂村悗閲嶈瘯
+                # 如果上传失败锛屼絾鏈揪鍒版渶澶ч噸璇曟鏁帮紝等待涓€娈垫椂闂村悗重试
                 else:
                     retries += 1
                     logger.warning(
                         f"{file_name} - chunks-{params_clone['chunk']} - up failed: {r.status_code}. Retrying {retries}/{max_retries}")
 
-                    # 璁＄畻閫€閬挎椂闂达紝閫愭澧炲姞閲嶈瘯闂撮殧
+                    # 璁＄畻閫€閬挎椂闂达紝閫愭澧炲姞重试闂撮殧
                     backoff_time = backoff_factor ** retries
                     time.sleep(backoff_time)
 
@@ -572,11 +572,11 @@ class BiliBili:
                 retries += 1
                 logger.error(f"upload_chunk_thread err {str(e)}. Retrying {retries}/{max_retries}")
 
-                # 璁＄畻閫€閬挎椂闂达紝閫愭澧炲姞閲嶈瘯闂撮殧
+                # 璁＄畻閫€閬挎椂闂达紝閫愭澧炲姞重试闂撮殧
                 backoff_time = backoff_factor ** retries
                 time.sleep(backoff_time)
 
-        # 濡傛灉閲嶈瘯浜嗘墍鏈夋鏁颁粛鐒跺け璐ワ紝璁板綍错误
+        # 如果重试浜嗘墍鏈夋鏁颁粛鐒跺け璐ワ紝璁板綍错误
         logger.error(f"{file_name} - chunks-{params_clone['chunk']} - Upload failed after {max_retries} attempts.")
         return None
 
@@ -587,7 +587,7 @@ class BiliBili:
 
         :param simple_queue: queue.SimpleQueue 瀹炰緥锛屾暟鎹祦浼氫互澶氫釜鍒嗗寘 (bytes) 鍏ラ槦锛屾渶鍚庝互 None 琛ㄧず结束
         :param chunk_size: 娑堣垂鑰呮瘡娆℃兂瑕佽幏鍙栫殑数据鍧楀ぇ灏?
-        :param max_size: 闇€瑕佹渶缁堣ˉ榻愮殑鎬诲ぇ灏忥紙鍗曚綅锛氬瓧鑺傦級锛屽繀椤绘槸 chunk_size 鐨勬暣鏁板€?
+        :param max_size: 闇€瑕佹渶缁堣ˉ榻愮殑鎬诲ぇ灏忥紙单位锛氬瓧鑺傦級锛屽繀椤绘槸 chunk_size 鐨勬暣鏁板€?
         :return: 鐢熸垚鍣紝鎸?chunk_size 大小鍒嗘壒娆′骇鍑烘暟鎹?
         """
         if max_size % chunk_size != 0:
@@ -641,14 +641,14 @@ class BiliBili:
                 current_buffer = current_buffer[chunk_size:]
                 chunks_yielded += 1
 
-        # print("鏈鍒唒瀹屾垚")
+        # print("鏈鍒唒完成")
         save_file and save_file.close()
         yield None
 
-    def submit(self, submit_api=None, edit=False, videos=None):
+    def submit(self, submit_api=None, edit=False, vdeos=None):
 
         # 涓嶈兘鎻愪氦 extra_fields 瀛楁锛屾彁鍓嶅鐞?
-        post_data = asdict(videos)
+        post_data = asdict(vdeos)
         if post_data.get('extra_fields'):
             for key, value in json.loads(post_data.pop('extra_fields')).items():
                 post_data.setdefault(key, value)
@@ -673,7 +673,7 @@ class BiliBili:
             ret = self.submit_web(post_data, edit=edit)
             if ret["code"] == 21138:
                 time.sleep(5)
-                logger.info(f'鏀圭敤瀹㈡埛绔帴鍙ｆ彁浜ret}')
+                logger.info(f'鏀圭敤客户绔帴鍙ｆ彁浜ret}')
                 submit_api = 'client'
         if submit_api == 'client':
             ret = self.submit_client(post_data, edit=edit)
@@ -685,7 +685,7 @@ class BiliBili:
             raise Exception(ret)
 
     def submit_web(self, post_data, edit=False):
-        logger.info('浣跨敤缃戦〉绔痑pi鎻愪氦')
+        logger.info('使用网页绔痑pi鎻愪氦')
         if not self.__bili_jct:
             raise RuntimeError("bili_jct is required!")
         api = 'https://member.bilibili.com/x/vu/web/add?csrf=' + self.__bili_jct
@@ -695,7 +695,7 @@ class BiliBili:
                                    json=post_data).json()
 
     def submit_client(self, post_data, edit=False):
-        logger.info('浣跨敤瀹㈡埛绔痑pi绔彁浜?)
+        logger.info('使用客户绔痑pi绔彁浜?)
         if not self.access_token:
             if self.account is None:
                 raise RuntimeError("Access token is required, but account and access_token does not exist!")
@@ -746,20 +746,20 @@ class BiliBili:
             raise Exception(res)
         return res['data']['url']
 
-    def get_tags(self, upvideo, typeid="", desc="", cover="", groupid=1, vfea=""):
+    def get_tags(self, upvdeo, typed="", desc="", cover="", groupd=1, vfea=""):
         """
         上传瑙嗛鍚庤幏寰楁帹鑽愭爣绛?
         :param vfea:
-        :param groupid:
-        :param typeid:
+        :param groupd:
+        :param typed:
         :param desc:
         :param cover:
-        :param upvideo:
-        :return: 杩斿洖瀹樻柟鎺ㄨ崘鐨則ag
+        :param upvdeo:
+        :return: 返回瀹樻柟鎺ㄨ崘鐨則ag
         """
         url = f'https://member.bilibili.com/x/web/archive/tags?'
-        f'typeid={typeid}&title={quote(upvideo["title"])}&filename=filename&desc={desc}&cover={cover}'
-        f'&groupid={groupid}&vfea={vfea}'
+        f'typed={typed}&title={quote(upvdeo["title"])}&filename=filename&desc={desc}&cover={cover}'
+        f'&groupd={groupd}&vfea={vfea}'
         return self.__session.get(url=url, timeout=5).json()
 
     def __enter__(self):
@@ -780,16 +780,16 @@ class Data:
     """
     copyright: int = 2
     source: str = ''
-    tid: int = 21
+    td: int = 21
     cover: str = ''
     title: str = ''
-    desc_format_id: int = 0
+    desc_format_d: int = 0
     desc: str = ''
     desc_v2: list = field(default_factory=list)
     dynamic: str = ''
     subtitle: dict = field(init=False)
     tag: Union[list, str] = ''
-    videos: list = field(default_factory=list)
+    vdeos: list = field(default_factory=list)
     dtime: Any = None
     open_subtitle: InitVar[bool] = False
     dolby: int = 0
@@ -799,7 +799,7 @@ class Data:
     charging_pay: int = 0
     extra_fields: str = ""
 
-    aid: int = None
+    ad: int = None
     # interactive: int = 0
     # no_reprint: int 1
     # charging_pay: int 1
@@ -820,5 +820,5 @@ class Data:
         """设置鏍囩锛宼ag涓烘暟缁?""
         self.tag = ','.join(tag)
 
-    def append(self, video):
-        self.videos.append(video)
+    def append(self, vdeo):
+        self.vdeos.append(vdeo)

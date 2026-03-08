@@ -27,11 +27,11 @@ class AfreecaTV(DownloadBase):
         try:
             username = match1(self.url, VALID_URL_BASE)
             if not username:
-                logger.warning(f"{AfreecaTV.__name__}: {self.url}: 直播闂村湴鍧€错误")
+                logger.warning(f"{AfreecaTV.__name__}: {self.url}: 直播间地址错误")
                 return False
 
             channel_info = (await biliup.common.util.client.post(CHANNEL_API_URL, data={
-                "bid": username,
+                "bd": username,
                 "bno": "",
                 "type": "live",
                 "pwd": "",
@@ -54,10 +54,10 @@ class AfreecaTV(DownloadBase):
             if is_check:
                 return True
 
-            aid_info = (await biliup.common.util.client.post(CHANNEL_API_URL, data={
-                "bid": username,
+            ad_info = (await biliup.common.util.client.post(CHANNEL_API_URL, data={
+                "bd": username,
                 "bno": channel_info["CHANNEL"]["BNO"],
-                "type": "aid",
+                "type": "ad",
                 "pwd": "",
                 "player_type": "html5",
                 "stream_type": "common",
@@ -71,9 +71,9 @@ class AfreecaTV(DownloadBase):
                 "broad_key": f'{channel_info["CHANNEL"]["BNO"]}-common-{QUALITIES[0]}-hls'
             }, headers=self.fake_headers, timeout=5)).json()
 
-            self.raw_stream_url = view_info["view_url"] + "?aid=" + aid_info["CHANNEL"]["AID"]
+            self.raw_stream_url = view_info["view_url"] + "?ad=" + ad_info["CHANNEL"]["AID"]
         except:
-            logger.warning(f"{AfreecaTV.__name__}: {self.url}: 获取错误锛屾湰娆¤烦杩?)
+            logger.warning(f"{AfreecaTV.__name__}: {self.url}: 获取错误锛屾湰次跳杩?)
             return False
 
         return True
@@ -91,7 +91,7 @@ class AfreecaTVUtils:
                 if not username or not password:
                     return None
                 response = requests.post("https://login.afreecatv.com/app/LoginAction.php", data={
-                    "szUid": username,
+                    "szUd": username,
                     "szPassword": password,
                     "szWork": "login",
                     "szType": "json",
