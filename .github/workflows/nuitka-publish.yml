@@ -157,9 +157,9 @@ jobs:
         # 使用 Nuitka 编译单文件
         # --onefile: 单文件模式
         # --standalone: 独立运行（不依赖系统 Python）
-        # --enable-plugin=tk-inter: 支持 tkinter（如果有 GUI）
         # --include-package=biliup: 包含 biliup 包
         # --include-data-dir=biliup/Danmaku/douyin_util=biliup/Danmaku/douyin_util: 包含数据文件
+        # --nofollow-import-to=yt_dlp: 排除 yt_dlp 模块（太大导致编译器内存不足）
         python -m nuitka \
           --onefile \
           --standalone \
@@ -170,6 +170,9 @@ jobs:
           --include-package=biliup.plugins \
           --include-data-dir=biliup/Danmaku/douyin_util=biliup/Danmaku/douyin_util \
           --include-data-files=public/logo.png=public/logo.png \
+          --nofollow-import-to=yt_dlp \
+          --lto=no \
+          --jobs=2 \
           --output-dir=dist \
           --output-filename=biliup \
           --assume-yes-for-downloads \
