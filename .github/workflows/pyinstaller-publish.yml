@@ -6,29 +6,8 @@ env:
   BASE_VERSION: '0.2.0'
 
 on:
-  push:
-    branches:
-      - master
-      - main
-    paths:
-      # 只有修改以下路径的文件时才触发自动编译
-      # Python 代码
-      - 'biliup/**'
-      # Rust 代码
-      - 'crates/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      # 前端代码
-      - 'app/**'
-      - 'public/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'next.config.js'
-      # Python 构建配置
-      - 'pyproject.toml'
-      - 'biliup.spec'
-      # 工作流本身
-      - '.github/workflows/pyinstaller-publish.yml'
+  # PyInstaller 有 DLL 加载问题，仅保留手动触发
+  # 使用 Nuitka 工作流进行自动编译
   workflow_dispatch:
     inputs:
       version:
