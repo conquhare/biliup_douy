@@ -1,0 +1,210 @@
+name: Build Windows EXE with Nuitka
+
+env:
+  # 独立版本号管理 - 不依赖上游 Cargo.toml
+  # 修改此值来更新版本号
+  BASE_VERSION: '0.2.0'
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      # 只有修改以下路径的文件时才触发自动编译
+      # Python 代码
+      - 'biliup/**'
+      # Rust 代码
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      # 前端代码
+      - 'app/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'next.config.js'
+      # Python 构建配置
+      - 'pyproject.toml'
+      # 工作流本身
+      - '.github/workflows/nuitka-publish.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (例如: v0.2.0)'
+        required: true
+        default: 'v0.2.0'
+        type: string
+      release:
+        description: '是否创建 Release'
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    runs-on: 'windows-latest'
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set version
+      id: version
+      shell: pwsh
+      run: |
+        if ("${{ github.event.inputs.version }}") {
+          $version = "${{ github.event.inputs.version }}"
+        } else {
+          # 自动生成版本号：使用 BASE_VERSION + 构建号
+          # 格式：0.2.0.dev11+g93446c9 (符合 PEP 440)
+          $baseVersion = "${{ env.BASE_VERSION }}"
+          $shortSha = "${{ github.sha }}".Substring(0, 7)
+          $buildNumber = "${{ github.run_number }}"
+          $version = "v$baseVersion.dev$buildNumber+$shortSha"
+        }
+        # 确保版本号以 v 开头
+        if (-not $version.StartsWith('v')) {
+          $version = "v$version"
+        }
+        # 使用 GitHub Actions 的特殊语法设置输出
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "VERSION=$version"
+        Add-Content -Path $env:GITHUB_ENV -Value "VERSION=$version"
+        Write-Host "设置版本号: $version"
+
+    - name: Update version in Cargo.toml
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        Write-Host "从步骤输出获取的版本号: '$version'"
+        Write-Host "从环境变量获取的版本号: '$env:VERSION'"
+
+        # 如果步骤输出为空，使用环境变量
+        if ([string]::IsNullOrEmpty($version)) {
+          $version = $env:VERSION
+          Write-Host "使用环境变量版本号: '$version'"
+        }
+
+        # 移除 v 前缀
+        $version = $version -replace '^v', ''
+        # 对于 PEP 440 格式 (0.2.0.dev11+g93446c9)，需要移除 +local 部分
+        # 因为 Cargo.toml 只需要主版本号
+        $version = $version -replace '\+.*$', ''
+        # 移除 .devN 后缀，只保留主版本号 (0.2.0)
+        $version = $version -replace '\.dev\d+$', ''
+
+        Write-Host "处理后的版本号: '$version'"
+
+        if ([string]::IsNullOrEmpty($version)) {
+          Write-Error "版本号为空，无法继续"
+          exit 1
+        }
+
+        # 使用更简单可靠的方法：直接替换整行
+        $cargoToml = Get-Content Cargo.toml
+        $updated = $false
+        for ($i = 0; $i -lt $cargoToml.Length; $i++) {
+          if ($cargoToml[$i] -match '^version\s*=\s*"') {
+            $oldLine = $cargoToml[$i]
+            $cargoToml[$i] = "version = `"$version`""
+            $updated = $true
+            Write-Host "找到并替换第 $i 行: '$oldLine' -> '$($cargoToml[$i])'"
+            break
+          }
+        }
+
+        if (-not $updated) {
+          Write-Error "未找到 version 行，替换失败"
+          exit 1
+        }
+
+        # 写回文件
+        $cargoToml | Set-Content Cargo.toml
+
+        Write-Host "版本号已更新为: $version"
+        Write-Host "--- Cargo.toml 中的版本配置 ---"
+        Get-Content Cargo.toml | Select-String -Pattern '^version' | Select-Object -First 3
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Build frontend
+      run: |
+        npm install
+        npm run build
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install Rust stable
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Build Rust extension
+      uses: PyO3/maturin-action@v1
+      with:
+        command: build
+        args: --release
+
+    - name: Build EXE with Nuitka
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install target/wheels/*.whl
+        pip install Pillow nuitka
+
+        # 使用 Nuitka 编译单文件
+        # --onefile: 单文件模式
+        # --standalone: 独立运行（不依赖系统 Python）
+        # --enable-plugin=tk-inter: 支持 tkinter（如果有 GUI）
+        # --include-package=biliup: 包含 biliup 包
+        # --include-data-dir=biliup/Danmaku/douyin_util=biliup/Danmaku/douyin_util: 包含数据文件
+        python -m nuitka \
+          --onefile \
+          --standalone \
+          --include-package=biliup \
+          --include-package=biliup.Danmaku \
+          --include-package=biliup.engine \
+          --include-package=biliup.common \
+          --include-package=biliup.plugins \
+          --include-data-dir=biliup/Danmaku/douyin_util=biliup/Danmaku/douyin_util \
+          --include-data-files=public/logo.png=public/logo.png \
+          --output-dir=dist \
+          --output-filename=biliup \
+          --assume-yes-for-downloads \
+          biliup/__main__.py
+
+    - name: Package EXE
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        $targetTriple = rustc -Vv | Select-String "host:" | ForEach-Object {$_.Line.split(" ")[1]}
+        $archiveName = "biliup-$version-x86_64-windows-nuitka.zip"
+
+        # Nuitka 单文件模式：直接压缩 dist/biliup.exe
+        if (Test-Path "dist/biliup.exe") {
+          Compress-Archive -Path "dist/biliup.exe" -DestinationPath $archiveName
+          Write-Host "创建压缩包: $archiveName (Nuitka 单文件模式)"
+        } else {
+          Write-Error "未找到构建输出 dist/biliup.exe"
+          exit 1
+        }
+        Write-Host "目标架构: $targetTriple"
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: biliup-windows-exe-nuitka-${{ steps.version.outputs.VERSION }}
+        path: biliup-*.zip
+
+    - name: Create Release
+      if: github.event.inputs.release == 'true'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.VERSION }}-nuitka
+        name: ${{ steps.version.outputs.VERSION }} (Nuitka Build)
+        files: biliup-*.zip
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
