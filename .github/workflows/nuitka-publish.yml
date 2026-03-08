@@ -154,14 +154,12 @@ jobs:
         pip install target/wheels/*.whl
         pip install Pillow nuitka
 
-        # 使用 Nuitka 编译单文件
-        # --onefile: 单文件模式
+        # 使用 Nuitka 编译文件夹模式（单文件模式与 Windows asyncio 不兼容）
         # --standalone: 独立运行（不依赖系统 Python）
         # --include-package=biliup: 包含 biliup 包
         # --include-data-dir=biliup/Danmaku/douyin_util=biliup/Danmaku/douyin_util: 包含数据文件
         # --nofollow-import-to=yt_dlp: 排除 yt_dlp 模块（太大导致编译器内存不足）
         python -m nuitka \
-          --onefile \
           --standalone \
           --include-package=biliup \
           --include-package=biliup.Danmaku \
@@ -185,12 +183,16 @@ jobs:
         $targetTriple = rustc -Vv | Select-String "host:" | ForEach-Object {$_.Line.split(" ")[1]}
         $archiveName = "biliup-$version-x86_64-windows-nuitka.zip"
 
-        # Nuitka 单文件模式：直接压缩 dist/biliup.exe
-        if (Test-Path "dist/biliup.exe") {
+        # Nuitka 文件夹模式：压缩 dist/biliup/ 目录
+        if (Test-Path "dist/biliup") {
+          Compress-Archive -Path "dist/biliup/*" -DestinationPath $archiveName
+          Write-Host "创建压缩包: $archiveName (Nuitka 文件夹模式)"
+        } elseif (Test-Path "dist/biliup.exe") {
+          # 兼容单文件模式
           Compress-Archive -Path "dist/biliup.exe" -DestinationPath $archiveName
           Write-Host "创建压缩包: $archiveName (Nuitka 单文件模式)"
         } else {
-          Write-Error "未找到构建输出 dist/biliup.exe"
+          Write-Error "未找到构建输出"
           exit 1
         }
         Write-Host "目标架构: $targetTriple"
