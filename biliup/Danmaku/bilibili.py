@@ -9,6 +9,7 @@ import brotli
 from biliup.plugins import match1
 from biliup.plugins import random_user_agent
 from biliup.plugins import wbi, generate_fake_buvid3
+from .danmaku_client import BaseDanmakuClient
 
 logger = logging.getLogger('biliup')
 
@@ -34,8 +35,8 @@ class Bilibili:
         Bilibili.headers['cookie'] = f"buvid3={generate_fake_buvid3()};"
         if uid > 0:
             Bilibili.headers['cookie'] += content['cookie']
-            
-            
+
+
         # 获取弹幕认证信息
         danmu_wss_url = 'wss://broadcastlv.chat.bilibili.com/sub'
         room_id = content.get('room_id')
@@ -52,7 +53,7 @@ class Bilibili:
                 'web_location': '444.8'
             }
             wbi.sign(params)
-            
+
             async with session.get(f"https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo",params=params,
                                    timeout=5) as resp:
                 danmu_info = await resp.json()
@@ -193,3 +194,20 @@ class Bilibili:
             except Exception as Error:
                 logger.warning(f"{Bilibili.__name__}: 弹幕接收异常 - {Error}")
         return msgs
+
+
+class DanmakuClient(BaseDanmakuClient):
+    """B站弹幕客户端"""
+
+    def __init__(self, url: str, filename: str):
+        super().__init__(url, filename)
+        self.heartbeat = Bilibili.heartbeat
+        self.heartbeatInterval = Bilibili.heartbeatInterval
+
+    async def get_ws_info(self, url: str, context: dict) -> tuple:
+        """获取 WebSocket 连接信息"""
+        return await Bilibili.get_ws_info(url, context)
+
+    def decode_msg(self, data: bytes) -> tuple:
+        """解码弹幕消息"""
+        return Bilibili.decode_msg(data), None

@@ -137,6 +137,53 @@ pub struct Config {
     #[serde(default)]
     pub douyin_danmaku_types: Option<Vec<String>>,
 
+    // 弹幕处理设置
+    /// 生成ASS字幕
+    #[serde(default)]
+    pub danmaku_generate_ass: Option<bool>,
+    /// ASS字幕字体
+    #[serde(default)]
+    pub danmaku_ass_font: Option<String>,
+    /// ASS字幕字体大小
+    #[serde(default)]
+    pub danmaku_ass_fontsize: Option<u32>,
+    /// ASS字幕颜色(BGR格式)
+    #[serde(default)]
+    pub danmaku_ass_color: Option<String>,
+    /// 弹幕滚动速度(像素/帧)
+    #[serde(default)]
+    pub danmaku_ass_speed: Option<u32>,
+    /// 弹幕显示行数
+    #[serde(default)]
+    pub danmaku_ass_line_count: Option<u32>,
+    /// 合成弹幕视频
+    #[serde(default)]
+    pub danmaku_render_video: Option<bool>,
+    /// 使用GPU加速
+    #[serde(default)]
+    pub danmaku_use_gpu: Option<bool>,
+    /// 视频编码器
+    #[serde(default)]
+    pub danmaku_video_codec: Option<String>,
+    /// 编码预设
+    #[serde(default)]
+    pub danmaku_preset: Option<String>,
+    /// 视频质量因子(CRF)
+    #[serde(default)]
+    pub danmaku_crf: Option<u32>,
+    /// 高能区域检测
+    #[serde(default)]
+    pub danmaku_detect_energy: Option<bool>,
+    /// 高能检测窗口(秒)
+    #[serde(default)]
+    pub danmaku_energy_window: Option<u32>,
+    /// 高能阈值(0-1)
+    #[serde(default)]
+    pub danmaku_energy_threshold: Option<f32>,
+    /// 最小高能持续时间(秒)
+    #[serde(default)]
+    pub danmaku_min_energy_duration: Option<u32>,
+
     // 哔哩哔哩平台设置
     /// B站弹幕录制
     #[serde(default)]
@@ -226,7 +273,7 @@ pub struct Config {
     pub user: Option<UserConfig>,
 
     pub loggers_level: Option<String>,
-    
+
     // ===== 网络代理设置 =====
     /// HTTP代理地址（如 http://127.0.0.1:7890）
     #[serde(default)]

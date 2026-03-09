@@ -1,6 +1,7 @@
 'use client'
 import React, { useEffect } from 'react'
 import { Form, Select, Collapse, useFormApi } from '@douyinfe/semi-ui'
+import DanmakuConfig from './DanmakuConfig'
 
 type Props = {
   entity: any
@@ -48,40 +49,8 @@ const Douyin: React.FC<Props> = props => {
           <Select.Option value="ld">标清（ld）</Select.Option>
           <Select.Option value="md">流畅（md）</Select.Option>
         </Form.Select>
-        <Form.Switch
-          field="douyin_danmaku"
-          extraText="录制抖音弹幕，默认关闭。"
-          label="录制弹幕（douyin_danmaku）"
-          fieldStyle={{
-            alignSelf: 'stretch',
-            padding: 0,
-          }}
-        />
-        <Form.Select
-          field="douyin_danmaku_types"
-          extraText={
-            <div style={{ fontSize: '14px' }}>
-              选择要录制的弹幕消息类型，为空则录制所有类型。
-              <br />
-              可选值：danmaku(弹幕)、like(点赞)、member(进场)、gift(礼物)、social(关注)、room_user_seq(统计)
-            </div>
-          }
-          label="弹幕类型筛选（douyin_danmaku_types）"
-          style={{ width: '100%' }}
-          fieldStyle={{
-            alignSelf: 'stretch',
-            padding: 0,
-          }}
-          showClear={true}
-          multiple
-        >
-          <Select.Option value="danmaku">弹幕消息（danmaku）</Select.Option>
-          <Select.Option value="like">点赞消息（like）</Select.Option>
-          <Select.Option value="member">进场消息（member）</Select.Option>
-          <Select.Option value="gift">礼物消息（gift）</Select.Option>
-          <Select.Option value="social">关注消息（social）</Select.Option>
-          <Select.Option value="room_user_seq">统计消息（room_user_seq）</Select.Option>
-        </Form.Select>
+        {/* 弹幕配置 */}
+        <DanmakuConfig platformName="抖音" inPanel={false} />
         <Form.Input
           field="user.douyin_cookie"
           extraText={

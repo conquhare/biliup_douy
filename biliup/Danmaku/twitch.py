@@ -2,6 +2,8 @@
 import random
 import re
 
+from .danmaku_client import BaseDanmakuClient
+
 logger = logging.getLogger('biliup')
 
 
@@ -41,3 +43,20 @@ class Twitch:
                 except Exception:
                     pass
         return msgs
+
+
+class DanmakuClient(BaseDanmakuClient):
+    """Twitch弹幕客户端"""
+
+    def __init__(self, url: str, filename: str):
+        super().__init__(url, filename)
+        self.heartbeat = Twitch.heartbeat.encode() if Twitch.heartbeat else None
+        self.heartbeatInterval = Twitch.heartbeatInterval
+
+    async def get_ws_info(self, url: str, context: dict) -> tuple:
+        """获取WebSocket连接信息"""
+        return await Twitch.get_ws_info(url, context)
+
+    def decode_msg(self, data: bytes) -> tuple:
+        """解码弹幕消息"""
+        return Twitch.decode_msg(data.decode('utf-8')), None

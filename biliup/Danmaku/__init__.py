@@ -1,4 +1,4 @@
-﻿# 部分弹幕功能代码来自项目：https://github.com/IsoaSFlus/danmaku，感谢大佬
+# 部分弹幕功能代码来自项目：https://github.com/IsoaSFlus/danmaku，感谢大佬
 # 快手弹幕代码来源及思路：https://github.com/py-wuhao/ks_barrage，感谢大佬
 # 部分斗鱼录播修复代码与思路来源于：https://github.com/SmallPeaches/DanmakuRender，感谢大佬
 # 仅抓取用户弹幕，不包括入场提醒、礼物赠送等。
@@ -12,6 +12,25 @@ import ssl
 from biliup.config import config
 
 logger = logging.getLogger('biliup')
+
+# 导出弹幕相关功能
+from .danmaku_client import BaseDanmakuClient, IDanmakuClient
+from .ass_generator import AssGenerator, convert_danmaku_to_ass
+from .video_renderer import DanmakuVideoRenderer, render_danmaku_video
+from .danmaku_processor import DanmakuProcessor, DanmakuConfig, create_processor_from_config
+
+__all__ = [
+    'DanmakuClient',
+    'BaseDanmakuClient',
+    'IDanmakuClient',
+    'AssGenerator',
+    'convert_danmaku_to_ass',
+    'DanmakuVideoRenderer',
+    'render_danmaku_video',
+    'DanmakuProcessor',
+    'DanmakuConfig',
+    'create_processor_from_config',
+]
 
 
 class DanmakuClient:
@@ -51,3 +70,10 @@ class DanmakuClient:
     async def stop(self):
         if self.__plugin:
             await self.__plugin.stop()
+
+    def save(self, filename: str):
+        """保存弹幕到文件"""
+        if self.__plugin:
+            self.__plugin.save(filename)
+        else:
+            logger.warning('弹幕插件未初始化，无法保存')

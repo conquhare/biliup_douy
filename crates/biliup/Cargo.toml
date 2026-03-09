@@ -18,7 +18,8 @@ tracing = { workspace = true }
 rsa = "0.9.8"
 base64 = "0.22"
 md-5 = "0.10.6"
-# FIXME: 等 rsa 0.10.0 发布后再更新
+# NOTE: rsa 0.10.0 尚未发布，当前使用 0.9.8 版本
+# 发布后需检查 API 兼容性并更新
 rand = { workspace = true }
 url = { workspace = true }
 thiserror = { workspace = true }

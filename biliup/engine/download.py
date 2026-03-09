@@ -136,7 +136,7 @@ class DownloadBase(ABC):
                                 max_file_size=int(self.file_size / 1024 / 1024),
                                 output_prefix=self.gen_download_filename(True),
                                 stream_info=stream_info,
-                                file_name_callback=lambda file_name: self.__download_segment_callback(file_name), database_row_id=self.database_row_id)
+                                file_name_callback=lambda file_name: self._download_segment_callback(file_name), database_row_id=self.database_row_id)
                     return True
                 # streamlink无法处理flv,所以回退到ffmpeg
                 if self.downloader == 'streamlink' and '.flv' not in parsed_url_path:
@@ -152,12 +152,13 @@ class DownloadBase(ABC):
         stream_gears_download(self.raw_stream_url, self.stream_headers, self.gen_download_filename(),
                               self.segment_time,
                               self.file_size,
-                              lambda file_name: self.__download_segment_callback(file_name))
+                              lambda file_name: self._download_segment_callback(file_name))
         return True
 
     def ffmpeg_segment_download(self):
-        # TODO 无日志
-        # , '-report'
+        """使用 ffmpeg 分段下载直播流"""
+        logger.info(f'开始 ffmpeg 分段下载: {self.__class__.__name__} - {self.fname}')
+        logger.debug(f'下载地址: {self.raw_stream_url}')
         # ffmpeg 输入参数
         input_args = [
             '-loglevel', 'quiet', '-y'
@@ -189,6 +190,8 @@ class DownloadBase(ABC):
         output_args += self.opt_args
         file_name = self.gen_download_filename(is_fmt=True)
         args = ['ffmpeg', *input_args, *output_args, f'{file_name}_%d.{self.suffix}']
+        logger.debug(f'ffmpeg 命令: {" ".join(args)}')
+        segment_count = 0
         with subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                               stderr=subprocess.DEVNULL) as proc:
             for line in iter(proc.stdout.readline, b''):  # b'\n'-separated lines
@@ -197,11 +200,14 @@ class DownloadBase(ABC):
                     time.sleep(1)
                     # 文件重命名
                     self.download_file_rename(ffmpeg_file_name, f'{file_name}.{self.suffix}')
-                    self.__download_segment_callback(f'{file_name}.{self.suffix}')
+                    segment_count += 1
+                    logger.info(f'分段下载完成 [{segment_count}]: {file_name}.{self.suffix}')
+                    self._download_segment_callback(f'{file_name}.{self.suffix}')
                     file_name = self.gen_download_filename(is_fmt=True)
                 except:
                     logger.error(f'分段事件失败：{self.__class__.__name__} - {self.fname}', exc_info=True)
 
+        logger.info(f'ffmpeg 分段下载结束: {self.__class__.__name__} - {self.fname}, 共 {segment_count} 个分段, 返回码: {proc.returncode}')
         return proc.returncode == 0
 
     def ffmpeg_download(self, use_streamlink=False):
@@ -296,7 +302,7 @@ class DownloadBase(ABC):
                 # 文件重命名
                 self.download_file_rename(f'{fmt_file_name}.{self.suffix}.part', f'{fmt_file_name}.{self.suffix}')
                 # 触发分段事件
-                self.__download_segment_callback(f'{fmt_file_name}.{self.suffix}')
+                self._download_segment_callback(f'{fmt_file_name}.{self.suffix}')
                 return True
             else:
                 return False
@@ -306,11 +312,11 @@ class DownloadBase(ABC):
                     streamlink_proc.terminate()
                     streamlink_proc.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                streamlink_proc.kill()
+                    streamlink_proc.kill()
             except:
                 logger.exception(f'terminate {self.fname} failed')
 
-    def __download_segment_callback(self, file_name: str):
+    def _download_segment_callback(self, file_name: str):
         """
         分段后触发返回含后戳的文件名
         """
@@ -453,6 +459,9 @@ def stream_gears_download(url, headers, file_name, segment_time=None, file_size=
     if file_size is None and segment_time is None:
         segment.size = 8 * 1024 * 1024 * 1024
     # FIXME: 下载时如出现403，这里不会回到上层方法获取新链接
+    # 问题说明：stream_gears.download 是 Rust 层实现的同步下载，当出现 403/404 等错误时，
+    # 无法中断并返回到 Python 上层重新获取流地址。需要重构为支持错误回调或轮询检查流地址有效性的机制。
+    # 相关文件: crates/stream-gears/src/lib.rs, crates/biliup/src/client.rs
     if file_name_callback:
         stream_gears.download_with_callback(
             url,

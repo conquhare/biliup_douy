@@ -1,10 +1,11 @@
-﻿import logging
+import logging
 import re
 from struct import pack
 
 import aiohttp
 
 from biliup.plugins import match1
+from .danmaku_client import BaseDanmakuClient
 
 logger = logging.getLogger('biliup')
 
@@ -74,5 +75,22 @@ class Douyu:
                         'color': Douyu.msg_col.get(msg.get('col')),
                     })
             except:
-                logger.warning(f"{Douyu.__name__}: 寮瑰箷鎺ユ敹寮傚父", exc_info=True)
+                logger.warning(f"{Douyu.__name__}: 弹幕接收异常", exc_info=True)
         return msgs
+
+
+class DanmakuClient(BaseDanmakuClient):
+    """斗鱼弹幕客户端"""
+
+    def __init__(self, url: str, filename: str):
+        super().__init__(url, filename)
+        self.heartbeat = Douyu.heartbeat
+        self.heartbeatInterval = Douyu.heartbeatInterval
+
+    async def get_ws_info(self, url: str, context: dict) -> tuple:
+        """获取 WebSocket 连接信息"""
+        return await Douyu.get_ws_info(url, context)
+
+    def decode_msg(self, data: bytes) -> tuple:
+        """解码弹幕消息"""
+        return Douyu.decode_msg(data), None

@@ -34,8 +34,8 @@ mod post {
         mut auth_session: AuthSession,
         Json(creds): Json<Credentials>,
     ) -> impl IntoResponse {
-        // TODO: we rely on `auth_session.user` and `auth_session.backend`, not sure
-        // if this is a good sample impl of signing up?
+        // NOTE: 此实现参考 axum-login 示例代码，依赖 auth_session.user 和 auth_session.backend
+        // 如需改进，可参考 axum-login 最新文档和最佳实践
 
         // Disallow signing up when currently logged in.
         if auth_session.user.is_some() {

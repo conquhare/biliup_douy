@@ -1,8 +1,9 @@
 'use client'
 import React, { useEffect } from 'react'
 import styles from '../../styles/dashboard.module.scss'
-import { Form, Select, Space, useFormApi } from '@douyinfe/semi-ui'
+import { Form, Select, Space, useFormApi, Collapse } from '@douyinfe/semi-ui'
 import { IconUpload, IconDownload } from '@douyinfe/semi-icons'
+import DanmakuConfig from './DanmakuConfig'
 
 const Global: React.FC = () => {
   const formApi = useFormApi()
@@ -295,6 +296,30 @@ const Global: React.FC = () => {
 
       <Space />
 
+      {/* 弹幕录制与处理 */}
+      <div className={styles.frameDownload}>
+        <div className={styles.frameInside}>
+          <div className={styles.group}>
+            <div className={styles.buttonOnlyIconSecond} />
+            <div
+              className={styles.lineStory}
+              style={{
+                color: 'var(--semi-color-bg-0)',
+                display: 'flex',
+              }}
+            >
+              <IconDownload size="small" />
+            </div>
+          </div>
+          <p className={styles.meegoSharedWebWorkIt}>弹幕录制与处理</p>
+        </div>
+        <Collapse keepDOM style={{ width: '100%' }}>
+          <DanmakuConfig platformName="全局" />
+        </Collapse>
+      </div>
+
+      <Space />
+
       {/* 全局上传 */}
       <div className={styles.frameUpload}>
         <div className={styles.frameInside}>
@@ -441,7 +466,7 @@ const Global: React.FC = () => {
             padding: 0,
           }}
         />
-        
+
         <Form.Input
           field="http_proxy"
           extraText={
@@ -482,7 +507,7 @@ const Global: React.FC = () => {
           }}
           showClear={true}
         />
-        
+
         <Form.InputNumber
           field="max_retry_count"
           extraText={
@@ -501,7 +526,7 @@ const Global: React.FC = () => {
           }}
           showClear={true}
         />
-        
+
         <Form.InputNumber
           field="max_retry_count_after_fail"
           extraText={

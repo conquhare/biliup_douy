@@ -1,4 +1,4 @@
-﻿import aiohttp
+import aiohttp
 from biliup.plugins import random_user_agent
 
 from biliup.common.tars import tarscore
@@ -6,6 +6,7 @@ from biliup.plugins import match1
 from biliup.plugins.huya_wup.wup_struct import EWebSocketCommandType
 from biliup.plugins.huya_wup.wup_struct.WebSocketCommand import HuyaWebSocketCommand
 from biliup.plugins.huya_wup.wup_struct.WSUserInfo import HuyaWSUserInfo
+from .danmaku_client import BaseDanmakuClient
 
 
 class Huya:
@@ -106,3 +107,20 @@ class Huya:
             #     msg = {"name": "", "content": "", "msg_type": "other"}
             msgs.append(msg)
         return msgs
+
+
+class DanmakuClient(BaseDanmakuClient):
+    """虎牙弹幕客户端"""
+
+    def __init__(self, url: str, filename: str):
+        super().__init__(url, filename)
+        self.heartbeat = Huya.heartbeat
+        self.heartbeatInterval = Huya.heartbeatInterval
+
+    async def get_ws_info(self, url: str, context: dict) -> tuple:
+        """获取 WebSocket 连接信息"""
+        return await Huya.get_ws_info(url, context)
+
+    def decode_msg(self, data: bytes) -> tuple:
+        """解码弹幕消息"""
+        return Huya.decode_msg(data), None

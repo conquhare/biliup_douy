@@ -1,8 +1,12 @@
 import re, traceback, datetime, base64
 import asyncio
+import logging
 from biliup.plugins import random_user_agent
+from .danmaku_client import BaseDanmakuClient
 
 # The core codes for YouTube support are basically from taizan-hokuto/pytchat
+
+logger = logging.getLogger('biliup')
 
 headers = {
     'user-agent': random_user_agent(),
@@ -136,3 +140,75 @@ class Youtube:
             for m in ms:
                 await cls.q.put(m)
                 await asyncio.sleep(interval)
+
+
+class DanmakuClient(BaseDanmakuClient):
+    """YouTube弹幕客户端 - 使用轮询方式获取弹幕"""
+
+    def __init__(self, url: str, filename: str):
+        super().__init__(url, filename)
+        self.heartbeat = None
+        self.heartbeatInterval = 30
+        self._youtube_task = None
+        self._queue = None
+
+    async def start(self):
+        """启动YouTube弹幕录制"""
+        if self._running:
+            return
+        self._running = True
+        self.start_time = time.time()
+        self._queue = asyncio.Queue()
+
+        # 启动YouTube轮询任务
+        self._youtube_task = asyncio.create_task(self._run_youtube())
+
+        # 启动消息处理任务
+        self._task = asyncio.create_task(self._process_messages())
+        logger.info(f'YouTube弹幕录制启动: {self.url}')
+
+    async def stop(self):
+        """停止YouTube弹幕录制"""
+        self._running = False
+        Youtube.stop()
+        if self._youtube_task:
+            self._youtube_task.cancel()
+            try:
+                await self._youtube_task
+            except asyncio.CancelledError:
+                pass
+        if self._task:
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+        logger.info(f'YouTube弹幕录制停止: {self.url}, 共录制 {len(self.danmaku_list)} 条弹幕')
+
+    async def _run_youtube(self):
+        """运行YouTube弹幕获取"""
+        import aiohttp
+        async with aiohttp.ClientSession() as client:
+            await Youtube.run(self.url, self._queue, client)
+
+    async def _process_messages(self):
+        """处理从队列获取的弹幕消息"""
+        try:
+            while self._running:
+                try:
+                    msg = await asyncio.wait_for(self._queue.get(), timeout=1)
+                    await self._process_message(msg)
+                except asyncio.TimeoutError:
+                    continue
+                except Exception as e:
+                    logger.exception(f'处理弹幕消息错误: {e}')
+        except Exception as e:
+            logger.exception(f'弹幕处理循环错误: {e}')
+
+    async def get_ws_info(self, url: str, context: dict) -> tuple:
+        """YouTube不使用WebSocket，返回空"""
+        return "", []
+
+    def decode_msg(self, data: bytes) -> tuple:
+        """YouTube不使用此方式解码"""
+        return [], None

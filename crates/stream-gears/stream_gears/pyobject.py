@@ -30,7 +30,15 @@ class Segment:
 
 
 class Credit:
-    # FIXME: docstring
+    """
+    B站视频简介v2格式中的@对象
+
+    用于在视频简介中@其他用户或话题
+
+    :param int type_id: 类型ID，1表示@用户，2表示@话题
+    :param str raw_text: 显示的原始文本
+    :param Optional[str] biz_id: 业务ID，@用户时为UID，@话题时为话题ID
+    """
     type_id: int
     raw_text: str
     biz_id: Optional[str]

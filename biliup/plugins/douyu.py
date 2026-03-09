@@ -129,9 +129,9 @@ class Douyu(DownloadBase):
 
         self.raw_stream_url = f"{play_info['rtmp_url']}/{play_info['rtmp_live']}"
 
-        # HACK: 构造 hs-h5 cdn 直播流链接
-        # self.douyu_cdn = 'hs-h5'
-        # 修改：当用户选择 hs-h5 时，允许通过配置强制构造 hs 链接（即使 play_info 已经返回 hs-h5）
+        # NOTE: 构造 hs-h5 cdn 直播流链接
+        # 斗鱼平台 hs-h5 CDN 线路有时需要通过特定方式构造获取
+        # 当用户选择 hs-h5 时，允许通过配置强制构造 hs 链接（即使 play_info 已经返回 hs-h5）
         if self.douyu_cdn == 'hs-h5':
             need_build = self.douyu_force_hs or play_info['rtmp_cdn'] != 'hs-h5'
             if need_build:

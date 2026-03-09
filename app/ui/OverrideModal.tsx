@@ -12,6 +12,7 @@ import { useState } from 'react'
 import { LiveStreamerEntity } from '../lib/api-streamer'
 import { SupportedPlatforms } from '@/app/ui/plugins'
 import { useBiliUsers } from '../lib/use-streamers'
+import DanmakuConfig from './plugins/DanmakuConfig'
 
 type PluginProps = {
   entity?: LiveStreamerEntity
@@ -278,6 +279,7 @@ const OverrideModal: React.FC<TemplateModalProps> = ({ children, entity, onOk })
           <Form.Section>
             <Collapse defaultActiveKey={['plugin']}>
               {downloadSettings}
+              <DanmakuConfig prefix="override" platformName="当前主播" inPanel={false} />
               {(() => {
                 const Plugin = platformSetting()
                 return Plugin ? (

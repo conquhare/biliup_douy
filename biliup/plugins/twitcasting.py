@@ -19,7 +19,7 @@ class Twitcasting(DownloadBase):
         self.twitcasting_cookie = config.get('user', {}).get('twitcasting_cookie')
         self.fake_headers['referer'] = "https://twitcasting.tv/"
 
-        # TODO 传递过于繁琐
+        # TODO: _movie_id 在 acheck_stream 中获取后传递给弹幕客户端，考虑优化为更简洁的上下文传递方式
         self._movie_id = None
 
     async def acheck_stream(self, is_check=False):

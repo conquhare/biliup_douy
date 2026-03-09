@@ -1,501 +1,161 @@
-# 项目知识库
+# PROJECT_KNOWLEDGE.md
 
-## GitHub 代理连接问题解决方案
+## 编码问题修复技能库
 
-### 问题现象
-- `failed to open socket: Invalid arguments`
-- `getaddrinfo() thread failed to start`
-- `TLS connect error: error:0A000126:SSL routines::unexpected eof while reading`
+> **用途**: 快速解决项目中的 GBK/UTF-8 编码乱码问题  
+> **相关技能**: `encoding-checker`
 
-### 排查步骤
+---
 
-#### 1. 检查 Clash 是否运行
-```powershell
-# 检查 Clash 端口是否在监听（默认 7890 或 54350）
-netstat -ano | findstr :54350
-netstat -ano | findstr :7890
-```
+## 相关文档
 
-#### 2. 测试代理连接
-```powershell
-# 方法1: 使用 curl 测试
-$env:http_proxy = "http://127.0.0.1:54350"
-$env:https_proxy = "http://127.0.0.1:54350"
-curl -I https://github.com
+- `PROJECT_INFO.md` - 项目信息和任务管理（主文档）
+- `PROJECT_INCOMPLETE.md` - 编码问题事件复盘和经验总结
+- `FIX_SUMMARY.md` - 问题修复详细记录
 
-# 方法2: 使用 Invoke-WebRequest 测试
-Invoke-WebRequest -Uri "https://github.com" -Proxy "http://127.0.0.1:54350" -Method HEAD
+---
 
-# 方法3: 测试 GitHub API
-$env:http_proxy = "http://127.0.0.1:54350"
-$env:https_proxy = "http://127.0.0.1:54350"
-curl https://api.github.com
-```
+## 项目技能索引
 
-#### 3. 配置 Git 使用代理
+项目已沉淀以下可复用技能，位于 `.claude/skills/` 和 `.trae/skills/`：
+
+| 技能 | 用途 | 适用场景 |
+|------|------|----------|
+| `encoding-checker` | 编码问题检测与修复 | 处理 GBK/UTF-8 乱码问题 |
+| `proxy-troubleshooting` | GitHub 代理连接故障排查 | 解决 git push 失败、GitHub 访问问题 |
+| `douyin-danmaku` | 抖音弹幕录制开发 | WebSocket 连接、签名计算、protobuf 解析 |
+| `live-stream-download` | 直播流下载引擎开发 | 多平台适配、分段录制、下载管理 |
+| `bilibili-upload` | B站视频上传开发 | 分P上传、线路选择、投稿接口 |
+| `ci-cd-build` | CI/CD 构建流程 | Windows EXE 构建、版本号管理、发布流程 |
+| `gitnexus-*` | 代码库分析 | 架构理解、影响分析、调试追踪、重构指导 |
+
+---
+
+## 快速开始
+
+### 1. 检测编码问题
 ```bash
-# 设置代理
-git config http.proxy http://127.0.0.1:54350
-git config https.proxy http://127.0.0.1:54350
-
-# 验证配置
-git config --get http.proxy
-git config --get https.proxy
+python encoding_fixer.py
 ```
 
-#### 4. 如果代理不可用
-- 检查 Clash 是否开启系统代理
-- 尝试切换 Clash 模式（规则模式/全局模式）
-- 重启 Clash 服务
-
-### 预防措施
-
-#### 使用现成的测试脚本
-项目已包含 `test-proxy.ps1` 脚本，GitHub 不通时直接执行即可：
-
-```powershell
-# 快速测试代理和 GitHub 连接
-.\test-proxy.ps1
-```
-
-**脚本功能**:
-1. 测试代理端口（默认 54350）是否监听
-2. 测试 GitHub 访问（HTTP 状态码）
-3. 测试 Git 连接（自动配置代理）
-4. 如连接失败，自动尝试禁用 SSL 验证
-
-**使用方法**:
-```powershell
-# 在 PowerShell 中执行
-.\test-proxy.ps1
-
-# 如果测试通过，会提示可以执行 git push
-```
-
-#### 创建连接测试脚本（备用）
-如果 `test-proxy.ps1` 不存在，可创建如下脚本：
-```powershell
-# 测试代理连接脚本
-$proxyPort = 54350  # 根据实际情况修改
-
-Write-Host "测试代理端口 $proxyPort..." -ForegroundColor Yellow
-$connection = Test-NetConnection -ComputerName 127.0.0.1 -Port $proxyPort
-
-if ($connection.TcpTestSucceeded) {
-    Write-Host "✓ 代理端口连接正常" -ForegroundColor Green
-    
-    # 测试 GitHub 访问
-    Write-Host "测试 GitHub 访问..." -ForegroundColor Yellow
-    try {
-        $env:http_proxy = "http://127.0.0.1:$proxyPort"
-        $env:https_proxy = "http://127.0.0.1:$proxyPort"
-        $response = Invoke-WebRequest -Uri "https://github.com" -Method HEAD -TimeoutSec 10
-        Write-Host "✓ GitHub 访问正常 (HTTP $($response.StatusCode))" -ForegroundColor Green
-    } catch {
-        Write-Host "✗ GitHub 访问失败: $_" -ForegroundColor Red
-    }
-} else {
-    Write-Host "✗ 代理端口 $proxyPort 未响应，请检查 Clash 是否运行" -ForegroundColor Red
-}
-```
-
-#### Git 配置检查清单
-```powershell
-# 推送前检查清单
-function Test-GitConnection {
-    Write-Host "=== Git 连接测试 ===" -ForegroundColor Cyan
-    
-    # 1. 检查远程仓库
-    Write-Host "`n1. 远程仓库配置:" -ForegroundColor Yellow
-    git remote -v
-    
-    # 2. 检查代理设置
-    Write-Host "`n2. Git 代理设置:" -ForegroundColor Yellow
-    git config --get http.proxy
-    git config --get https.proxy
-    
-    # 3. 测试连接
-    Write-Host "`n3. 测试 GitHub 连接..." -ForegroundColor Yellow
-    git ls-remote origin HEAD 2>&1 | Out-Null
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✓ 连接正常" -ForegroundColor Green
-        return $true
-    } else {
-        Write-Host "✗ 连接失败，请检查网络或代理" -ForegroundColor Red
-        return $false
-    }
-}
-```
-
-### 快速修复命令
-```powershell
-# 如果确认代理可用但 Git 无法连接，尝试以下命令：
-
-# 1. 清除 Git 代理设置
-git config --global --unset http.proxy
-git config --global --unset https.proxy
-
-# 2. 设置环境变量代理（当前会话有效）
-$env:http_proxy = "http://127.0.0.1:54350"
-$env:https_proxy = "http://127.0.0.1:54350"
-
-# 3. 或者设置 Git 代理
-git config http.proxy http://127.0.0.1:54350
-git config https.proxy http://127.0.0.1:54350
-
-# 4. 推送
-git push
-```
-
-### 常见 Clash 端口
-- HTTP 代理: `7890` 或 `54350`
-- SOCKS5 代理: `7891` 或 `54351`
-
-根据您的 Clash 配置选择正确的端口。
-
----
-
-## GitHub Actions CI/CD 构建知识
-
-### 版本号管理策略
-
-#### 问题背景
-- 本项目是 fork 自上游仓库，但做了大量自定义修改
-- 不沿用上游 Cargo.toml 的版本号
-- 需要独立的版本号管理体系
-
-#### 解决方案
-在 `.github/workflows/pyinstaller-publish.yml` 中使用 `env` 定义独立版本号：
-
-```yaml
-env:
-  # 独立版本号管理 - 不依赖上游 Cargo.toml
-  # 修改此值来更新版本号
-  BASE_VERSION: '0.2.0'
-```
-
-#### 版本号生成规则
-1. **手动触发**: 使用输入的版本号（如 `v0.2.0`）
-2. **自动触发**: `v{BASE_VERSION}-{buildNumber}-g{shortSha}`
-   - 示例: `v0.2.0-15-gabc1234`
-
-#### 修改版本号步骤
-1. 编辑 `.github/workflows/pyinstaller-publish.yml`
-2. 修改 `BASE_VERSION` 的值
-3. 提交并推送
-
-### 构建流程
-
-#### 完整构建步骤
-1. **设置版本号** - 根据触发方式确定版本号
-2. **更新 Cargo.toml** - 将版本号写入 Rust 配置
-3. **构建前端** - `npm install && npm run build`
-4. **构建 Rust 扩展** - 使用 maturin 构建 wheel
-5. **构建 EXE** - 使用 PyInstaller 打包
-6. **打包发布** - 创建 zip 压缩包
-7. **上传产物** - 上传 Artifact
-8. **创建 Release** - 可选，手动触发时创建
-
-#### 关键配置
-```yaml
-# Node.js 版本 - 使用固定版本避免网络问题
-node-version: '20'
-
-# Python 版本
-python-version: '3.x'
-
-# Rust 工具链
-uses: dtolnay/rust-toolchain@stable
-
-# Maturin 构建
-uses: PyO3/maturin-action@v1
-with:
-  command: build
-  args: --release
-```
-
-### 常见问题排查
-
-#### maturin 构建失败 (exit code 1)
-**可能原因**:
-- Cargo.toml 版本号格式错误
-- Rust 代码编译错误
-- 依赖项问题
-
-**排查步骤**:
-1. 检查 Cargo.toml 版本号格式是否正确
-2. 本地运行 `maturin build --release` 测试
-3. 检查 Rust 代码是否有语法错误
-
-#### 版本号替换失败
-**检查正则表达式**:
-```powershell
-$pattern = '(\[workspace\.package\]\s*\nversion\s*=\s*)"[^"]*"'
-```
-
-**验证方法**:
-```powershell
-# 本地测试版本号替换
-$cargoToml = Get-Content Cargo.toml -Raw
-$pattern = '(\[workspace\.package\]\s*\nversion\s*=\s*)"[^"]*"'
-$replacement = '$1"0.2.0"'
-$cargoToml -replace $pattern, $replacement
-```
-
-### 触发构建方式
-
-#### 1. 推送到 master/main 分支
+### 2. 验证修复结果
 ```bash
-git add .
-git commit -m "更新代码"
-git push origin master
-```
-
-#### 2. 手动触发（带版本号）
-1. 进入 GitHub 仓库页面
-2. 点击 Actions → Build Windows EXE
-3. 点击 "Run workflow"
-4. 输入版本号（如 `v0.2.0`）
-5. 选择是否创建 Release
-6. 点击运行
-
-### 产物下载
-构建完成后，可在以下位置下载：
-1. **Actions 页面** → 具体运行记录 → Artifacts
-2. **Release 页面**（如果创建了 Release）
-
-### 最佳实践
-
-#### 版本号规范
-- 使用语义化版本: `v主版本.次版本.修订号`
-- 示例: `v0.2.0`, `v1.0.0`, `v2.1.3`
-
-#### 发布流程
-1. 更新 `BASE_VERSION`
-2. 提交代码变更
-3. 手动触发构建，输入新版本号
-4. 勾选 "创建 Release"
-5. 等待构建完成
-6. 在 Release 页面查看并编辑发布说明
-
-#### 调试技巧
-```powershell
-# 本地测试 PowerShell 脚本逻辑
-$version = "v0.2.0-15-gabc1234"
-$version = $version -replace '^v', ''
-$version = $version -replace '-[a-f0-9]+$', ''
-$version = $version -replace '-\d+$', ''
-Write-Host "清理后的版本号: $version"
-# 输出: 0.2.0
+python test_encoding_fix.py
 ```
 
 ---
 
-## Skill 目录管理方案
+## 问题诊断
 
-### 问题背景
-- GitNexus 默认使用 `.claude/skills/` 目录存放 Skill 文件
-- Trae IDE 默认使用 `.trae/skills/` 目录
-- 我们希望统一使用 `.trae/skills/`，但 GitNexus 需要真实目录才能创建子目录
+### 乱码特征
+- 中文显示为 `鎶栭煶勫` 等生僻字
+- 出现 Unicode 扩展 A 区字符（0x3400-0x4DBF）
+- 文件头部出现 `锘` 字符
 
-### 解决方案：目录联接（Junction）
-
-使用 Windows 目录联接（Junction）让两个目录指向同一位置：
-
+### 产生机制
 ```
-biliup_code/
-├── .claude/
-│   └── skills/                    ← 真实目录（GitNexus 使用）
-│       ├── encoding-checker/      ← 自定义 skill
-│       ├── gitnexus/              ← GitNexus skill
-│       └── proxy-troubleshooting/ ← 自定义 skill
-└── .trae/
-    └── skills -> .claude/skills   ← 目录联接（Junction）
+原始 UTF-8 内容 → 错误地用 GBK 解码 → 保存为 UTF-8 乱码
 ```
-
-### 创建目录联接
-
-```powershell
-# 1. 确保 .claude/skills 真实目录存在
-# 将自定义 skill 移动到 .claude/skills/ 下
-
-# 2. 创建目录联接
-$target = Resolve-Path ".claude\skills"
-New-Item -ItemType Junction -Path ".trae\skills" -Target $target -Force
-
-# 3. 验证
-Get-Item ".trae\skills" | Select-Object Mode, Name, Target
-```
-
-### 注意事项
-
-1. **目录联接 vs 符号链接**
-   - 目录联接（Junction）：只能用于目录，不需要管理员权限
-   - 符号链接（SymbolicLink）：可用于文件和目录，需要管理员权限或 Developer Mode
-
-2. **GitNexus 兼容性**
-   - 符号链接会导致 `ENOTDIR` 错误（GitNexus 无法创建子目录）
-   - 目录联接可以正常工作
-
-3. **Git 版本控制**
-   - `.trae/skills` 作为目录联接会被 git 跟踪为普通目录
-   - 实际文件存储在 `.claude/skills/`
-
-### 自定义 Skill 存放位置
-
-**推荐做法：**
-1. 所有自定义 Skill 放在 `.claude/skills/` 下
-2. 通过 `.trae/skills/` 访问（统一路径）
-3. 这样 GitNexus 和 Trae 都能正确找到 Skill
 
 ---
 
-## CI 自动编译触发规则
+## 修复原理
 
-### 路径过滤配置
-
-在 `.github/workflows/pyinstaller-publish.yml` 中配置了 `paths` 过滤，只有修改以下文件时才会触发自动编译：
-
-```yaml
-paths:
-  # Python 代码
-  - 'biliup/**'
-  # Rust 代码
-  - 'crates/**'
-  - 'Cargo.toml'
-  - 'Cargo.lock'
-  # 前端代码
-  - 'app/**'
-  - 'public/**'
-  - 'package.json'
-  - 'package-lock.json'
-  - 'next.config.js'
-  # Python 构建配置
-  - 'pyproject.toml'
-  - 'biliup.spec'
-  # 工作流本身
-  - '.github/workflows/pyinstaller-publish.yml'
-```
-
-### 编译流程
-
-当触发自动编译时，执行以下步骤：
-
-1. **前端构建** - `npm install && npm run build`
-   - 编译 Next.js 前端代码
-   - 生成静态资源
-
-2. **Rust 扩展构建** - `maturin build --release`
-   - 编译 `crates/` 下的 Rust 代码
-   - 生成 Python wheel 包
-
-3. **EXE 打包** - `pyinstaller biliup.spec`
-   - 打包 Python 代码和 Rust 扩展
-   - 生成独立的 Windows EXE
-
-### 触发场景
-
-**会自动触发编译：**
-- 修改 Python 代码 (`biliup/**`)
-- 修改 Rust 代码 (`crates/**`)
-- 修改前端代码 (`app/**`, `public/**`)
-- 修改构建配置 (`Cargo.toml`, `pyproject.toml`, `biliup.spec`)
-
-**不会触发自动编译：**
-- 修改文档 (`*.md`, `docs/**`)
-- 修改 Skill 文件 (`.claude/skills/**`)
-- 修改运行时配置
-- 修改测试文件
-
-### 手动触发
-
-如需强制编译，可在 GitHub Actions 页面手动触发：
-1. 进入 Actions → Build Windows EXE
-2. 点击 "Run workflow"
-3. 输入版本号（可选）
-4. 点击运行
-
----
-
-## PyInstaller 单文件模式问题
-
-### 问题：Failed to load Python DLL
-
-**错误信息：**
-```
-[PYI-280488:ERROR] Failed to load Python DLL 'C:\Users\...\Temp\_MEI2814322\python314.dll'.
-LoadLibrary: ?????????
-```
-
-**原因：**
-PyInstaller 单文件模式（`onefile=True`）在运行时会将文件解压到临时目录，但有时会出现 DLL 加载失败的问题。可能原因：
-
-1. **临时目录权限问题** - 某些系统临时目录权限受限
-2. **杀毒软件拦截** - 安全软件阻止 DLL 加载
-3. **路径长度问题** - Windows 路径长度限制
-4. **文件被占用** - 之前的运行实例未完全清理
-
-**解决方案：**
-
-#### 方案 1：使用文件夹模式（推荐）
-修改 `biliup.spec`，移除 `onefile=True`，使用 `COLLECT` 生成文件夹：
+**逆向修复**:
 ```python
-# 单文件模式（可能有问题）
-onefile=True
-
-# 改为文件夹模式（更稳定）
-# 移除 onefile 参数，使用 COLLECT
+# 乱码字符 → GBK 字节 → UTF-8 正确内容
+mojibake_text = "鎶栭煶勫"
+gbk_bytes = mojibake_text.encode('gbk')
+fixed_text = gbk_bytes.decode('utf-8')  # "抖音弹幕"
 ```
-
-#### 方案 2：设置临时目录环境变量
-运行前设置环境变量：
-```powershell
-$env:TMP = "C:\temp"
-$env:TEMP = "C:\temp"
-biliup.exe list
-```
-
-#### 方案 3：以管理员身份运行
-右键点击 EXE，选择"以管理员身份运行"
-
-#### 方案 4：添加到杀毒软件白名单
-将 EXE 所在目录添加到杀毒软件排除项
-
-#### 方案 5：清理临时文件
-```powershell
-# 删除 PyInstaller 临时文件
-Remove-Item -Path "$env:TEMP\_MEI*" -Recurse -Force -ErrorAction SilentlyContinue
-```
-
-**最佳实践：**
-- 对于需要稳定运行的场景，建议使用**文件夹模式**而非单文件模式
-- 单文件模式适合便携和分发，但可能有兼容性问题
-- 文件夹模式启动更快，兼容性更好
 
 ---
 
-## 网络诊断工具
+## 工具说明
 
-### 测试 GitHub 连接
-```powershell
-# 测试 DNS 解析
-Resolve-DnsName github.com
+### encoding_fixer.py
+- **智能检测**: 分析 Unicode 字符分布，识别扩展 A 区字符
+- **自动修复**: GBK→UTF-8 逆向转换
+- **批量处理**: 递归扫描项目目录
 
-# 测试端口连通性
-Test-NetConnection -ComputerName github.com -Port 443
-
-# 完整连接测试
-curl -v https://github.com 2>&1 | Select-String "SSL|error|connected"
+**检测算法**:
+```python
+if ext_a_ratio > 0.005 or gbk_gibberish_count >= 3:
+    is_mojibake = True  # 判定为乱码文件
 ```
 
-### 代理诊断
-```powershell
-# 查看系统代理设置
-Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' | Select-Object ProxyServer, ProxyEnable
+### test_encoding_fix.py
+- 验证关键文件编码
+- 测试模块导入功能
+- 生成测试报告
 
-# 查看环境变量
-Get-ChildItem Env: | Where-Object { $_.Name -like "*proxy*" }
+---
 
-# 测试代理速度
-Measure-Command { curl -s -o $null -w "%{http_code}" https://github.com }
+## 预防措施
+
+### 开发环境配置
+
+**Git**:
+```bash
+git config core.quotepath off
+git config gui.encoding utf-8
+git config i18n.commit.encoding utf-8
+git config i18n.logoutputencoding utf-8
 ```
+
+**VS Code**:
+```json
+{
+  "files.encoding": "utf8",
+  "files.autoGuessEncoding": false,
+  "files.candidateGuessEncodings": ["utf8"]
+}
+```
+
+**EditorConfig**:
+```ini
+[*]
+charset = utf-8
+```
+
+### CI/CD 集成
+```yaml
+- name: Check file encoding
+  run: python encoding_fixer.py
+```
+
+---
+
+## 修复记录
+
+| 时间 | 事件 | 结果 |
+|------|------|------|
+| 2026-03-07 | commit 5505c09 尝试修复 47 个文件 | ❌ 失败 |
+| 2026-03-08 | 使用逆向修复方法 | ✅ 成功修复 47+ 文件 |
+| 2026-03-08 | 清理冗余脚本，更新技能文档 | ✅ 完成 |
+
+**已修复文件**:
+- `biliup/Danmaku/*.py` - 弹幕模块
+- `biliup/common/*.py` - 通用模块
+- `biliup/plugins/*.py` - 平台插件
+- 总计 47+ 个文件
+
+---
+
+## 相关文件
+
+| 文件 | 用途 | 状态 |
+|------|------|------|
+| `encoding_fixer.py` | 编码修复工具 | ✅ 可用 |
+| `test_encoding_fix.py` | 编码测试工具 | ✅ 可用 |
+| `PROJECT_INCOMPLETE.md` | 问题复盘 | ✅ 已更新 |
+| `.claude/skills/encoding-checker/SKILL.md` | 可复用技能 | ✅ 已更新 |
+
+---
+
+## 使用建议
+
+1. **定期检查**: 每月运行 `encoding_fixer.py`
+2. **提交前检查**: 运行 `test_encoding_fix.py`
+3. **环境统一**: 确保团队使用相同的编码配置
+4. **CI 集成**: 在构建流程中添加编码检查
