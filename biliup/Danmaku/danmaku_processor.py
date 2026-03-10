@@ -71,7 +71,7 @@ class DanmakuProcessor:
                 danmaku_file: str,
                 video_file: str = None,
                 output_dir: str = None,
-                progress_callback: Callable[[str, float], None] = None) -> Dict[str, str]:
+                progress_callback = None):
         """
         处理弹幕文件
 
@@ -190,7 +190,7 @@ class DanmakuProcessor:
 
         return results
 
-    def _detect_high_energy_regions(self, danmaku_file: str) -> List[Dict[str, Any]]:
+    def _detect_high_energy_regions(self, danmaku_file: str):
         """
         检测高能区域
 
@@ -272,7 +272,7 @@ class DanmakuProcessor:
 
         return high_energy_regions
 
-    def _load_xml_danmaku(self, xml_file: str) -> List[Dict[str, Any]]:
+    def _load_xml_danmaku(self, xml_file: str):
         """从XML文件加载弹幕"""
         import xml.etree.ElementTree as ET
 
@@ -297,7 +297,7 @@ class DanmakuProcessor:
         return danmaku_list
 
 
-def create_processor_from_config(config: Dict[str, Any]) -> Optional[DanmakuProcessor]:
+def create_processor_from_config(config: Dict[str, Any]):
     """
     从配置字典创建弹幕处理器
 

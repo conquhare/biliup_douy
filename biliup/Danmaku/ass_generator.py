@@ -168,7 +168,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             f.write(header)
             f.write('\n'.join(events))
 
-    def _find_available_line(self, lines: List[List[float]], timestamp: float, duration: float) -> Optional[int]:
+    def _find_available_line(self, lines, timestamp, duration):
         """找到可用的弹幕行"""
         for i, line in enumerate(lines):
             # 清理已经过去的弹幕
