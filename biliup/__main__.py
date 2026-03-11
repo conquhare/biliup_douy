@@ -1,5 +1,8 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# 首先导入 certifi 补丁（必须在导入 httpx 之前）
+import biliup.common.certifi_patch
+
 import argparse
 import asyncio
 import logging.config

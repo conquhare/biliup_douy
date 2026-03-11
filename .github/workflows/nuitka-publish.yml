@@ -154,6 +154,10 @@ jobs:
         pip install target/wheels/*.whl
         pip install Pillow nuitka==2.6.9
 
+        # 获取 certifi 证书文件路径
+        CERTIFI_PATH=$(python -c "import certifi; print(certifi.where())")
+        echo "certifi 证书路径: $CERTIFI_PATH"
+
         # 使用 Nuitka 编译文件夹模式（单文件模式与 Windows asyncio 不兼容）
         # --standalone: 独立运行（不依赖系统 Python）
         # --include-package=biliup: 包含 biliup 包
@@ -168,6 +172,7 @@ jobs:
           --include-package=biliup.plugins \
           --include-data-dir=biliup/Danmaku/douyin_util=biliup/Danmaku/douyin_util \
           --include-data-files=public/logo.png=public/logo.png \
+          --include-data-files="$CERTIFI_PATH"=certifi/cacert.pem \
           --nofollow-import-to=yt_dlp \
           --nofollow-import-to=ykdl \
           --nofollow-import-to=google.protobuf \
