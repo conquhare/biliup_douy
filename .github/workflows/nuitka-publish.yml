@@ -189,13 +189,31 @@ jobs:
         # 调试：列出 dist 目录内容
         Write-Host "=== dist 目录内容 ==="
         if (Test-Path "dist") {
-          Get-ChildItem -Path "dist" -Recurse | Select-Object -First 20
+          Get-ChildItem -Path "dist" | ForEach-Object { Write-Host $_.Name }
+          # 检查所有可能的子目录
+          Get-ChildItem -Path "dist" -Directory | ForEach-Object {
+            Write-Host "目录: $($_.Name)"
+            Get-ChildItem -Path $_.FullName | Select-Object -First 10 | ForEach-Object { Write-Host "  - $($_.Name)" }
+          }
         } else {
           Write-Host "dist 目录不存在"
         }
 
+        # 检查所有可能的输出路径
+        Write-Host "=== 检查输出路径 ==="
+        $paths = @("dist/__main__.dist", "dist/biliup.dist", "dist/biliup", "dist/biliup.exe", "dist/__main__.exe")
+        foreach ($path in $paths) {
+          if (Test-Path $path) {
+            Write-Host "找到: $path"
+          }
+        }
+
         # Nuitka 文件夹模式：检查可能的输出路径
-        if (Test-Path "dist/biliup.dist") {
+        if (Test-Path "dist/__main__.dist") {
+          # Nuitka 默认输出：__main__.dist 目录 (当输入是 __main__.py 时)
+          Compress-Archive -Path "dist/__main__.dist/*" -DestinationPath $archiveName
+          Write-Host "创建压缩包: $archiveName (Nuitka 文件夹模式 - __main__.dist)"
+        } elseif (Test-Path "dist/biliup.dist") {
           # Nuitka 默认输出：biliup.dist 目录
           Compress-Archive -Path "dist/biliup.dist/*" -DestinationPath $archiveName
           Write-Host "创建压缩包: $archiveName (Nuitka 文件夹模式 - biliup.dist)"
@@ -207,8 +225,25 @@ jobs:
           Compress-Archive -Path "dist/biliup.exe" -DestinationPath $archiveName
           Write-Host "创建压缩包: $archiveName (Nuitka 单文件模式)"
         } else {
-          Write-Error "未找到构建输出"
-          exit 1
+          # 最后尝试：查找任何 .dist 目录或 .exe 文件
+          Write-Host "=== 尝试查找任何可能的输出 ==="
+          $distDirs = Get-ChildItem -Path "dist" -Filter "*.dist" -Directory | Select-Object -First 1
+          $exeFiles = Get-ChildItem -Path "dist" -Filter "*.exe" | Select-Object -First 1
+
+          if ($distDirs) {
+            $dirName = $distDirs.Name
+            Write-Host "找到 .dist 目录: $dirName"
+            Compress-Archive -Path "dist/$dirName/*" -DestinationPath $archiveName
+            Write-Host "创建压缩包: $archiveName (Nuitka 文件夹模式 - $dirName)"
+          } elseif ($exeFiles) {
+            $exeName = $exeFiles.Name
+            Write-Host "找到 .exe 文件: $exeName"
+            Compress-Archive -Path "dist/$exeName" -DestinationPath $archiveName
+            Write-Host "创建压缩包: $archiveName (Nuitka 单文件模式 - $exeName)"
+          } else {
+            Write-Error "未找到构建输出"
+            exit 1
+          }
         }
         Write-Host "目标架构: $targetTriple"
 
