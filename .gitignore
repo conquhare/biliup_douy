@@ -55,3 +55,54 @@ cookies.json
 .cargo/
 logs/
 .gitnexus
+
+# Claude skills (开发辅助，非功能必需)
+.claude/
+
+# 项目文档和知识库 (开发辅助，非功能必需)
+CLAUDE.md
+PROJECT_INFO.md
+PROJECT_INCOMPLETE.md
+PROJECT_KNOWLEDGE.md
+FIX_SUMMARY.md
+AGENTS.md
+
+# 编译生成的文件
+nuitka-crash-report.xml
+*.build/
+*.dist/
+*.onefile-build/
+
+# 临时文件和目录
+*.tmp
+*.temp
+.temp/
+tmp/
+temp/
+
+# 测试相关
+tests/
+*_test.py
+*_tests.py
+
+# 开发工具配置
+.editorconfig
+.prettierrc.toml
+.prettierignore
+.eslintrc.json
+.flake8
+.pylintrc
+mypy.ini
+
+# 环境文件
+.env*
+!.env.example
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 日志目录
+log/
+logs/
