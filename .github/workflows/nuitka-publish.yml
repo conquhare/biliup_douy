@@ -170,8 +170,10 @@ jobs:
           --include-data-files=public/logo.png=public/logo.png \
           --nofollow-import-to=yt_dlp \
           --nofollow-import-to=ykdl \
+          --nofollow-import-to=google.protobuf \
           --lto=no \
-          --jobs=2 \
+          --jobs=1 \
+          --low-memory \
           --output-dir=dist \
           --output-filename=biliup \
           --assume-yes-for-downloads \

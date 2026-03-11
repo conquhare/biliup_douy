@@ -6,10 +6,14 @@ import gzip
 import logging
 
 import aiohttp
-from google.protobuf import json_format
 
 from .danmaku_client import BaseDanmakuClient
-from .douyin_util.dy_pb2 import ChatMessage, PushFrame, Response
+
+# 延迟导入 protobuf 相关模块，避免 Nuitka 编译时内存不足
+def _get_protobuf_modules():
+    from google.protobuf import json_format
+    from .douyin_util.dy_pb2 import ChatMessage, PushFrame, Response
+    return json_format, ChatMessage, PushFrame, Response
 
 logger = logging.getLogger('biliup')
 
@@ -161,6 +165,8 @@ class Douyin:
     @staticmethod
 
     def decode_msg(data):
+        # 运行时动态导入 protobuf 模块
+        json_format, ChatMessage, PushFrame, Response = _get_protobuf_modules()
 
         wss_package = PushFrame()
 
