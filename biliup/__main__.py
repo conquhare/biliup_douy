@@ -7,6 +7,7 @@ import argparse
 import asyncio
 import logging.config
 import shutil
+import sys
 
 import stream_gears
 
@@ -20,6 +21,11 @@ from biliup.common.log import DebugLevelFilter
 def arg_parser():
     logging.config.dictConfig(LOG_CONF)
     logging.getLogger('httpx').addFilter(DebugLevelFilter())
+
+    # Windows PyInstaller 打包后的 asyncio 兼容处理
+    if sys.platform == 'win32' and IS_FROZEN:
+        # 使用 SelectorEventLoop 替代 ProactorEventLoop 避免 WinError 10022
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     asyncio.run(main())
 

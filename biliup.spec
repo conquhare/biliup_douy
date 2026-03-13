@@ -1,7 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all, copy_metadata
+import certifi
 
-datas = [('biliup/Danmaku/douyin_util/', 'biliup/Danmaku/douyin_util/')]
+datas = [
+    ('biliup/Danmaku/douyin_util/', 'biliup/Danmaku/douyin_util/'),
+    # 包含 certifi 的证书文件
+    (certifi.where(), 'certifi'),
+]
 binaries = []
 hiddenimports = [
     # Danmaku 模块
@@ -30,17 +35,28 @@ hiddenimports = [
     'biliup.common.reload',
     'biliup.common.abogus',
     'biliup.common.Daemon',
+    'biliup.common.certifi_patch',
     # Tars 模块
     'biliup.common.tars',
     'biliup.common.tars.core',
     'biliup.common.tars.exception',
     'biliup.common.tars.EndpointF',
     'biliup.common.tars.QueryF',
+    # Asyncio 模块 (Windows 需要)
+    'asyncio',
+    'asyncio.windows_events',
+    'asyncio.windows_utils',
+    'asyncio.proactor_events',
+    'asyncio.base_subprocess',
     # 第三方库
     'lxml.etree',
     'aiohttp',
     'charset_normalizer',
     'chardet',
+    'certifi',
+    'httpcore',
+    'httpx',
+    'requests',
 ]
 tmp_ret = collect_all('biliup.plugins')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
