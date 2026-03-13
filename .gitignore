@@ -48,6 +48,10 @@ target
 _internal
 .trae/
 pnpm-lock.yaml
+
+# Scripts for development workflow (non-business code)
+scripts/
+!scripts/.gitkeep
 cookies.json
 .augment/
 .cunzhi-memory/
