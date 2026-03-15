@@ -170,6 +170,7 @@ jobs:
           --include-package=biliup.engine \
           --include-package=biliup.common \
           --include-package=biliup.plugins \
+          --include-package=certifi \
           --include-data-dir=biliup/Danmaku/douyin_util=biliup/Danmaku/douyin_util \
           --include-data-files=public/logo.png=public/logo.png \
           --include-data-files="$CERTIFI_PATH"=certifi/cacert.pem \
