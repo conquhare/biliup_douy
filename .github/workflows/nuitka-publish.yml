@@ -180,7 +180,7 @@ jobs:
           --nofollow-import-to=ykdl \
           --nofollow-import-to=google.protobuf \
           --lto=no \
-          --jobs=1 \
+          --jobs=2 \
           --low-memory \
           --output-dir=dist \
           --output-filename=biliup \
