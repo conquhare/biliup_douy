@@ -1,13 +1,44 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# 首先导入 certifi 补丁（必须在导入 httpx 之前）
+import os
+import sys
+
+if hasattr(sys, 'frozen'):
+    import types
+    
+    def _get_cert_path():
+        base_path = os.path.dirname(sys.executable)
+        possible_paths = [
+            os.path.join(base_path, 'certifi', 'cacert.pem'),
+            os.path.join(base_path, 'cacert.pem'),
+        ]
+        for p in possible_paths:
+            if os.path.exists(p):
+                return p
+        return ''
+    
+    _certifi_stub = types.ModuleType('certifi')
+    _certifi_stub.__file__ = '<certifi_stub>'
+    _certifi_stub.where = _get_cert_path
+    _certifi_stub.contents = lambda: open(_get_cert_path(), 'r', encoding='ascii').read() if _get_cert_path() else ''
+    sys.modules['certifi'] = _certifi_stub
+    
+    _core_stub = types.ModuleType('certifi.core')
+    _core_stub.where = _get_cert_path
+    _core_stub.contents = _certifi_stub.contents
+    sys.modules['certifi.core'] = _core_stub
+    
+    _cert_path = _get_cert_path()
+    if _cert_path:
+        os.environ['SSL_CERT_FILE'] = _cert_path
+        os.environ['REQUESTS_CA_BUNDLE'] = _cert_path
+
 import biliup.common.certifi_patch
 
 import argparse
 import asyncio
 import logging.config
 import shutil
-import sys
 
 import stream_gears
 
