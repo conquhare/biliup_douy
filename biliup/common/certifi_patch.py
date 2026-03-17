@@ -12,12 +12,9 @@ import sys
 
 def _get_certifi_cert_path():
     """获取打包的 certifi 证书文件路径"""
-    # 打包后的路径处理
     if hasattr(sys, 'frozen'):
-        # PyInstaller 模式
         if hasattr(sys, '_MEIPASS'):
             base_path = sys._MEIPASS
-            # 尝试多种可能的路径
             possible_paths = [
                 os.path.join(base_path, 'certifi', 'cacert.pem'),
                 os.path.join(base_path, 'cacert.pem'),
@@ -26,7 +23,6 @@ def _get_certifi_cert_path():
                 if os.path.exists(cert_path):
                     return cert_path
         else:
-            # Nuitka standalone - 可执行文件所在目录
             base_path = os.path.dirname(sys.executable)
             possible_paths = [
                 os.path.join(base_path, 'certifi', 'cacert.pem'),
@@ -36,8 +32,8 @@ def _get_certifi_cert_path():
             for cert_path in possible_paths:
                 if os.path.exists(cert_path):
                     return cert_path
+        return None
 
-    # 开发环境 - 使用正常的 certifi
     try:
         import certifi
         return certifi.where()
@@ -45,6 +41,37 @@ def _get_certifi_cert_path():
         pass
 
     return None
+
+
+def _create_certifi_stub():
+    """创建 certifi 模块的 stub，避免导入错误"""
+    if not hasattr(sys, 'frozen'):
+        return
+
+    import types
+
+    certifi_stub = types.ModuleType('certifi')
+    certifi_stub.__file__ = '<certifi_stub>'
+
+    def where():
+        return _get_certifi_cert_path() or ''
+
+    def contents():
+        cert_path = where()
+        if cert_path and os.path.exists(cert_path):
+            with open(cert_path, 'r', encoding='ascii') as f:
+                return f.read()
+        return ''
+
+    certifi_stub.where = where
+    certifi_stub.contents = contents
+
+    sys.modules['certifi'] = certifi_stub
+
+    core_stub = types.ModuleType('certifi.core')
+    core_stub.where = where
+    core_stub.contents = contents
+    sys.modules['certifi.core'] = certifi_stub
 
 
 def patch_certifi():
@@ -57,5 +84,7 @@ def patch_certifi():
     return False
 
 
-# 导入时自动执行补丁
+if hasattr(sys, 'frozen'):
+    _create_certifi_stub()
+
 patch_certifi()

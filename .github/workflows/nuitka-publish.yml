@@ -163,8 +163,8 @@ jobs:
         # --include-package=biliup: 包含 biliup 包
         # --include-data-dir=biliup/Danmaku/douyin_util=biliup/Danmaku/douyin_util: 包含数据文件
         # --nofollow-import-to=yt_dlp: 排除 yt_dlp 模块（太大导致编译器内存不足）
-        # --include-package=importlib: 包含 importlib 及其子模块（certifi 依赖 importlib.resources）
-        # --include-package-data=certifi: 包含 certifi 的数据文件（cacert.pem）
+        # --nofollow-import-to=certifi: 排除 certifi 模块（使用 certifi_patch.py 中的 stub 替代）
+        # --include-data-files=certifi: 包含 certifi 证书文件（供 stub 使用）
         python -m nuitka \
           --standalone \
           --include-package=biliup \
@@ -172,13 +172,13 @@ jobs:
           --include-package=biliup.engine \
           --include-package=biliup.common \
           --include-package=biliup.plugins \
-          --include-package=importlib \
-          --include-package-data=certifi \
           --include-data-dir=biliup/Danmaku/douyin_util=biliup/Danmaku/douyin_util \
           --include-data-files=public/logo.png=public/logo.png \
+          --include-data-files="$CERTIFI_PATH"=certifi/cacert.pem \
           --nofollow-import-to=yt_dlp \
           --nofollow-import-to=ykdl \
           --nofollow-import-to=google.protobuf \
+          --nofollow-import-to=certifi \
           --lto=no \
           --jobs=2 \
           --low-memory \
