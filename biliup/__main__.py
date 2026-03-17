@@ -3,7 +3,20 @@
 import os
 import sys
 
-if hasattr(sys, 'frozen'):
+def _is_nuitka_standalone():
+    if hasattr(sys, 'frozen'):
+        return True
+    if hasattr(sys, '_MEIPASS'):
+        return True
+    if "__compiled__" in globals():
+        return True
+    executable = sys.executable.lower()
+    if executable and not executable.endswith('python.exe') and not executable.endswith('pythonw.exe') and not executable.endswith('python3.exe'):
+        if os.path.isfile(sys.executable):
+            return True
+    return False
+
+if _is_nuitka_standalone():
     import types
     
     def _get_cert_path():

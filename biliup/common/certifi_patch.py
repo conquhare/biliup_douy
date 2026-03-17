@@ -10,28 +10,39 @@ import os
 import sys
 
 
+def _is_nuitka_standalone():
+    """检测是否在 Nuitka standalone 打包环境下运行"""
+    if hasattr(sys, 'frozen'):
+        return True
+    if hasattr(sys, '_MEIPASS'):
+        return True
+    if "__compiled__" in globals():
+        return True
+    executable = sys.executable.lower() if sys.executable else ''
+    if executable and not executable.endswith('python.exe') and not executable.endswith('pythonw.exe') and not executable.endswith('python3.exe'):
+        if os.path.isfile(sys.executable):
+            return True
+    if 'certifi' in sys.modules and hasattr(sys.modules['certifi'], '__file__'):
+        if sys.modules['certifi'].__file__ == '<certifi_stub>':
+            return True
+    return False
+
+
 def _get_certifi_cert_path():
     """获取打包的 certifi 证书文件路径"""
-    if hasattr(sys, 'frozen'):
+    if _is_nuitka_standalone():
         if hasattr(sys, '_MEIPASS'):
             base_path = sys._MEIPASS
-            possible_paths = [
-                os.path.join(base_path, 'certifi', 'cacert.pem'),
-                os.path.join(base_path, 'cacert.pem'),
-            ]
-            for cert_path in possible_paths:
-                if os.path.exists(cert_path):
-                    return cert_path
         else:
             base_path = os.path.dirname(sys.executable)
-            possible_paths = [
-                os.path.join(base_path, 'certifi', 'cacert.pem'),
-                os.path.join(base_path, 'cacert.pem'),
-                os.path.join(os.path.dirname(base_path), 'certifi', 'cacert.pem'),
-            ]
-            for cert_path in possible_paths:
-                if os.path.exists(cert_path):
-                    return cert_path
+        
+        possible_paths = [
+            os.path.join(base_path, 'certifi', 'cacert.pem'),
+            os.path.join(base_path, 'cacert.pem'),
+        ]
+        for cert_path in possible_paths:
+            if os.path.exists(cert_path):
+                return cert_path
         return None
 
     try:
@@ -43,37 +54,6 @@ def _get_certifi_cert_path():
     return None
 
 
-def _create_certifi_stub():
-    """创建 certifi 模块的 stub，避免导入错误"""
-    if not hasattr(sys, 'frozen'):
-        return
-
-    import types
-
-    certifi_stub = types.ModuleType('certifi')
-    certifi_stub.__file__ = '<certifi_stub>'
-
-    def where():
-        return _get_certifi_cert_path() or ''
-
-    def contents():
-        cert_path = where()
-        if cert_path and os.path.exists(cert_path):
-            with open(cert_path, 'r', encoding='ascii') as f:
-                return f.read()
-        return ''
-
-    certifi_stub.where = where
-    certifi_stub.contents = contents
-
-    sys.modules['certifi'] = certifi_stub
-
-    core_stub = types.ModuleType('certifi.core')
-    core_stub.where = where
-    core_stub.contents = contents
-    sys.modules['certifi.core'] = certifi_stub
-
-
 def patch_certifi():
     """设置 SSL_CERT_FILE 环境变量指向正确的证书文件"""
     cert_path = _get_certifi_cert_path()
@@ -83,8 +63,5 @@ def patch_certifi():
         return True
     return False
 
-
-if hasattr(sys, 'frozen'):
-    _create_certifi_stub()
 
 patch_certifi()
