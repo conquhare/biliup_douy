@@ -1,7 +1,10 @@
 import functools
 import importlib
+import logging
 import pkgutil
 import re
+
+logger = logging.getLogger('biliup')
 
 
 def suit_url(pattern, urls):
@@ -78,9 +81,12 @@ class Plugin:
         plugins = []
 
         for loader, name, ispkg in pkgutil.iter_modules([pkg.__path__[0]]):
-            # set the full plugin module name
             module_name = f"{pkg.__name__}.{name}"
-            module = importlib.import_module(module_name)
+            try:
+                module = importlib.import_module(module_name)
+            except Exception as e:
+                logger.warning(f'跳过插件 {module_name}: {e}')
+                continue
             if ispkg:
                 self.load_plugins(module)
                 continue

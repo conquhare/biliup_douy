@@ -165,6 +165,7 @@ jobs:
         # --nofollow-import-to=yt_dlp: 排除 yt_dlp 模块（太大导致编译器内存不足）
         # --nofollow-import-to=certifi: 排除 certifi 模块（使用 certifi_patch.py 中的 stub 替代）
         # --include-data-files=certifi: 包含 certifi 证书文件（供 stub 使用）
+        # 注意: google.protobuf 不能排除，抖音弹幕功能需要它
         python -m nuitka \
           --standalone \
           --include-package=biliup \
@@ -172,12 +173,12 @@ jobs:
           --include-package=biliup.engine \
           --include-package=biliup.common \
           --include-package=biliup.plugins \
+          --include-package=google.protobuf \
           --include-data-dir=biliup/Danmaku/douyin_util=biliup/Danmaku/douyin_util \
           --include-data-files=public/logo.png=public/logo.png \
           --include-data-files="$CERTIFI_PATH"=certifi/cacert.pem \
           --nofollow-import-to=yt_dlp \
           --nofollow-import-to=ykdl \
-          --nofollow-import-to=google.protobuf \
           --nofollow-import-to=certifi \
           --lto=no \
           --jobs=2 \
