@@ -1,27 +1,48 @@
 from threading import Event
-from ykdl.common import url_to_module
-import yt_dlp
 
 from ..engine.download import DownloadBase
 from . import logger
+
+
+def _get_ykdl_url_to_module():
+    try:
+        from ykdl.common import url_to_module
+        return url_to_module
+    except ImportError:
+        return None
+
+
+def _get_yt_dlp():
+    try:
+        import yt_dlp
+        return yt_dlp
+    except ImportError:
+        return None
 
 
 class YDownload(DownloadBase):
     def __init__(self, fname, url, suffix='flv'):
         super().__init__(fname, url, suffix)
         self.ydl_opts = {}
+        self._yt_dlp = None
 
     async def acheck_stream(self, is_check=False):
+        self._yt_dlp = _get_yt_dlp()
+        if not self._yt_dlp:
+            logger.debug('%s: yt_dlp 不可用' % self.fname)
+            return False
         try:
             self.get_sinfo()
             return True
-        except yt_dlp.utils.DownloadError:
+        except self._yt_dlp.utils.DownloadError:
             logger.debug('%s未开播或读取下载信息失败' % self.fname)
             return False
 
     def get_sinfo(self):
+        if not self._yt_dlp:
+            return None
         info_list = []
-        with yt_dlp.YoutubeDL() as ydl:
+        with self._yt_dlp.YoutubeDL() as ydl:
             if self.url:
                 info = ydl.extract_info(self.url, download=False)
             else:
@@ -33,12 +54,14 @@ class YDownload(DownloadBase):
         return info_list
 
     def download(self):
+        if not self._yt_dlp:
+            return 1
         try:
             filename = self.gen_download_filename(is_fmt=True) + '.' + self.suffix
             self.ydl_opts = {'outtmpl': filename}
-            with yt_dlp.YoutubeDL(self.ydl_opts) as ydl:
+            with self._yt_dlp.YoutubeDL(self.ydl_opts) as ydl:
                 ydl.download([self.url])
-        except yt_dlp.utils.DownloadError:
+        except self._yt_dlp.utils.DownloadError:
             return 1
         return 0
 
@@ -87,22 +110,25 @@ class Generic(DownloadBase):
 
     async def acheck_stream(self, is_check=False):
         logger.debug(self.fname)
-        try:
-            site, url = url_to_module(self.url)
-            info = site.parser(url)
-            stream_id = info.stream_types[0]
-            urls = info.streams[stream_id]['src']
-            self.raw_stream_url = urls[0]
-        # print(info.title)
-        except:
-            handlers = [YDownload(self.fname, self.url, 'mp4'), SDownload(self.fname, self.url, 'flv')]
-            for handler in handlers:
-                if await handler.acheck_stream():
-                    self.handler = handler
-                    self.suffix = handler.suffix
-                    return True
-            return False
-        return True
+        url_to_module = _get_ykdl_url_to_module()
+        if url_to_module:
+            try:
+                site, url = url_to_module(self.url)
+                info = site.parser(url)
+                stream_id = info.stream_types[0]
+                urls = info.streams[stream_id]['src']
+                self.raw_stream_url = urls[0]
+                return True
+            except:
+                pass
+        
+        handlers = [YDownload(self.fname, self.url, 'mp4'), SDownload(self.fname, self.url, 'flv')]
+        for handler in handlers:
+            if await handler.acheck_stream():
+                self.handler = handler
+                self.suffix = handler.suffix
+                return True
+        return False
 
     def download(self):
         if self.handler == self:
