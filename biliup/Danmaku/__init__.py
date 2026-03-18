@@ -9,8 +9,6 @@ import os
 import re
 import ssl
 
-from biliup.config import config
-
 logger = logging.getLogger('biliup')
 
 # 导出弹幕相关功能

@@ -77,7 +77,10 @@ def update_client_proxy():
 
 
 def check_timerange(name):
-    from biliup.config import config
+    try:
+        from biliup.config import config
+    except ImportError:
+        return True
     
     try:
         time_range_str = config['streamers'].get(name, {}).get('time_range')
@@ -95,6 +98,5 @@ def check_timerange(name):
 
     now = datetime.now(timezone.utc).time()
 
-    # Normal interval (e.g. 16:00 to 20:00)
     if start <= end:
         return start <= now <= end
