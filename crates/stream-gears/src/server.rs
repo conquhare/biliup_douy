@@ -7,7 +7,7 @@ use biliup_cli::server::app::ApplicationController;
 use biliup_cli::server::common::util::media_ext_from_url;
 use biliup_cli::server::config::Config;
 use biliup_cli::server::core::download_manager::DownloadManager;
-use biliup_cli::server::core::downloader::DanmakuClient;
+use biliup_cli::server::core::downloader::{DanmakuClient, DownloaderType};
 use biliup_cli::server::core::plugin::{DownloadBase, DownloadPlugin, StreamInfoExt, StreamStatus};
 use biliup_cli::server::errors::{AppError, AppResult};
 use biliup_cli::server::infrastructure::connection_pool::ConnectionManager;
@@ -15,7 +15,6 @@ use biliup_cli::server::infrastructure::context::{PluginContext, Worker};
 use biliup_cli::server::infrastructure::models::StreamerInfo;
 use biliup_cli::server::infrastructure::repositories;
 use biliup_cli::server::infrastructure::repositories::get_upload_config;
-use biliup_cli::server::infrastructure::service_register::ServiceRegister;
 use biliup_cli::uploader::{append, list, login, renew, show, upload_by_command, upload_by_config};
 use chrono::Utc;
 use clap::Parser;
@@ -229,11 +228,31 @@ impl DownloadBase for PyDownloader {
         if let Some(danmaku) = &self.danmaku {
             let danmaku = Arc::new(PyDanmakuClient::new(danmaku.clone()))
                 as Arc<dyn DanmakuClient + Send + Sync>;
-            // ctx.extension.insert(danmaku);
             Some(danmaku)
         } else {
             None
         }
+    }
+
+    fn use_sync_downloader(&self, downloader_type: DownloaderType) -> bool {
+        matches!(downloader_type, DownloaderType::SyncDownloader)
+    }
+
+    fn sync_download(&self, ctx: &mut PluginContext) -> Result<bool, Report<AppError>> {
+        let url = self.url.clone();
+        let remark = self.remark.clone();
+        let obj = self.plugin.clone();
+        let config = self.cfg.clone();
+        let database_row_id = ctx.live_streamer().id;
+
+        Python::attach(|py| -> PyResult<bool> {
+            let instance = obj.bind(py).call1((remark, url, config))?;
+            
+            instance.setattr("database_row_id", database_row_id)?;
+            
+            let result: bool = instance.call_method0("download")?.extract()?;
+            Ok(result)
+        }).map_err(|e| Report::new(AppError::Unknown).attach_printable(format!("sync_download failed: {:?}", e)))
     }
 }
 

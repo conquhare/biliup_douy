@@ -337,16 +337,47 @@ impl DActor {
     /// * `msg` - 要处理的下载消息
     async fn handle_message(&mut self, msg: DownloaderMessage) {
         match msg {
-            DownloaderMessage::Start(downloader, ctx) => {
-                // 创建下载任务
+            DownloaderMessage::Start(mut downloader, mut ctx) => {
+                let downloader_type = ctx.config()
+                    .downloader
+                    .unwrap_or(DownloaderType::StreamGears);
+
+                if downloader.use_sync_downloader(downloader_type) {
+                    info!(
+                        "Using sync-downloader (边录边传) for {}",
+                        ctx.live_streamer().url
+                    );
+                    
+                    ctx.change_status(Stage::Download, WorkerStatus::Pending).await;
+
+                    process(&[], &ctx.live_streamer().preprocessor).await;
+
+                    match downloader.sync_download(&mut ctx) {
+                        Ok(result) => {
+                            info!(
+                                "Sync-download completed {} => {:?}",
+                                ctx.live_streamer().url,
+                                result
+                            );
+                        }
+                        Err(e) => {
+                            error!(
+                                "Sync-download failed {}: {:?}",
+                                ctx.live_streamer().url,
+                                e
+                            );
+                        }
+                    }
+
+                    process(&[], &ctx.live_streamer().downloaded_processor).await;
+                    
+                    ctx.change_status(Stage::Download, WorkerStatus::Idle).await;
+                    return;
+                }
+
                 let task = Arc::new(DownloadTask::new(
-                    downloader.downloader(
-                        ctx.config()
-                            .downloader
-                            .unwrap_or(DownloaderType::StreamGears),
-                    ),
+                    downloader.downloader(downloader_type),
                 ));
-                // 更新工作器状态为工作中
                 ctx.change_status(Stage::Download, WorkerStatus::Working(task.clone()))
                     .await;
 

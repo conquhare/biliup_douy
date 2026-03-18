@@ -58,8 +58,18 @@ pub trait DownloadBase: Send + Sync {
     fn danmaku_init(&self) -> Option<Arc<dyn DanmakuClient + Send + Sync>> {
         None
     }
-    // /// 获取平台名称
-    // fn get_platform_name(&self) -> &'static str;
+
+    /// 是否使用 sync-downloader（边录边传）
+    /// 返回 true 时，下载流程会调用 sync_download 方法
+    fn use_sync_downloader(&self, _downloader_type: DownloaderType) -> bool {
+        false
+    }
+
+    /// 执行 sync-downloader 下载（边录边传）
+    /// 当 use_sync_downloader 返回 true 时调用
+    fn sync_download(&self, _ctx: &mut PluginContext) -> Result<bool, Report<AppError>> {
+        Ok(false)
+    }
 }
 
 /// 下载插件trait
