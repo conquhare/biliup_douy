@@ -67,7 +67,7 @@ pub trait DownloadBase: Send + Sync {
 
     /// 执行 sync-downloader 下载（边录边传）
     /// 当 use_sync_downloader 返回 true 时调用
-    fn sync_download(&self, _ctx: &mut PluginContext) -> Result<bool, Report<AppError>> {
+    fn sync_download(&self, _ctx: &mut Context) -> Result<bool, Report<AppError>> {
         Ok(false)
     }
 }

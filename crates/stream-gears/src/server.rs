@@ -11,7 +11,7 @@ use biliup_cli::server::core::downloader::{DanmakuClient, DownloaderType};
 use biliup_cli::server::core::plugin::{DownloadBase, DownloadPlugin, StreamInfoExt, StreamStatus};
 use biliup_cli::server::errors::{AppError, AppResult};
 use biliup_cli::server::infrastructure::connection_pool::ConnectionManager;
-use biliup_cli::server::infrastructure::context::{PluginContext, Worker};
+use biliup_cli::server::infrastructure::context::{Context, PluginContext, Worker};
 use biliup_cli::server::infrastructure::models::StreamerInfo;
 use biliup_cli::server::infrastructure::repositories;
 use biliup_cli::server::infrastructure::repositories::get_upload_config;
@@ -238,7 +238,7 @@ impl DownloadBase for PyDownloader {
         matches!(downloader_type, DownloaderType::SyncDownloader)
     }
 
-    fn sync_download(&self, ctx: &mut PluginContext) -> Result<bool, Report<AppError>> {
+    fn sync_download(&self, ctx: &mut Context) -> Result<bool, Report<AppError>> {
         let url = self.url.clone();
         let remark = self.remark.clone();
         let obj = self.plugin.clone();
