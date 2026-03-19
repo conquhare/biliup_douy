@@ -15,6 +15,7 @@ use biliup_cli::server::infrastructure::context::{Context, PluginContext, Worker
 use biliup_cli::server::infrastructure::models::StreamerInfo;
 use biliup_cli::server::infrastructure::repositories;
 use biliup_cli::server::infrastructure::repositories::get_upload_config;
+use biliup_cli::server::infrastructure::service_register::ServiceRegister;
 use biliup_cli::uploader::{append, list, login, renew, show, upload_by_command, upload_by_config};
 use chrono::Utc;
 use clap::Parser;
@@ -252,7 +253,7 @@ impl DownloadBase for PyDownloader {
             
             let result: bool = instance.call_method0("download")?.extract()?;
             Ok(result)
-        }).map_err(|e| Report::new(AppError::Unknown).attach_printable(format!("sync_download failed: {:?}", e)))
+        }).map_err(|e| Report::new(AppError::Unknown).attach(format!("sync_download failed: {:?}", e)))
     }
 }
 

@@ -1,0 +1,482 @@
+Build Rust extension  出现错误7m 45s
+Run PyO3/maturin-action@v1
+Found maturin version requirement maturin>=1.0,<2.0 specified in pyproject.toml
+Found maturin release from manifest: v1.12.6
+Install Rust target
+Install maturin
+D:\a\_temp\94eb0897-3786-4b2e-ba67-8dedac643c7c\maturin.exe build --release
+    Updating crates.io index
+ Downloading crates ...
+中间没有错误，省略
+  Compiling biliup-cli v0.2.0 (D:\a\biliup_douy\biliup_douy\crates\biliup-cli)
+warning: unused import: `tower_sessions::cookie::Key`
+  --> crates\biliup-cli\src\server\app.rs:19:5
+   |
+19 | use tower_sessions::cookie::Key;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `crate::server::config::default_segment_time`
+ --> crates\biliup-cli\src\server\common\download.rs:3:5
+  |
+3 | use crate::server::config::default_segment_time;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `DownloadConfig`
+ --> crates\biliup-cli\src\server\common\download.rs:6:20
+  |
+6 |     DanmakuClient, DownloadConfig, DownloadStatus, DownloaderRuntime, DownloaderType, SegmentEvent,
+  |                    ^^^^^^^^^^^^^^
+
+warning: unused import: `bail`
+  --> crates\biliup-cli\src\server\common\download.rs:15:30
+   |
+15 | use error_stack::{ResultExt, bail};
+   |                              ^^^^
+
+warning: unused imports: `HeaderMap`, `HeaderValue`, and `USER_AGENT`
+  --> crates\biliup-cli\src\server\common\download.rs:16:23
+   |
+16 | use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
+   |                       ^^^^^^^^^  ^^^^^^^^^^^  ^^^^^^^^^^
+
+warning: unused import: `std::fs`
+  --> crates\biliup-cli\src\server\common\download.rs:17:5
+   |
+17 | use std::fs;
+   |     ^^^^^^^
+
+warning: unused imports: `PathBuf` and `Path`
+  --> crates\biliup-cli\src\server\common\download.rs:18:17
+   |
+18 | use std::path::{Path, PathBuf};
+   |                 ^^^^  ^^^^^^^
+
+warning: unused import: `Worker`
+ --> crates\biliup-cli\src\server\common\upload.rs:6:62
+  |
+6 | use crate::server::infrastructure::context::{Context, Stage, Worker, WorkerStatus};
+  |                                                              ^^^^^^
+
+warning: unused import: `std::time::Duration`
+ --> crates\biliup-cli\src\server\core\downloader\cover_downloader.rs:9:5
+  |
+9 | use std::time::Duration;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `warn`
+  --> crates\biliup-cli\src\server\core\downloader\cover_downloader.rs:10:40
+   |
+10 | use tracing::{error, info, instrument, warn};
+   |                                        ^^^^
+
+warning: unused import: `crate::server::common::util::Recorder`
+ --> crates\biliup-cli\src\server\core\monitor.rs:2:5
+  |
+2 | use crate::server::common::util::Recorder;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Context`
+ --> crates\biliup-cli\src\server\core\monitor.rs:5:46
+  |
+5 | use crate::server::infrastructure::context::{Context, PluginContext, Stage, Worker, WorkerStatus};
+  |                                              ^^^^^^^
+
+warning: unused import: `Context`
+ --> crates\biliup-cli\src\server\core\plugin\twitch.rs:8:46
+  |
+8 | use crate::server::infrastructure::context::{Context, PluginContext};
+  |                                              ^^^^^^^
+
+warning: unused import: `Context`
+ --> crates\biliup-cli\src\server\core\plugin\yy.rs:4:46
+  |
+4 | use crate::server::infrastructure::context::{Context, PluginContext};
+  |                                              ^^^^^^^
+
+warning: unused import: `cover_downloader`
+ --> crates\biliup-cli\src\server\core\plugin.rs:5:55
+  |
+5 |     DanmakuClient, DownloaderRuntime, DownloaderType, cover_downloader,
+  |                                                       ^^^^^^^^^^^^^^^^
+
+warning: unused import: `axum::http::header::USER_AGENT`
+  --> crates\biliup-cli\src\server\core\plugin.rs:11:5
+   |
+11 | use axum::http::header::USER_AGENT;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `HeaderMap` and `HeaderValue`
+  --> crates\biliup-cli\src\server\core\plugin.rs:12:18
+   |
+12 | use axum::http::{HeaderMap, HeaderValue};
+   |                  ^^^^^^^^^  ^^^^^^^^^^^
+
+warning: unused import: `std::fs`
+  --> crates\biliup-cli\src\server\core\plugin.rs:16:5
+   |
+16 | use std::fs;
+   |     ^^^^^^^
+
+warning: unused import: `std::path::PathBuf`
+  --> crates\biliup-cli\src\server\core\plugin.rs:17:5
+   |
+17 | use std::path::PathBuf;
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `error` and `info`
+  --> crates\biliup-cli\src\server\core\plugin.rs:19:15
+   |
+19 | use tracing::{error, info};
+   |               ^^^^^  ^^^^
+
+warning: unused import: `tracing::log::error`
+ --> crates\biliup-cli\src\server\errors.rs:8:5
+  |
+8 | use tracing::log::error;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Path`
+ --> crates\biliup-cli\src\upload_lock.rs:9:17
+  |
+9 | use std::path::{Path, PathBuf};
+  |                 ^^^^
+
+   Compiling tracing-appender v0.2.4
+warning: variable does not need to be mutable
+   --> crates\biliup-cli\src\server\common\download.rs:340:38
+    |
+340 |             DownloaderMessage::Start(mut downloader, mut ctx) => {
+    |                                      ----^^^^^^^^^^
+    |                                      |
+    |                                      help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> crates\biliup-cli\src\server\core\monitor.rs:103:41
+    |
+103 |                 Ok(StreamStatus::Live { mut stream_info }) => {
+    |                                         ----^^^^^^^^^^^
+    |                                         |
+    |                                         help: remove this `mut`
+
+   Compiling fancy-regex v0.17.0
+warning: unused variable: `service_register`
+   --> crates\biliup-cli\src\server\api\endpoints.rs:513:11
+    |
+513 |     State(service_register): State<ServiceRegister>,
+    |           ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_service_register`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `next_file_path`
+   --> crates\biliup-cli\src\server\common\download.rs:247:39
+    |
+247 |                 SegmentEvent::Start { next_file_path } => {
+    |                                       ^^^^^^^^^^^^^^ help: try ignoring the field: `next_file_path: _`
+
+warning: value captured by `prev_file_path` is never read
+  --> crates\biliup-cli\src\server\core\downloader\stream_gears.rs:87:17
+   |
+87 |                 prev_file_path = Some(file_path);
+   |                 ^^^^^^^^^^^^^^
+   |
+   = help: did you mean to capture by reference instead?
+   = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `prev_file_path` is never read
+  --> crates\biliup-cli\src\server\core\downloader\stream_gears.rs:87:17
+   |
+87 |                 prev_file_path = Some(file_path);
+   |                 ^^^^^^^^^^^^^^
+   |
+   = help: maybe it is overwritten before being read?
+
+warning: unused variable: `prev_file_path`
+  --> crates\biliup-cli\src\server\core\downloader\stream_gears.rs:75:17
+   |
+75 |             let mut prev_file_path = None::<PathBuf>;
+   |                 ^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_prev_file_path`
+
+   Compiling pythonize v0.27.0
+warning: unused variable: `query`
+   --> crates\biliup-cli\src\server\core\downloader\streamlink.rs:162:13
+    |
+162 |         let query = url.query().unwrap_or("");
+    |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_query`
+
+warning: unused variable: `url`
+   --> crates\biliup-cli\src\server\core\downloader\streamlink.rs:225:34
+    |
+225 |             StreamOutput::Http { url, process } => process,
+    |                                  ^^^ help: try ignoring the field: `url: _`
+
+warning: unused variable: `file_name`
+   --> crates\biliup-cli\src\server\core\downloader.rs:184:23
+    |
+184 |     fn rolling(&self, file_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    |                       ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_file_name`
+
+warning: unused variable: `platform_interval`
+  --> crates\biliup-cli\src\server\core\monitor.rs:80:13
+   |
+80 |         let platform_interval = self
+   |             ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_platform_interval`
+
+warning: unused variable: `platform_name`
+   --> crates\biliup-cli\src\server\core\monitor.rs:154:43
+    |
+154 |     async fn get_first_room_config(&self, platform_name: &str) -> Option<crate::server::config::Config> {
+    |                                           ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_platform_name`
+
+warning: type `GqlResponse` is more private than the item `TwitchUtils::post_gql`
+   --> crates\biliup-cli\src\server\core\plugin\twitch.rs:298:5
+    |
+298 |     pub async fn post_gql<T: Serialize>(ops: T) -> AppResult<GqlResponse> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ associated function `TwitchUtils::post_gql` is reachable at visibility `pub(in crate::server::core::plugin)`
+    |
+note: but type `GqlResponse` is only usable at visibility `pub(self)`
+   --> crates\biliup-cli\src\server\core\plugin\twitch.rs:85:1
+    |
+ 85 | struct GqlResponse {
+    | ^^^^^^^^^^^^^^^^^^
+    = note: `#[warn(private_interfaces)]` on by default
+
+warning: type `GqlResponse` is more private than the item `TwitchUtils::post_gql_batch`
+   --> crates\biliup-cli\src\server\core\plugin\twitch.rs:349:5
+    |
+349 |     pub async fn post_gql_batch(ops: Vec<Value>) -> AppResult<Vec<GqlResponse>> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ associated function `TwitchUtils::post_gql_batch` is reachable at visibility `pub(in crate::server::core::plugin)`
+    |
+note: but type `GqlResponse` is only usable at visibility `pub(self)`
+   --> crates\biliup-cli\src\server\core\plugin\twitch.rs:85:1
+    |
+ 85 | struct GqlResponse {
+    | ^^^^^^^^^^^^^^^^^^
+
+warning: function `resolve_latest_log_path` is never used
+   --> crates\biliup-cli\src\server\api\ws.rs:218:10
+    |
+218 | async fn resolve_latest_log_path(
+    |          ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `streamlink_downloader` and `process_handle` are never read
+  --> crates\biliup-cli\src\server\core\downloader\streamlink.rs:28:5
+   |
+27 | pub struct Streamlink {
+   |            ---------- fields in this struct
+28 |     streamlink_downloader: StreamlinkDownloader,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+29 |     /// 进程句柄
+30 |     process_handle: Arc<RwLock<Option<Child>>>,
+   |     ^^^^^^^^^^^^^^
+
+warning: enum `Backend` is never used
+  --> crates\biliup-cli\src\server\core\downloader\ytdlp.rs:11:10
+   |
+11 | pub enum Backend {
+   |          ^^^^^^^
+
+warning: struct `DownloadConfig` is never constructed
+  --> crates\biliup-cli\src\server\core\downloader\ytdlp.rs:17:12
+   |
+17 | pub struct DownloadConfig {
+   |            ^^^^^^^^^^^^^^
+
+warning: struct `YouTubeDownloader` is never constructed
+  --> crates\biliup-cli\src\server\core\downloader\ytdlp.rs:96:12
+   |
+96 | pub struct YouTubeDownloader {
+   |            ^^^^^^^^^^^^^^^^^
+
+warning: associated items `new`, `download`, `run_ytdlp`, `run_ytarchive`, `move_dir_contents`, and `spawn_cover_download` are never used
+   --> crates\biliup-cli\src\server\core\downloader\ytdlp.rs:101:12
+    |
+100 | impl YouTubeDownloader {
+    | ---------------------- associated items in this implementation
+101 |     pub fn new(cfg: DownloadConfig) -> Self {
+    |            ^^^
+...
+105 |     pub async fn download(&self) -> AppResult<()> {
+    |                  ^^^^^^^^
+...
+132 |     async fn run_ytdlp(&self) -> AppResult<()> {
+    |              ^^^^^^^^^
+...
+257 |     async fn run_ytarchive(&self) -> AppResult<()> {
+    |              ^^^^^^^^^^^^^
+...
+340 |     async fn move_dir_contents(&self, from: &Path, to: &Path) -> AppResult<()> {
+    |              ^^^^^^^^^^^^^^^^^
+...
+383 |     fn spawn_cover_download(&self) -> Option<tokio::task::JoinHandle<AppResult<()>>> {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: variant `GetPlatform` is never constructed
+   --> crates\biliup-cli\src\server\core\monitor.rs:372:5
+    |
+344 | enum ActorMessage {
+    |      ------------ variant in this enum
+...
+372 |     GetPlatform {
+    |     ^^^^^^^^^^^
+
+warning: constant `CLIENT_ID` is never used
+  --> crates\biliup-cli\src\server\core\plugin\twitch.rs:24:7
+   |
+24 | const CLIENT_ID: &str = "kimne78kx3ncx6brgo4mv6wki5h1ko";
+   |       ^^^^^^^^^
+
+warning: struct `Twitch` is never constructed
+  --> crates\biliup-cli\src\server\core\plugin\twitch.rs:26:12
+   |
+26 | pub struct Twitch {
+   |            ^^^^^^
+
+warning: associated function `new` is never used
+  --> crates\biliup-cli\src\server\core\plugin\twitch.rs:31:8
+   |
+30 | impl Twitch {
+   | ----------- associated function in this implementation
+31 |     fn new() -> Twitch {
+   |        ^^^
+
+warning: struct `GqlResponse` is never constructed
+  --> crates\biliup-cli\src\server\core\plugin\twitch.rs:85:8
+   |
+85 | struct GqlResponse {
+   |        ^^^^^^^^^^^
+
+warning: struct `GqlData` is never constructed
+  --> crates\biliup-cli\src\server\core\plugin\twitch.rs:91:8
+   |
+91 | struct GqlData {
+   |        ^^^^^^^
+
+warning: struct `UserData` is never constructed
+  --> crates\biliup-cli\src\server\core\plugin\twitch.rs:96:8
+   |
+96 | struct UserData {
+   |        ^^^^^^^^
+
+warning: struct `StreamData` is never constructed
+   --> crates\biliup-cli\src\server\core\plugin\twitch.rs:101:8
+    |
+101 | struct StreamData {
+    |        ^^^^^^^^^^
+
+warning: struct `PlaybackAccessToken` is never constructed
+   --> crates\biliup-cli\src\server\core\plugin\twitch.rs:113:8
+    |
+113 | struct PlaybackAccessToken {
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: struct `TwitchDownloader` is never constructed
+   --> crates\biliup-cli\src\server\core\plugin\twitch.rs:119:12
+    |
+119 | pub struct TwitchDownloader {
+    |            ^^^^^^^^^^^^^^^^
+
+warning: associated items `new`, `acheck_stream`, `abatch_check`, `danmaku_init`, and `gen_download_filename` are never used
+   --> crates\biliup-cli\src\server\core\plugin\twitch.rs:129:12
+    |
+128 | impl TwitchDownloader {
+    | --------------------- associated items in this implementation
+129 |     pub fn new(name: &str, url: String, re: Regex) -> Self {
+    |            ^^^
+...
+140 |     pub async fn acheck_stream(&self) -> AppResult<StreamStatus> {
+    |                  ^^^^^^^^^^^^^
+...
+231 |     pub async fn abatch_check(&self, check_urls: Vec<String>) -> AppResult<Vec<String>> {
+    |                  ^^^^^^^^^^^^
+...
+272 |     pub fn danmaku_init(&mut self) {
+    |            ^^^^^^^^^^^^
+...
+278 |     fn gen_download_filename(&self) -> String {
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `TwitchUtils` is never constructed
+   --> crates\biliup-cli\src\server\core\plugin\twitch.rs:284:12
+    |
+284 | pub struct TwitchUtils {
+    |            ^^^^^^^^^^^
+
+warning: associated functions `get_auth_token`, `invalid_auth_token`, `post_gql`, `post_gql_batch`, and `post_gql_chunk` are never used
+   --> crates\biliup-cli\src\server\core\plugin\twitch.rs:289:12
+    |
+288 | impl TwitchUtils {
+    | ---------------- associated functions in this implementation
+289 |     pub fn get_auth_token() -> Option<String> {
+    |            ^^^^^^^^^^^^^^
+...
+294 |     pub async fn invalid_auth_token() {
+    |                  ^^^^^^^^^^^^^^^^^^
+...
+298 |     pub async fn post_gql<T: Serialize>(ops: T) -> AppResult<GqlResponse> {
+    |                  ^^^^^^^^
+...
+349 |     pub async fn post_gql_batch(ops: Vec<Value>) -> AppResult<Vec<GqlResponse>> {
+    |                  ^^^^^^^^^^^^^^
+...
+363 |     async fn post_gql_chunk(ops: &[Value]) -> AppResult<Vec<GqlResponse>> {
+    |              ^^^^^^^^^^^^^^
+
+warning: field `extension` is never read
+  --> crates\biliup-cli\src\server\infrastructure\context.rs:26:5
+   |
+20 | pub struct Context {
+   |            ------- field in this struct
+...
+26 |     extension: Extensions,
+   |     ^^^^^^^^^
+   |
+   = note: `Context` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: `biliup-cli` (lib) generated 56 warnings (run `cargo fix --lib -p biliup-cli` to apply 32 suggestions)
+   Compiling stream-gears v0.2.0 (D:\a\biliup_douy\biliup_douy\crates\stream-gears)
+error[E0433]: failed to resolve: use of undeclared type `ServiceRegister`
+   --> crates\stream-gears\src\server.rs:549:36
+    |
+549 |             let service_register = ServiceRegister::new(
+    |                                    ^^^^^^^^^^^^^^^ use of undeclared type `ServiceRegister`
+    |
+help: consider importing this struct
+    |
+  1 + use biliup_cli::server::infrastructure::service_register::ServiceRegister;
+    |
+
+warning: use of deprecated method `error_stack::Report::<C>::attach_printable`: Use `attach` instead. `attach` was renamed to `attach_opaque` and `attach_printable` was renamed to `attach`
+   --> crates\stream-gears\src\server.rs:255:55
+    |
+255 |         }).map_err(|e| Report::new(AppError::Unknown).attach_printable(format!("sync_download failed: {:?}", e)))
+    |                                                       ^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+error[E0282]: type annotations needed
+   --> crates\stream-gears\src\server.rs:568:20
+    |
+568 |                 if service_register.managers.add_room(worker).await.is_none() {
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot infer type
+
+Some errors have detailed explanations: E0282, E0433.
+For more information about an error, try `rustc --explain E0282`.
+warning: `stream-gears` (lib) generated 1 warning
+error: could not compile `stream-gears` (lib) due to 2 previous errors; 1 warning emitted
+💥 maturin failed
+  Caused by: Failed to build a native library through cargo
+  Caused by: Cargo build finished with "exit code: 101": `"cargo" "rustc" "--profile" "release" "--features" "pyo3/extension-module" "--message-format" "json-render-diagnostics" "--manifest-path" "D:\\a\\biliup_douy\\biliup_douy\\crates\\stream-gears\\Cargo.toml" "--lib" "--crate-type" "cdylib"`
+Error: The process 'D:\a\_temp\94eb0897-3786-4b2e-ba67-8dedac643c7c\maturin.exe' failed with exit code 1
+    at ExecState._setResult (file:///D:/a/_actions/PyO3/maturin-action/v1/dist/index.js:44149:25)
+    at ExecState.CheckComplete (file:///D:/a/_actions/PyO3/maturin-action/v1/dist/index.js:44132:18)
+    at ChildProcess.<anonymous> (file:///D:/a/_actions/PyO3/maturin-action/v1/dist/index.js:44028:27)
+    at ChildProcess.emit (node:events:508:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:305:5)
+Error: The process 'D:\a\_temp\94eb0897-3786-4b2e-ba67-8dedac643c7c\maturin.exe' failed with exit code 1
