@@ -3,6 +3,64 @@ from .__util import auto_decode_fields
 from ..wup_struct.UserId import HuyaUserId
 
 @auto_decode_fields
+class HuyaGetCdnTokenReq(tarscore.struct):
+
+    __tars_class__ = "HUYA.GetCdnTokenReq"
+
+    def __init__(self):
+        self.cdnType: tarscore.string = ""
+        self.streamName: tarscore.string = ""
+        self.presenterUid: tarscore.int64 = 0
+
+    @staticmethod
+    def writeTo(oos: tarscore.TarsOutputStream, value):
+        oos.write(tarscore.string, 0, value.cdnType)
+        oos.write(tarscore.string, 1, value.streamName)
+        oos.write(tarscore.int64, 2, value.presenterUid)
+
+    @staticmethod
+    def readFrom(ios: tarscore.TarsInputStream):
+        value = HuyaGetCdnTokenReq()
+        value.cdnType = ios.read(tarscore.string, 0, False)
+        value.streamName = ios.read(tarscore.string, 1, False)
+        value.presenterUid = ios.read(tarscore.int64, 2, False)
+        return value
+
+    def as_dict(self):
+        return self.__dict__.copy()
+
+@auto_decode_fields
+class HuyaGetCdnTokenRsp(tarscore.struct):
+
+    __tars_class__ = "HUYA.GetCdnTokenRsp"
+
+    def __init__(self):
+        self.flvAntiCode: tarscore.string = ""
+        self.hlsAntiCode: tarscore.string = ""
+        self.flvToken: tarscore.string = ""
+        self.hlsToken: tarscore.string = ""
+
+    @staticmethod
+    def writeTo(oos: tarscore.TarsOutputStream, value):
+        oos.write(tarscore.string, 0, value.flvAntiCode)
+        oos.write(tarscore.string, 1, value.hlsAntiCode)
+        oos.write(tarscore.string, 2, value.flvToken)
+        oos.write(tarscore.string, 3, value.hlsToken)
+
+    @staticmethod
+    def readFrom(ios: tarscore.TarsInputStream):
+        value = HuyaGetCdnTokenRsp()
+        value.flvAntiCode = ios.read(tarscore.string, 0, False)
+        value.hlsAntiCode = ios.read(tarscore.string, 1, False)
+        value.flvToken = ios.read(tarscore.string, 2, False)
+        value.hlsToken = ios.read(tarscore.string, 3, False)
+        return value
+
+    def as_dict(self):
+        return self.__dict__.copy()
+
+
+@auto_decode_fields
 class HuyaGetCdnTokenExReq(tarscore.struct):
 
     __tars_class__ = "HUYA.GetCdnTokenExReq"

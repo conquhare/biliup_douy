@@ -1,11 +1,12 @@
 # 弹幕视频合成器
 # 使用 FFmpeg 将 ASS 字幕渲染到视频上
 
+import json
 import logging
 import os
 import subprocess
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 logger = logging.getLogger('biliup')
 
@@ -177,6 +178,148 @@ class DanmakuVideoRenderer:
             return self.gpu_encoder in result.stdout
         except:
             return False
+
+    def generate_energy_bar(self,
+                           video_file: str,
+                           energy_regions: List[Dict[str, Any]],
+                           output_file: str = None,
+                           bar_height: int = 10,
+                           bar_color: str = "FF0000",
+                           position: str = "bottom") -> str:
+        """
+        生成带有高能进度条的视频
+
+        Args:
+            video_file: 输入视频文件路径
+            energy_regions: 高能区域列表，每个元素包含 start, end, density 等
+            output_file: 输出文件路径
+            bar_height: 进度条高度（像素）
+            bar_color: 进度条颜色（十六进制，如 FF0000 表示红色）
+            position: 进度条位置，'top' 或 'bottom'
+
+        Returns:
+            输出文件路径
+        """
+        if not os.path.exists(video_file):
+            logger.error(f'视频文件不存在: {video_file}')
+            return None
+
+        if not energy_regions:
+            logger.warning('没有高能区域数据，跳过进度条生成')
+            return None
+
+        if output_file is None:
+            video_path = Path(video_file)
+            output_file = str(video_path.parent / f"{video_path.stem}_energy_bar{video_path.suffix}")
+
+        try:
+            video_duration = self._get_video_duration(video_file)
+            if not video_duration:
+                logger.error('无法获取视频时长')
+                return None
+
+            draw_filter = self._build_energy_bar_filter(
+                video_duration=video_duration,
+                energy_regions=energy_regions,
+                bar_height=bar_height,
+                bar_color=bar_color,
+                position=position
+            )
+
+            cmd = [
+                self.ffmpeg_path, '-y',
+                '-i', video_file,
+                '-vf', draw_filter,
+                '-c:a', 'copy',
+                '-c:v', 'libx264',
+                '-preset', 'fast',
+                '-crf', '23',
+                output_file
+            ]
+
+            logger.info(f'开始生成高能进度条视频: {output_file}')
+            logger.debug(f'FFmpeg 命令: {" ".join(cmd)}')
+
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding='utf-8'
+            )
+
+            if result.returncode != 0:
+                logger.error(f'FFmpeg 错误: {result.stderr}')
+                return None
+
+            logger.info(f'高能进度条视频生成完成: {output_file}')
+            return output_file
+
+        except Exception as e:
+            logger.exception(f'生成高能进度条视频失败: {e}')
+            return None
+
+    def _get_video_duration(self, video_file: str) -> Optional[float]:
+        """获取视频时长（秒）"""
+        try:
+            cmd = [
+                self.ffmpeg_path,
+                '-i', video_file,
+                '-hide_banner',
+                '-f', 'null',
+                '-'
+            ]
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding='utf-8'
+            )
+            import re
+            duration_match = re.search(r'Duration: (\d+):(\d+):(\d+\.?\d*)', result.stderr)
+            if duration_match:
+                hours = int(duration_match.group(1))
+                minutes = int(duration_match.group(2))
+                seconds = float(duration_match.group(3))
+                return hours * 3600 + minutes * 60 + seconds
+        except Exception as e:
+            logger.debug(f'获取视频时长失败: {e}')
+        return None
+
+    def _build_energy_bar_filter(self,
+                                video_duration: float,
+                                energy_regions: List[Dict[str, Any]],
+                                bar_height: int,
+                                bar_color: str,
+                                position: str) -> str:
+        """
+        构建高能进度条 FFmpeg 滤镜
+
+        使用 drawbox 滤镜绘制背景条和高能区域
+        """
+        bar_y = f"0" if position == "top" else f"h-{bar_height}"
+
+        filter_parts = []
+
+        filter_parts.append(f"drawbox=y={bar_y}:width=iw:height={bar_height}:color=0x333333@0.8:t=fill")
+
+        for region in energy_regions:
+            start = region.get('start', 0)
+            end = region.get('end', 0)
+
+            start_ratio = start / video_duration if video_duration > 0 else 0
+            end_ratio = end / video_duration if video_duration > 0 else 1
+
+            enable_start = start
+            enable_end = end
+
+            filter_parts.append(
+                f"drawbox=y={bar_y}:width=iw*{end_ratio-start_ratio:.4f}:height={bar_height}:"
+                f"color=0x{bar_color}@0.9:t=fill:enable='between(t,{enable_start},{enable_end})'"
+            )
+
+        return ",".join(filter_parts)
 
 
 def render_danmaku_video(video_file: str,

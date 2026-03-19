@@ -178,8 +178,19 @@ class DanmakuProcessor:
                 progress_callback('energy_bar', 0.0)
 
             try:
-                # TODO: 实现高能进度条视频生成
-                logger.info('高能进度条功能待实现')
+                energy_bar_file = f"{base_path}_energy_bar.mp4"
+                result = self.video_renderer.generate_energy_bar(
+                    video_file=video_file,
+                    energy_regions=results['energy_regions'],
+                    output_file=energy_bar_file,
+                    bar_height=self.config.energy_bar_height,
+                    bar_color=self.config.energy_bar_color,
+                    position="bottom"
+                )
+
+                if result:
+                    results['energy_bar_file'] = result
+                    logger.info(f'高能进度条视频生成完成: {result}')
 
                 if progress_callback:
                     progress_callback('energy_bar', 1.0)
@@ -350,8 +361,8 @@ def create_processor_from_config(config: Dict[str, Any]):
         ass_font_name=get_config('danmaku_ass_font', 'Microsoft YaHei'),
         ass_font_size=get_config('danmaku_ass_fontsize', 25),
         ass_color=get_config('danmaku_ass_color', '00FFFFFF'),
-        danmaku_speed=get_config('danmaku_ass_speed', 8),
-        line_count=get_config('danmaku_ass_line_count', 12),
+        ass_speed=get_config('danmaku_ass_speed', 8),
+        ass_line_count=get_config('danmaku_ass_line_count', 12),
         video_codec=get_config('danmaku_video_codec', 'libx264'),
         preset=get_config('danmaku_preset', 'medium'),
         crf=get_config('danmaku_crf', 23),
