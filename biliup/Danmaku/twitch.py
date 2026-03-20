@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import random
 import re
 
@@ -48,8 +48,8 @@ class Twitch:
 class DanmakuClient(BaseDanmakuClient):
     """Twitch弹幕客户端"""
 
-    def __init__(self, url: str, filename: str):
-        super().__init__(url, filename)
+    def __init__(self, url: str, filename: str, context: dict = None):
+        super().__init__(url, filename, context)
         self.heartbeat = Twitch.heartbeat.encode() if Twitch.heartbeat else None
         self.heartbeatInterval = Twitch.heartbeatInterval
 

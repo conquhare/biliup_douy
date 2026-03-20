@@ -199,8 +199,8 @@ class Bilibili:
 class DanmakuClient(BaseDanmakuClient):
     """B站弹幕客户端"""
 
-    def __init__(self, url: str, filename: str):
-        super().__init__(url, filename)
+    def __init__(self, url: str, filename: str, context: dict = None):
+        super().__init__(url, filename, context)
         self.heartbeat = Bilibili.heartbeat
         self.heartbeatInterval = Bilibili.heartbeatInterval
 

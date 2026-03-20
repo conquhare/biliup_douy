@@ -82,8 +82,8 @@ class Douyu:
 class DanmakuClient(BaseDanmakuClient):
     """斗鱼弹幕客户端"""
 
-    def __init__(self, url: str, filename: str):
-        super().__init__(url, filename)
+    def __init__(self, url: str, filename: str, context: dict = None):
+        super().__init__(url, filename, context)
         self.heartbeat = Douyu.heartbeat
         self.heartbeatInterval = Douyu.heartbeatInterval
 

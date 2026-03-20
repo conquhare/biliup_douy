@@ -32,9 +32,10 @@ __all__ = [
 
 
 class DanmakuClient:
-    def __init__(self, url, filename):
+    def __init__(self, url, filename, context=None):
         self.__url = url
         self.__filename = filename
+        self.__context = context
         self.__plugin = None
 
     async def start(self):
@@ -45,19 +46,19 @@ class DanmakuClient:
             return
         try:
             if 'huya.com' in self.__url:
-                self.__plugin = huya.DanmakuClient(self.__url, self.__filename)
+                self.__plugin = huya.DanmakuClient(self.__url, self.__filename, self.__context)
             elif 'douyu.com' in self.__url:
-                self.__plugin = douyu.DanmakuClient(self.__url, self.__filename)
+                self.__plugin = douyu.DanmakuClient(self.__url, self.__filename, self.__context)
             elif 'bilibili.com' in self.__url or 'live.bilibili.com' in self.__url:
-                self.__plugin = bilibili.DanmakuClient(self.__url, self.__filename)
+                self.__plugin = bilibili.DanmakuClient(self.__url, self.__filename, self.__context)
             elif 'douyin.com' in self.__url:
-                self.__plugin = douyin.DanmakuClient(self.__url, self.__filename)
+                self.__plugin = douyin.DanmakuClient(self.__url, self.__filename, self.__context)
             elif 'twitch.tv' in self.__url:
-                self.__plugin = twitch.DanmakuClient(self.__url, self.__filename)
+                self.__plugin = twitch.DanmakuClient(self.__url, self.__filename, self.__context)
             elif 'youtube.com' in self.__url or 'youtu.be' in self.__url:
-                self.__plugin = youtube.DanmakuClient(self.__url, self.__filename)
+                self.__plugin = youtube.DanmakuClient(self.__url, self.__filename, self.__context)
             elif 'twitcasting.tv' in self.__url:
-                self.__plugin = twitcasting.DanmakuClient(self.__url, self.__filename)
+                self.__plugin = twitcasting.DanmakuClient(self.__url, self.__filename, self.__context)
             else:
                 logger.error(f'不支持的弹幕平台: {self.__url}')
                 return

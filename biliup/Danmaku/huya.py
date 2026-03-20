@@ -112,8 +112,8 @@ class Huya:
 class DanmakuClient(BaseDanmakuClient):
     """虎牙弹幕客户端"""
 
-    def __init__(self, url: str, filename: str):
-        super().__init__(url, filename)
+    def __init__(self, url: str, filename: str, context: dict = None):
+        super().__init__(url, filename, context)
         self.heartbeat = Huya.heartbeat
         self.heartbeatInterval = Huya.heartbeatInterval
 

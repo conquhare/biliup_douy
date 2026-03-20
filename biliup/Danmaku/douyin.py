@@ -217,8 +217,8 @@ class Douyin:
 class DanmakuClient(BaseDanmakuClient):
     """抖音弹幕客户端"""
 
-    def __init__(self, url: str, filename: str):
-        super().__init__(url, filename)
+    def __init__(self, url: str, filename: str, context: dict = None):
+        super().__init__(url, filename, context)
         self.heartbeat = Douyin.heartbeat
         self.heartbeatInterval = Douyin.heartbeatInterval
 

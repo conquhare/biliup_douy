@@ -145,8 +145,8 @@ class Youtube:
 class DanmakuClient(BaseDanmakuClient):
     """YouTube弹幕客户端 - 使用轮询方式获取弹幕"""
 
-    def __init__(self, url: str, filename: str):
-        super().__init__(url, filename)
+    def __init__(self, url: str, filename: str, context: dict = None):
+        super().__init__(url, filename, context)
         self.heartbeat = None
         self.heartbeatInterval = 30
         self._youtube_task = None
