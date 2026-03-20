@@ -18,9 +18,10 @@ logger = logging.getLogger('biliup')
 class BaseDanmakuClient(ABC):
     """弹幕客户端基类"""
 
-    def __init__(self, url: str, filename: str):
+    def __init__(self, url: str, filename: str, context: dict = None):
         self.url = url
         self.filename = filename
+        self.context = context
         self.danmaku_list: List[Dict[str, Any]] = []
         self.start_time = time.time()
         self._running = False
