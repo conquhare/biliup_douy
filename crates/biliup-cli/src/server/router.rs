@@ -10,7 +10,6 @@ use crate::server::api::endpoints::{
     put_configuration, put_streamers_endpoint,
 };
 use crate::server::api::log_dedup::{get_log_dedup_config, put_log_dedup_config};
-use crate::server::api::ws::ws_logs;
 use crate::server::infrastructure::service_register::ServiceRegister;
 use axum::Router;
 use axum::body::Body;
@@ -56,7 +55,6 @@ pub fn router(service_register: ServiceRegister) -> Router<()> {
         .route("/v1/videos", get(get_videos))
         .route("/v1/status", get(get_status))
         .route("/v1/uploads", post(post_uploads))
-        .route("/v1/ws/logs", get(ws_logs))
         .route_service("/static/{path}", get(using_serve_file_from_a_route))
         .with_state(service_register)
 }
