@@ -484,39 +484,24 @@ def sync_download(stream_url, headers, segment_duration=60, max_file_size=100, o
     video_queue = queue.SimpleQueue()
 
     def upload(video_queue, stream_info, stop_event: threading.Event):
-        with SessionLocal() as db:
-            data = get_stream_info(db, f"{stream_info['name']}")
-        data = {**data, "name": stream_info['name']}
+        data = dict(stream_info)
         if "title" not in data:
             data["title"] = stream_info.get("title", "")
-        # 使用 fmt_title_and_desc 生成格式化后的标题和简介
-        # fmt_title_and_desc 返回 (data, context)，其中 context 中包含已格式化的 description
-        data, context_fmt = fmt_title_and_desc(data)
 
-        # 更新基本信息（含 format_title）
         stream_info.update(data)
-
-        # 若存在格式化后的简介，将其写入 stream_info，保证后续上传时使用正确的简介
-        if context_fmt.get('description'):
-            stream_info['description'] = context_fmt['description']
         logger.info(f"stream_info: {stream_info}")
-        # 获取 BiliWebAsync.__init__ 的参数名
         init_params = inspect.signature(BiliWebAsync.__init__).parameters
-        # 过滤 info 中的无关键
         filtered_info = {key: value for key, value in stream_info.items() if key in init_params}
 
         filtered_info['submit_api'] = config.get('submit_api')
         filtered_info['lines'] = config.get('lines', 'AUTO')
-        # 映射 'uploader' 到 'principal'
         filtered_info['principal'] = ""
         filtered_info["data"] = stream_info
         uploader = BiliWebAsync(**filtered_info, video_queue=video_queue)
         uploader.upload(total_size=max_file_size * 1024 * 1024,
                         stop_event=stop_event, output_prefix=output_prefix,
                         file_name_callback=file_name_callback, database_row_id=database_row_id)
-        # print("上传器结束")
         logger.info(f"{stream_info['name']} 上传器结束")
-        # video_queue = queue.SimpleQueue()
 
     downloader = SyncDownloader(stream_url, headers, segment_duration, max_file_size, output_prefix, video_queue)
 
