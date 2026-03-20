@@ -3,6 +3,7 @@ import React from 'react'
 import styles from '../../styles/dashboard.module.scss'
 import { Form, Select, useFormApi } from '@douyinfe/semi-ui'
 import { IconSetting } from '@douyinfe/semi-icons'
+import LogDedupConfig from './logDedupConfig'
 
 const t = {
   LOGGING: {
@@ -80,6 +81,10 @@ const Developer: React.FC = () => {
           <Select.Option value="ERROR">ERROR</Select.Option>
           <Select.Option value="CRITICAL">CRITICAL</Select.Option>
         </Form.Select>
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <LogDedupConfig />
       </div>
     </>
   )
