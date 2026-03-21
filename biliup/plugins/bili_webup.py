@@ -692,7 +692,9 @@ class BiliBili:
                                       timeout=5, json=asdict(self.video)).json()
             if ret['code'] == -101:
                 logger.info(f'刷新token{ret}')
-                self.login_by_password(**config['user']['account'])
+                if self.account is None:
+                    raise RuntimeError("Account info is required for token refresh!")
+                self.login_by_password(**self.account)
                 self.store()
                 continue
             return ret

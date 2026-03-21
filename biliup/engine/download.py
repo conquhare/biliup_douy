@@ -497,6 +497,7 @@ def sync_download(stream_url, headers, segment_duration=60, max_file_size=100, o
         if global_config:
             filtered_info['submit_api'] = global_config.get('submit_api')
             filtered_info['lines'] = global_config.get('lines', 'AUTO')
+            filtered_info['save_dir'] = global_config.get('sync_save_dir')
         filtered_info['principal'] = ""
         filtered_info["data"] = stream_info
         uploader = BiliWebAsync(**filtered_info, video_queue=video_queue)

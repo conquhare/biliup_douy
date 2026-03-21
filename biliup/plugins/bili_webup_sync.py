@@ -40,7 +40,8 @@ class BiliWebAsync(UploadBase):
             self, principal, data, submit_api=None, copyright=2, postprocessor=None, dtime=None,
             dynamic='', lines='AUTO', threads=3, tid=122, tags=None, cover_path=None, description='',
             dolby=0, hires=0, no_reprint=0, is_only_self=0, charging_pay=0, credits=None,
-            user_cookie='cookies.json', copyright_source=None, extra_fields="", video_queue=None
+            user_cookie='cookies.json', copyright_source=None, extra_fields="", video_queue=None,
+            save_dir=None
     ):
         super().__init__(principal, data, persistence_path='bili.cookie', postprocessor=postprocessor)
         if credits is None:
@@ -73,13 +74,14 @@ class BiliWebAsync(UploadBase):
 
         self.user_cookie = user_cookie
         self.video_queue: queue.SimpleQueue = video_queue
+        self.save_dir = save_dir
 
     def upload(self, total_size: int, stop_event: threading.Event, output_prefix: str, file_name_callback: Callable[[str], None] = None, database_row_id=0) -> List[UploadBase.FileInfo]:
         # print("开始同步上传")
         logger.info(f"开始同步上传 {database_row_id}")
         file_index = 1
         videos = Data()
-        bili = BiliBili(videos)
+        bili = BiliBili(videos, save_dir=self.save_dir)
         bili.database_row_id = database_row_id
 
         bili.login(self.persistence_path, self.user_cookie)
@@ -200,7 +202,7 @@ class BiliWebAsync(UploadBase):
 
 
 class BiliBili:
-    def __init__(self, video: 'Data'):
+    def __init__(self, video: 'Data', save_dir=None):
         self.app_key = None
         self.appsec = None
         # if self.app_key is None or self.appsec is None:
@@ -222,7 +224,7 @@ class BiliBili:
         self._auto_os = None
         self.persistence_path = 'engine/bili.cookie'
 
-        self.save_dir = config.get('sync_save_dir', None)
+        self.save_dir = save_dir
         self.save_path = ''
         if self.save_dir and not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
@@ -709,7 +711,9 @@ class BiliBili:
             ret = self.__session.post(api, timeout=5, json=post_data).json()
             if ret['code'] == -101:
                 logger.info(f'刷新token{ret}')
-                self.login_by_password(**config['user']['account'])
+                if self.account is None:
+                    raise RuntimeError("Account info is required for token refresh!")
+                self.login_by_password(**self.account)
                 self.store()
                 continue
             return ret
