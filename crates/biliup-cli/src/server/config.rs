@@ -101,6 +101,12 @@ pub struct Config {
     /// 斗鱼码率
     #[serde(default)]
     pub douyu_rate: Option<u32>,
+    /// 斗鱼禁用互动游戏
+    #[serde(default)]
+    pub douyu_disable_interactive_game: Option<bool>,
+    /// 斗鱼强制HS
+    #[serde(default)]
+    pub douyu_force_hs: Option<bool>,
 
     // 虎牙平台设置
     /// 虎牙CDN节点
@@ -118,6 +124,18 @@ pub struct Config {
     /// 虎牙 Flv or Hls
     #[serde(default)]
     pub huya_protocol: Option<String>,
+    /// 虎牙imgplus
+    #[serde(default)]
+    pub huya_imgplus: Option<bool>,
+    /// 虎牙移动API
+    #[serde(default)]
+    pub huya_mobile_api: Option<bool>,
+    /// 虎牙编码
+    #[serde(default)]
+    pub huya_codec: Option<String>,
+    /// 虎牙使用WUP
+    #[serde(default)]
+    pub huya_use_wup: Option<bool>,
 
     // 抖音平台设置
     /// 抖音弹幕录制
@@ -132,6 +150,9 @@ pub struct Config {
     /// 抖音真原画
     #[serde(default)]
     pub douyin_true_origin: Option<bool>,
+    /// 抖音协议
+    #[serde(default)]
+    pub douyin_protocol: Option<String>,
     /// 抖音弹幕消息类型筛选（为空则录制所有类型）
     /// 可选值: danmaku(弹幕), like(点赞), member(进场), gift(礼物), social(关注), room_user_seq(统计)
     #[serde(default)]
@@ -221,6 +242,9 @@ pub struct Config {
     /// B站免登录原画
     #[serde(default)]
     pub bili_anonymous_origin: Option<bool>,
+    /// B站HLS转码超时
+    #[serde(default)]
+    pub bili_hls_transcode_timeout: Option<u64>,
 
     // YouTube平台设置
     /// YouTube首选视频编码
@@ -247,6 +271,9 @@ pub struct Config {
     /// YouTube启用回放下载
     #[serde(default)]
     pub youtube_enable_download_playback: Option<bool>,
+    /// YouTube弹幕录制
+    #[serde(default)]
+    pub ytb_danmaku: Option<bool>,
 
     // Twitch平台设置
     /// Twitch弹幕录制
@@ -263,6 +290,9 @@ pub struct Config {
     /// TwitCasting密码
     #[serde(default)]
     pub twitcasting_password: Option<String>,
+    /// TwitCasting画质
+    #[serde(default)]
+    pub twitcasting_quality: Option<String>,
 
     /// 录制主播配置映射
     #[serde(default)]
@@ -281,6 +311,24 @@ pub struct Config {
     /// HTTPS代理地址（如 http://127.0.0.1:7890）
     #[serde(default)]
     pub https_proxy: Option<String>,
+
+    /// 同步下载器本地保存目录
+    #[serde(default)]
+    pub sync_save_dir: Option<PathBuf>,
+
+    // 其他平台设置
+    /// 快手Cookie
+    #[serde(default)]
+    pub kuaishou_cookie: Option<String>,
+    /// Kila协议
+    #[serde(default)]
+    pub kila_protocol: Option<String>,
+    /// CC协议
+    #[serde(default)]
+    pub cc_protocol: Option<String>,
+    /// ChromeDriver路径
+    #[serde(default)]
+    pub chromedriver_path: Option<PathBuf>,
 }
 
 /// 主播配置结构体
@@ -398,6 +446,11 @@ pub struct UserConfig {
     /// Twitch Cookie
     #[serde(default)]
     pub twitch_cookie: Option<String>,
+
+    // TwitCasting配置
+    /// TwitCasting Cookie
+    #[serde(default)]
+    pub twitcasting_cookie: Option<String>,
 
     // YouTube配置
     /// YouTube Cookie文件路径

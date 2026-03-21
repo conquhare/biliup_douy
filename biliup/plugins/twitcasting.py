@@ -14,7 +14,7 @@ class Twitcasting(DownloadBase):
     def __init__(self, fname, url, config, suffix='flv'):
         super().__init__(fname, url, config, suffix)
         self.twitcasting_danmaku = config.get('twitcasting_danmaku', False)
-        self.twitcasting_password = config.get('user.twitcasting_password')
+        self.twitcasting_password = config.get('user', {}).get('twitcasting_password')
         self.twitcasting_quality = config.get('twitcasting_quality')
         self.twitcasting_cookie = config.get('user', {}).get('twitcasting_cookie')
         self.fake_headers['referer'] = "https://twitcasting.tv/"
