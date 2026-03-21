@@ -9,6 +9,18 @@ import Twitcasting from './twitcasting'
 import Twitch from './twitch'
 import Youtube from './youtube'
 
+const SupportedPlatforms = {
+  'https?:\/\/(b23\.tv|live\.bilibili\.com)': Bilibili,
+  'https?:\/\/(cc\.163\.com)': CC,
+  'https?:\/\/(?:(?:www|m|live|v)\.)?douyin\.com': Douyin,
+  'https?:\/\/(?:(?:www|m)\.)?douyu\.com': Douyu,
+  'https?:\/\/(?:(?:www|m)\.)?huya\.com': Huya,
+  'https?:\/\/(live\.kilakila\.cn|www\.hongdoufm\.com)': Kilakila,
+  'https?:\/\/twitcasting\.tv': Twitcasting,
+  'https?:\/\/(?:(?:www|go|m)\.)?twitch\.tv': Twitch,
+  'https?:\/\/(?:(?:www|m)\.)?youtube\.com': Youtube,
+}
+
 export {
   Bilibili,
   CC,
@@ -23,7 +35,6 @@ export {
   SupportedPlatforms,
 }
 
-// 导出所有插件
 const plugins = {
   Bilibili,
   CC,
@@ -35,18 +46,6 @@ const plugins = {
   Twitcasting,
   Twitch,
   Youtube,
-}
-
-const SupportedPlatforms = {
-  'https?:\/\/(b23\.tv|live\.bilibili\.com)': Bilibili,
-  'https?:\/\/(cc\.163\.com)': CC,
-  'https?:\/\/(?:(?:www|m|live|v)\.)?douyin\.com': Douyin,
-  'https?:\/\/(?:(?:www|m)\.)?douyu\.com': Douyu,
-  'https?:\/\/(?:(?:www|m)\.)?huya\.com': Huya,
-  'https?:\/\/(live\.kilakila\.cn|www\.hongdoufm\.com)': Kilakila,
-  'https?:\/\/twitcasting\.tv': Twitcasting,
-  'https?:\/\/(?:(?:www|go|m)\.)?twitch\.tv': Twitch,
-  'https?:\/\/(?:(?:www|m)\.)?youtube\.com': Youtube,
 }
 
 export default plugins
