@@ -139,6 +139,7 @@ class BiliWebAsync(UploadBase):
                     data = self.video_queue.get(timeout=10)
                 except queue.Empty:
                     if stop_event.is_set():
+                        video_upload_queue.put(None)
                         break
                     continue
 
@@ -147,19 +148,14 @@ class BiliWebAsync(UploadBase):
                     break
 
                 video_upload_queue.put(data)
-                # print(video_upload_queue.empty())
                 data_size += len(data)
-            # print(f"[consumer] 读取 {file_name} {data_size} 字节")
             logger.info(f"[consumer] 读取 {file_name} {data_size} 字节")
             file_index += 1
-            # print("[consumer] bili.video.videos", bili.video.videos)
             logger.info(f"[consumer] bili.video.videos {bili.video.videos}")
             if data_size < 100:
-                # print(f"[consumer] 停止下载回调")
-                # n = video_upload_queue.get()
                 logger.info(f"[consumer] 停止下载回调")
                 stop_event.set()
-                break
+                video_upload_queue.put(None)
 
             if stop_event.is_set():
                 video_upload_queue.put(None)
