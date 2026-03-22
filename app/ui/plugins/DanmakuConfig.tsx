@@ -1,16 +1,14 @@
 'use client'
 import React from 'react'
 import { Form, Select, Collapse } from '@douyinfe/semi-ui'
-import { FormApi } from '@douyinfe/semi-ui/lib/es/form'
 
 type DanmakuConfigProps = {
   prefix?: string
   platformName?: string
   inPanel?: boolean
-  formApi?: FormApi
 }
 
-const DanmakuConfigContent: React.FC<DanmakuConfigProps> = ({ prefix = '', platformName = '平台', formApi }) => {
+const DanmakuConfigContent: React.FC<DanmakuConfigProps> = ({ prefix = '', platformName = '平台' }) => {
   const field = (name: string) => (prefix ? `${prefix}.${name}` : name)
 
   return (
@@ -261,16 +259,16 @@ const DanmakuConfigContent: React.FC<DanmakuConfigProps> = ({ prefix = '', platf
   )
 }
 
-const DanmakuConfig: React.FC<DanmakuConfigProps> = ({ prefix = '', platformName = '平台', inPanel = true, formApi }) => {
+const DanmakuConfig: React.FC<DanmakuConfigProps> = ({ prefix = '', platformName = '平台', inPanel = true }) => {
   if (inPanel) {
     return (
       <Collapse.Panel header="弹幕录制与处理" itemKey={`${prefix || 'global'}_danmaku`}>
-        <DanmakuConfigContent prefix={prefix} platformName={platformName} inPanel={inPanel} formApi={formApi} />
+        <DanmakuConfigContent prefix={prefix} platformName={platformName} inPanel={inPanel} />
       </Collapse.Panel>
     )
   }
 
-  return <DanmakuConfigContent prefix={prefix} platformName={platformName} inPanel={inPanel} formApi={formApi} />
+  return <DanmakuConfigContent prefix={prefix} platformName={platformName} inPanel={inPanel} />
 }
 
 export default DanmakuConfig
