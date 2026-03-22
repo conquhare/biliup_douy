@@ -279,7 +279,7 @@ const OverrideModal: React.FC<TemplateModalProps> = ({ children, entity, onOk })
           <Form.Section>
             <Collapse defaultActiveKey={['plugin']}>
               {downloadSettings}
-              <DanmakuConfig prefix="override" platformName="当前主播" inPanel={false} />
+              <DanmakuConfig prefix="override" platformName="当前主播" inPanel={false} formApi={api.current} />
               {(() => {
                 const Plugin = platformSetting()
                 return Plugin ? (

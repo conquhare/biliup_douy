@@ -50,7 +50,7 @@ const Douyin: React.FC<Props> = props => {
           <Select.Option value="md">流畅（md）</Select.Option>
         </Form.Select>
         {/* 弹幕配置 */}
-        <DanmakuConfig platformName="抖音" inPanel={false} />
+        <DanmakuConfig platformName="抖音" inPanel={false} formApi={formApi} />
         <Form.Input
           field="user.douyin_cookie"
           extraText={
