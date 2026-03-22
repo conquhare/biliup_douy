@@ -138,7 +138,9 @@ class BiliWebAsync(UploadBase):
                 try:
                     data = self.video_queue.get(timeout=10)
                 except queue.Empty:
-                    break
+                    if stop_event.is_set():
+                        break
+                    continue
 
                 if data is None:
                     video_upload_queue.put(None)
@@ -157,6 +159,10 @@ class BiliWebAsync(UploadBase):
                 # n = video_upload_queue.get()
                 logger.info(f"[consumer] 停止下载回调")
                 stop_event.set()
+                break
+
+            if stop_event.is_set():
+                video_upload_queue.put(None)
                 break
 
         logger.info("等待上传线程结束")

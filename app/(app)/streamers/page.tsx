@@ -25,6 +25,7 @@ import OverrideModal from '../../ui/OverrideModal'
 import { LiveStreamerEntity, put, requestDelete, sendRequest } from '../../lib/api-streamer'
 import useSWRMutation from 'swr/mutation'
 import {PauseButton} from "@/app/ui/StreamerActions/PauseButton";
+import {StopButton} from "@/app/ui/StreamerActions/StopButton";
 
 export default function Home() {
   const { Header, Content } = Layout
@@ -266,6 +267,8 @@ export default function Home() {
                       </TemplateModal>
                       <span className="semi-button-group-line semi-button-group-line-borderless semi-button-group-line-primary"></span>
                       <PauseButton streamer={item}/>
+                      <span className="semi-button-group-line semi-button-group-line-borderless semi-button-group-line-primary"></span>
+                      <StopButton streamer={item}/>
                       <span className="semi-button-group-line semi-button-group-line-borderless semi-button-group-line-primary"></span>
                       <Popconfirm
                         title="确定是否要删除？"
