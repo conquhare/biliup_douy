@@ -163,12 +163,12 @@ class BiliWebAsync(UploadBase):
         for t in thread_list:
             t.join()
 
-        # ret = bili.submit(self.submit_api)  # 提交视频
-        # logger.info(f"上传成功: {ret}")
+        try:
+            ret = bili.submit(self.submit_api, videos=videos)
+            logger.info(f"上传成功: {ret}")
+        except Exception as e:
+            logger.error(f"投稿失败: {e}")
         file_list = []
-        # if config.get('sync_save_dir', None):
-        #     file_list = [os for file_name in os.listdir("sync_downloaded")]
-        # print("上传完成", file_list)
         return file_list
 
     def creditsToDesc_v2(self):
