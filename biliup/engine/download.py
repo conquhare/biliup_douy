@@ -117,6 +117,9 @@ class DownloadBase(ABC):
             else:
                 return self.ffmpeg_segment_download()
 
+        if not self.raw_stream_url:
+            logger.error(f"{self.plugin_msg}: 无法获取直播流地址")
+            return False
         parsed_url_path = urlparse(self.raw_stream_url).path
         if self.downloader != 'stream-gears':
             if not shutil.which("ffmpeg"):
@@ -129,6 +132,7 @@ class DownloadBase(ABC):
                     stream_info = self.config.get('streamers', {}).get(self.fname, {})
                     stream_info.update({'name': self.fname})
                     stream_info['format_title'] = self.gen_download_filename(True)
+                    stream_info['url'] = self.url
                     min_size = 10 * 1024 * 1024
                     if not self.file_size:
                         self.file_size = 2 * 1024 * 1024 * 1024

@@ -97,7 +97,7 @@ class BiliWebAsync(UploadBase):
         videos.desc = self.desc
         videos.copyright = self.copyright
         if self.copyright == 2:
-            videos.source = self.data["url"]  # 添加转载地址说明
+            videos.source = self.data.get("url", "")  # 添加转载地址说明
         # 设置视频分区,默认为174 生活，其他分区
         videos.tid = self.tid
         videos.set_tag(self.tags)

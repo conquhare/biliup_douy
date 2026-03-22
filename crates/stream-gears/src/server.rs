@@ -251,6 +251,21 @@ impl DownloadBase for PyDownloader {
             
             instance.setattr("database_row_id", database_row_id)?;
             
+            // 先调用 acheck_stream 获取流地址
+            let util = PyModule::import(py, "biliup.common.util")?;
+            let loop_obj = util.getattr("loop")?;
+            let asyncio = PyModule::import(py, "asyncio")?;
+            let coro = instance.call_method0("acheck_stream")?;
+            let fut = asyncio
+                .getattr("run_coroutine_threadsafe")?
+                .call1((coro, loop_obj))?;
+            let res = fut.call_method0("result")?;
+            let is_live: bool = res.unbind().extract(py)?;
+            
+            if !is_live {
+                return Ok(false);
+            }
+            
             let result: bool = instance.call_method0("download")?.extract()?;
             Ok(result)
         }).map_err(|e| Report::new(AppError::Unknown).attach(format!("sync_download failed: {:?}", e)))
