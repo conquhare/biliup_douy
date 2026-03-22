@@ -348,7 +348,8 @@ impl DActor {
                         ctx.live_streamer().url
                     );
                     
-                    ctx.change_status(Stage::Download, WorkerStatus::Pending).await;
+                    ctx.change_status(Stage::Download, WorkerStatus::Working(Arc::new(())))
+                        .await;
 
                     process(&[], &ctx.live_streamer().preprocessor).await;
 

@@ -1,6 +1,7 @@
 'use client'
 import React from 'react'
 import { Form, Select, Collapse } from '@douyinfe/semi-ui'
+import ErrorBoundary from '../ErrorBoundary'
 
 type DanmakuConfigProps = {
   prefix?: string
@@ -260,15 +261,21 @@ const DanmakuConfigContent: React.FC<DanmakuConfigProps> = ({ prefix = '', platf
 }
 
 const DanmakuConfig: React.FC<DanmakuConfigProps> = ({ prefix = '', platformName = '平台', inPanel = true }) => {
+  const content = (
+    <ErrorBoundary>
+      <DanmakuConfigContent prefix={prefix} platformName={platformName} inPanel={inPanel} />
+    </ErrorBoundary>
+  )
+
   if (inPanel) {
     return (
       <Collapse.Panel header="弹幕录制与处理" itemKey={`${prefix || 'global'}_danmaku`}>
-        <DanmakuConfigContent prefix={prefix} platformName={platformName} inPanel={inPanel} />
+        {content}
       </Collapse.Panel>
     )
   }
 
-  return <DanmakuConfigContent prefix={prefix} platformName={platformName} inPanel={inPanel} />
+  return content
 }
 
 export default DanmakuConfig
