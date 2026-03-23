@@ -348,7 +348,10 @@ impl DActor {
                         ctx.live_streamer().url
                     );
                     
-                    ctx.change_status(Stage::Download, WorkerStatus::Working(Arc::new(())))
+                    let task = Arc::new(DownloadTask::new(
+                        downloader.downloader(downloader_type),
+                    ));
+                    ctx.change_status(Stage::Download, WorkerStatus::Working(task.clone()))
                         .await;
 
                     process(&[], &ctx.live_streamer().preprocessor).await;
