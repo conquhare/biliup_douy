@@ -143,7 +143,7 @@ const LogDedupConfig: React.FC = () => {
           helpText="连续出现相同日志达到此数量后开始合并显示（1-20）"
         />
 
-        <Form.CheckBoxGroup
+        <Form.CheckboxGroup
           field="enabled_levels"
           label="应用去重的日志等级"
           options={logLevelOptions}

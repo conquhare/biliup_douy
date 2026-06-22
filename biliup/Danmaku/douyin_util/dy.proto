@@ -162,7 +162,9 @@ message GiftStruct {
   //  specialEffectsMap = 20;
   Image icon = 21;
   uint32 actionType = 22;
-  // fixme 后面的就不写了还有几十个属性
+  // NOTE: GiftStruct 实际有更多字段（约50+），此处仅定义当前功能需要的字段。
+  // Proto3 会自动忽略未知字段，缺失定义不会导致解析错误或数据丢失。
+  // 如需解析更完整的礼物信息，请参考抖音官方协议文档扩充。
 
 }
 

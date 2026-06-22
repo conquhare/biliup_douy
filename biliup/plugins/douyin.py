@@ -396,14 +396,39 @@ class Douyin(DownloadBase):
 
                 logger.error(f"¼ƶĻٰװһ Javascript  pip install quickjs")
 
-
+    def download(self):
+        """覆写父类 download 方法，添加直播流地址过期重试机制。
+        当 stream_gears 因 403/连接错误等原因下载失败时，自动重新获取流地址并重试。
+        """
+        max_retries = 2
+        import asyncio, time as _time
+        for attempt in range(max_retries + 1):
+            try:
+                return super().download()
+            except Exception as e:
+                logger.warning(
+                    f"{self.plugin_msg}: 下载异常 ({attempt + 1}/{max_retries + 1}): {e}"
+                )
+                if attempt < max_retries:
+                    logger.info(f"{self.plugin_msg}: 重试获取直播流地址...")
+                    try:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        refreshed = loop.run_until_complete(self.acheck_stream())
+                        loop.close()
+                        if not refreshed:
+                            logger.error(f"{self.plugin_msg}: 获取流地址失败")
+                            break
+                        logger.info(f"{self.plugin_msg}: 流地址已刷新，3秒后重试")
+                    except Exception as re:
+                        logger.error(f"{self.plugin_msg}: 刷新流异常: {re}")
+                        break
+                    _time.sleep(3)
+        return False
 
     def _download_segment_callback(self, file_name: str):
-
         """
-
         分段后触发，处理弹幕保存和后续处理
-
         """
 
         # 先调用父类的保存弹幕方法

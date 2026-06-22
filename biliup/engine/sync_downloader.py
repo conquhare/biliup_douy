@@ -45,14 +45,17 @@ class SyncDownloader:
                  segment_duration=10,
                  max_file_size=100,
                  output_prefix="segment_",
-                 video_queue=None):
+                 video_queue=None,
+                 refresh_url_callback=None):
         """
-        :param stream_url:   拉流地址
-
-        :param segment_duration: 每段录制时长（秒）（暂时不用）
-        :param max_file_size:     文件最小大小，不足时进行 0x00 填充 单位 MB
-        :param read_block_size:   从 streamlink stdout 读取数据时的单次块大小
-        :param output_prefix:     输出文件名前缀
+        :param stream_url:          拉流地址
+        :param headers:             HTTP 请求头
+        :param segment_duration:    每段录制时长（秒）（暂时不用）
+        :param max_file_size:       文件最小大小，不足时进行 0x00 填充 单位 MB
+        :param output_prefix:       输出文件名前缀
+        :param video_queue:         视频数据队列
+        :param refresh_url_callback: 流地址刷新回调（失败重试时调用）。
+                                     签名为 () -> Optional[str]，返回新 URL 或 None。
         """
         self.stream_url = stream_url
         self.quality = "best"
@@ -61,6 +64,7 @@ class SyncDownloader:
         self.read_block_size = 500
         self.max_file_size = max_file_size
         self.output_prefix = output_prefix
+        self.refresh_url_callback = refresh_url_callback
 
         self.video_queue: queue.SimpleQueue = video_queue
         self.stop_event = threading.Event()
@@ -175,7 +179,17 @@ class SyncDownloader:
             if self.stop_event.is_set():
                 break
             if retry_count >= 5:
-                logger.info("这个直播流已经失效，停止下载器")
+                # 最后一次尝试：通过回调刷新流地址
+                if self.refresh_url_callback:
+                    new_url = self.refresh_url_callback()
+                    if new_url and new_url != self.stream_url:
+                        logger.info(
+                            f"[run] 流地址已刷新，重置重试计数 (旧={self.stream_url[:80]}...)"
+                        )
+                        self.stream_url = new_url
+                        retry_count = 0
+                        continue
+                logger.info("[run] 这个直播流已经失效，停止下载器")
                 return
 
             output_filename = f"{self.output_prefix}{file_index:03d}.mkv"
@@ -191,6 +205,16 @@ class SyncDownloader:
                                                    self.headers, self.segment_duration)
                 if not self.run_ffmpeg_with_url(ffmpeg_cmd, output_filename):
                     retry_count += 1
+                    if self.refresh_url_callback and retry_count > 1:
+                        new_url = self.refresh_url_callback()
+                        if new_url and new_url != self.stream_url:
+                            logger.info(
+                                f"[run] 下载失败，流地址已刷新 (重试 {retry_count}/5)"
+                            )
+                            self.stream_url = new_url
+                            retry_count = 0
+                            time.sleep(1)
+                            continue
                     time.sleep(1)
                     continue
             else:
@@ -214,6 +238,16 @@ class SyncDownloader:
                 ffmpeg_cmd = self.build_ffmpeg_cmd("pipe:0", output_filename, None, self.segment_duration)
                 if not self.run_streamlink_with_ffmpeg(streamlink_cmd, ffmpeg_cmd, output_filename):
                     retry_count += 1
+                    if self.refresh_url_callback and retry_count > 1:
+                        new_url = self.refresh_url_callback()
+                        if new_url and new_url != self.stream_url:
+                            logger.info(
+                                f"[run] 下载失败，流地址已刷新 (重试 {retry_count}/5)"
+                            )
+                            self.stream_url = new_url
+                            retry_count = 0
+                            time.sleep(1)
+                            continue
                     time.sleep(1)
                     continue
 

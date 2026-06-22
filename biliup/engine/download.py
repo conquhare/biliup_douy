@@ -137,12 +137,28 @@ class DownloadBase(ABC):
                     if not self.file_size:
                         self.file_size = 2 * 1024 * 1024 * 1024
                     self.file_size = ((self.file_size + min_size - 1) // min_size) * min_size  # 向上取整
+
+                    # 创建流地址刷新回调（供 SyncDownloader 在下载失败时使用）
+                    def _url_refresh():
+                        try:
+                            import asyncio
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                            refreshed = loop.run_until_complete(self.acheck_stream())
+                            loop.close()
+                            if refreshed:
+                                return self.raw_stream_url
+                        except Exception:
+                            logger.debug(f"{self.plugin_msg}: URL 刷新跳过")
+                        return None
+
                     sync_download(self.raw_stream_url, self.stream_headers,
                                 max_file_size=int(self.file_size / 1024 / 1024),
                                 output_prefix=self.gen_download_filename(True),
                                 stream_info=stream_info,
                                 file_name_callback=lambda file_name: self._download_segment_callback(file_name), database_row_id=self.database_row_id,
-                                global_config=self.config)
+                                global_config=self.config,
+                                refresh_url_callback=_url_refresh)
                     return True
                 # streamlink无法处理flv,所以回退到ffmpeg
                 if self.downloader == 'streamlink' and '.flv' not in parsed_url_path:
@@ -464,28 +480,28 @@ def stream_gears_download(url, headers, file_name, segment_time=None, file_size=
         segment.size = file_size
     if file_size is None and segment_time is None:
         segment.size = 8 * 1024 * 1024 * 1024
-    # FIXME: 下载时如出现403，这里不会回到上层方法获取新链接
-    # 问题说明：stream_gears.download 是 Rust 层实现的同步下载，当出现 403/404 等错误时，
-    # 无法中断并返回到 Python 上层重新获取流地址。需要重构为支持错误回调或轮询检查流地址有效性的机制。
-    # 相关文件: crates/stream-gears/src/lib.rs, crates/biliup/src/client.rs
-    if file_name_callback:
-        stream_gears.download_with_callback(
-            url,
-            headers,
-            file_name,
-            segment,
-            file_name_callback
-        )
-    else:
-        stream_gears.download(
-            url,
-            headers,
-            file_name,
-            segment,
-        )
+    try:
+        if file_name_callback:
+            stream_gears.download_with_callback(
+                url,
+                headers,
+                file_name,
+                segment,
+                file_name_callback
+            )
+        else:
+            stream_gears.download(
+                url,
+                headers,
+                file_name,
+                segment,
+            )
+    except Exception as e:
+        logger.error(f"stream_gears 下载失败 (url={url[:120]}...): {e}")
+        raise
 
 
-def sync_download(stream_url, headers, segment_duration=60, max_file_size=100, output_prefix="segment", stream_info=None, file_name_callback: Callable[[str], None] = None, database_row_id=0, global_config=None):
+def sync_download(stream_url, headers, segment_duration=60, max_file_size=100, output_prefix="segment", stream_info=None, file_name_callback: Callable[[str], None] = None, database_row_id=0, global_config=None, refresh_url_callback=None):
     logger.info(f"启动同步下载器 max_file_size {max_file_size}MB")
     video_queue = queue.SimpleQueue()
 
@@ -511,7 +527,8 @@ def sync_download(stream_url, headers, segment_duration=60, max_file_size=100, o
                         file_name_callback=file_name_callback, database_row_id=database_row_id)
         logger.info(f"{stream_info['name']} 上传器结束")
 
-    downloader = SyncDownloader(stream_url, headers, segment_duration, max_file_size, output_prefix, video_queue)
+    downloader = SyncDownloader(stream_url, headers, segment_duration, max_file_size, output_prefix, video_queue,
+                                refresh_url_callback=refresh_url_callback)
 
     # 启动上传器
     upload_thread = threading.Thread(target=upload, args=(video_queue, stream_info, downloader.stop_event), daemon=True)

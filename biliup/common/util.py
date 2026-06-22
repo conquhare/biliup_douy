@@ -42,9 +42,9 @@ def _get_proxy_config():
     
     mounts = {}
     if http_proxy:
-        mounts["http://"] = httpx.HTTPTransport(proxy=http_proxy)
+        mounts["http://"] = httpx.AsyncHTTPTransport(proxy=http_proxy)
     if https_proxy:
-        mounts["https://"] = httpx.HTTPTransport(proxy=https_proxy)
+        mounts["https://"] = httpx.AsyncHTTPTransport(proxy=https_proxy)
     
     return mounts
 
