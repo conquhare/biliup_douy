@@ -1,12 +1,14 @@
 name: Zola on GitHub Pages
 
 on:
-  push:
-    branches:
-      - master 
-    paths:
-      - docs/**
-  pull_request:
+  # 自动触发已禁用，只保留手动触发
+  # push:
+  #   branches:
+  #     - master 
+  #   paths:
+  #     - docs/**
+  # pull_request:
+  workflow_dispatch:
   
 jobs:
   build:

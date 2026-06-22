@@ -1,8 +1,9 @@
 name: Build Termux Wheel to Release
 
 on:
-  release:
-    types: [published]
+  # 自动触发已禁用，只保留手动触发
+  # release:
+  #   types: [published]
   workflow_dispatch:
 
 jobs:
