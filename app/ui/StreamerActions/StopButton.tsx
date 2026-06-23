@@ -2,7 +2,7 @@ import React from 'react';
 import { useSWRConfig } from 'swr';
 import useSWRMutation from 'swr/mutation';
 import {Button, Popconfirm} from "@douyinfe/semi-ui";
-import {IconStopStroked} from "@douyinfe/semi-icons";
+import {IconClose} from "@douyinfe/semi-icons";
 import {API_BASE, LiveStreamerEntity} from "@/app/lib/api-streamer";
 
 interface StopButtonProps {
@@ -51,7 +51,7 @@ export const StopButton: React.FC<StopButtonProps> = ({
         >
             <Button
                 theme="borderless"
-                icon={<IconStopStroked />}
+                icon={<IconClose />}
                 loading={isMutating}
                 disabled={streamer.status === 'Idle'}
                 aria-label="停止"
