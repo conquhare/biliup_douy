@@ -49,7 +49,10 @@ pub async fn get_myinfo_endpoint(
     // 使用指定用户的Cookie登录
     let bili = login_by_cookies(&params["user"], None)
         .await
-        .change_context(AppError::Custom(params["user"].to_string()))
+        .change_context(AppError::Custom(format!(
+            "B站 Cookie 登录失败 (文件: {})",
+            params["user"]
+        )))
         .map_err(report_to_response)?;
 
     // 获取用户信息

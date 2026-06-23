@@ -300,7 +300,12 @@ async fn login_by_cookies(user_cookie: PathBuf, proxy: Option<&str>) -> AppResul
             AppError::Custom(String::from("open cookies file: ") + &user_cookie.to_string_lossy())
         })?,
         _ => {
-            let bili = result.change_context_lazy(|| AppError::Unknown)?;
+            let bili = result.change_context_lazy(|| {
+                AppError::Custom(format!(
+                    "B站 Cookie 登录失败 (文件: {})",
+                    user_cookie.to_string_lossy()
+                ))
+            })?;
             let info = bili
                 .my_info()
                 .await

@@ -301,7 +301,14 @@ pub async fn upload(
                 &cookie_file.as_ref().to_string_lossy()
             ))
         })?,
-        _ => bilibili.change_context_lazy(|| AppError::Unknown)?,
+        _ => {
+            bilibili.change_context_lazy(|| {
+                AppError::Custom(format!(
+                    "B站 Cookie 登录失败 (文件: {})",
+                    cookie_file.as_ref().to_string_lossy()
+                ))
+            })?
+        }
     };
 
     let client = StatelessClient::default();
