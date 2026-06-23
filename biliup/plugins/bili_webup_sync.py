@@ -690,7 +690,16 @@ class BiliBili:
             return ret
         else:
             err_msg = ret.get('message', '未知错误')
-            logger.error(f'投稿失败 [{ret["code"]}]: {err_msg}')
+            err_code = ret['code']
+            # 常见错误码建议
+            err_tips = {
+                -1160: '投稿过于频繁，请24小时后重试',
+                -101: '账号未登录或登录已过期',
+                -102: '账号未实名认证',
+            }
+            tip = err_tips.get(err_code, '')
+            tip_suffix = f' → 建议: {tip}' if tip else ''
+            logger.error(f'投稿失败 [{err_code}]: {err_msg}{tip_suffix}')
             return ret
 
     def submit_web(self, post_data, edit=False):
