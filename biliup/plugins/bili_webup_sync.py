@@ -437,6 +437,9 @@ class BiliBili:
         videos.append(video_part)  # 添加已经上传的视频
         edit = False if videos.aid is None else True
         ret = self.submit(submit_api=submit_api, edit=edit, videos=videos)
+        if ret["code"] != 0:
+            logger.error(f"投稿失败 [{ret['code']}]: {ret.get('message', '未知错误')}")
+            return
         # logger.info(f"上传成功: {ret}")
         if edit:
             logger.info(f"编辑添加成功: {ret}")
@@ -686,7 +689,9 @@ class BiliBili:
         if ret["code"] == 0:
             return ret
         else:
-            raise Exception(ret)
+            err_msg = ret.get('message', '未知错误')
+            logger.error(f'投稿失败 [{ret["code"]}]: {err_msg}')
+            return ret
 
     def submit_web(self, post_data, edit=False):
         logger.info('使用网页端api提交')
