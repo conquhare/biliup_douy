@@ -171,8 +171,8 @@ impl PyDownloader {
                 )
             })
             .await
-            .change_context(AppError::Unknown)?
-            .change_context(AppError::Unknown)?
+            .map_err(|e| AppError::Custom(format!("Python 线程异常退出: {e}")))?
+            .map_err(|e| AppError::Custom(format!("直播间检测失败: {e}")))?
             {
                 Some((info, Some(danmaku))) => {
                     self.danmaku = Some(Arc::new(danmaku));

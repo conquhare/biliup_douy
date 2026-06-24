@@ -30,8 +30,8 @@ impl DanmakuClient for PyDanmakuClient {
             })
         })
         .await
-        .change_context(AppError::Unknown)?
-        .change_context(AppError::Unknown)?;
+        .map_err(|e| AppError::Custom(format!("弹幕录制线程异常退出: {e}")))?
+        .map_err(|e| AppError::Custom(format!("弹幕录制启动失败: {e}")))?;
 
         // Start the danmaku recording
         // self.start()
@@ -54,8 +54,8 @@ impl DanmakuClient for PyDanmakuClient {
             })
         })
         .await
-        .change_context(AppError::Unknown)?
-        .change_context(AppError::Unknown)?;
+        .map_err(|e| AppError::Custom(format!("弹幕停止线程异常退出: {e}")))?
+        .map_err(|e| AppError::Custom(format!("弹幕停止失败: {e}")))?;
         Ok(())
     }
 
