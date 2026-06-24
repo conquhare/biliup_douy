@@ -123,6 +123,22 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ children, entity, onOk })
   } catch (e) {
     console.error(e)
   }
+  // Sanitize array fields to prevent Semi ArrayField "initValue must be an array" warning
+  if (entity) {
+    const arrayFields = [
+      'postprocessor',
+      'excluded_keywords',
+      'preprocessor',
+      'segment_processor',
+      'downloaded_processor',
+      'opt_args',
+    ]
+    for (const field of arrayFields) {
+      if (!Array.isArray(entity[field as keyof LiveStreamerEntity])) {
+        (entity as any)[field] = []
+      }
+    }
+  }
 
   return (
     <>
