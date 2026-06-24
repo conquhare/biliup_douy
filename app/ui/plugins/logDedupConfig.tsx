@@ -43,6 +43,8 @@ const LogDedupConfig: React.FC = () => {
   const [config, setConfig] = useState<LogDedupConfig>(defaultConfig)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  // formKey 在每次从服务端加载完成后递增，强制 Form 重新挂载以同步 Semi 内部状态
+  const [formKey, setFormKey] = useState(0)
 
   useEffect(() => {
     loadConfig()
@@ -59,6 +61,7 @@ const LogDedupConfig: React.FC = () => {
       if (response.ok) {
         const data = await response.json()
         setConfig({ ...defaultConfig, ...data })
+        setFormKey(k => k + 1)
       }
     } catch (error) {
       console.error('加载配置失败:', error)
@@ -97,6 +100,7 @@ const LogDedupConfig: React.FC = () => {
 
   const resetConfig = () => {
     setConfig(defaultConfig)
+    setFormKey(k => k + 1)
     Toast.info('已重置为默认配置')
   }
 
@@ -121,6 +125,7 @@ const LogDedupConfig: React.FC = () => {
       />
 
       <Form
+        key={formKey}
         labelPosition="left"
         labelWidth={200}
         style={{ width: '100%' }}
@@ -128,8 +133,8 @@ const LogDedupConfig: React.FC = () => {
         <Form.Switch
           field="enabled"
           label="启用日志去重"
-          checked={config.enabled}
-          onChange={(checked) => setConfig({ ...config, enabled: checked })}
+          initValue={config.enabled}
+          onChange={(checked) => setConfig(prev => ({ ...prev, enabled: checked as boolean }))}
         />
 
         <Form.InputNumber
@@ -137,9 +142,9 @@ const LogDedupConfig: React.FC = () => {
           label="重复阈值（条）"
           min={1}
           max={20}
-          value={config.threshold}
+          initValue={config.threshold}
           disabled={!config.enabled}
-          onChange={(value) => setConfig({ ...config, threshold: value as number })}
+          onChange={(value) => setConfig(prev => ({ ...prev, threshold: value as number }))}
           helpText="连续出现相同日志达到此数量后开始合并显示（1-20）"
         />
 
@@ -147,18 +152,18 @@ const LogDedupConfig: React.FC = () => {
           field="enabled_levels"
           label="应用去重的日志等级"
           options={logLevelOptions}
-          value={config.enabled_levels}
+          initValue={config.enabled_levels}
           disabled={!config.enabled}
-          onChange={(value) => setConfig({ ...config, enabled_levels: value as string[] })}
+          onChange={(value) => setConfig(prev => ({ ...prev, enabled_levels: value as string[] }))}
           direction="horizontal"
         />
 
         <Form.Input
           field="abbreviate_format"
           label="缩写格式模板"
-          value={config.abbreviate_format}
+          initValue={config.abbreviate_format}
           disabled={!config.enabled}
-          onChange={(value) => setConfig({ ...config, abbreviate_format: value })}
+          onChange={(value) => setConfig(prev => ({ ...prev, abbreviate_format: value }))}
           helpText="使用 {count} 表示重复次数，{content} 表示日志内容"
           placeholder="... [重复 {count} 次] {content}"
         />
@@ -166,18 +171,18 @@ const LogDedupConfig: React.FC = () => {
         <Form.Switch
           field="reset_on_error"
           label="ERROR日志重置计数"
-          checked={config.reset_on_error}
+          initValue={config.reset_on_error}
           disabled={!config.enabled}
-          onChange={(checked) => setConfig({ ...config, reset_on_error: checked })}
+          onChange={(checked) => setConfig(prev => ({ ...prev, reset_on_error: checked as boolean }))}
           helpText="收到ERROR等级日志时立即结束当前重复计数"
         />
 
         <Form.Switch
           field="reset_on_change"
           label="内容变化重置计数"
-          checked={config.reset_on_change}
+          initValue={config.reset_on_change}
           disabled={!config.enabled}
-          onChange={(checked) => setConfig({ ...config, reset_on_change: checked })}
+          onChange={(checked) => setConfig(prev => ({ ...prev, reset_on_change: checked as boolean }))}
           helpText="收到不同内容的日志时立即结束当前重复计数"
         />
 
