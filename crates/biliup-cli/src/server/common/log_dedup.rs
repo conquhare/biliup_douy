@@ -42,13 +42,26 @@ pub struct LogDeduplicator {
     config: LogDedupConfig,
     /// 多条目追踪：key = "level:normalized_content"
     entries: HashMap<String, LogEntry>,
+    /// 统计：已处理行数（用于诊断）
+    total_processed: u64,
+    total_suppressed: u64,
 }
 
 impl LogDeduplicator {
     pub fn new(config: LogDedupConfig) -> Self {
+        tracing::info!(
+            "[去重] 初始化: enabled={} threshold={} reset_on_change={} reset_on_error={} levels={:?}",
+            config.enabled,
+            config.threshold,
+            config.reset_on_change,
+            config.reset_on_error,
+            config.enabled_levels,
+        );
         Self {
             config,
             entries: HashMap::new(),
+            total_processed: 0,
+            total_suppressed: 0,
         }
     }
 
@@ -97,7 +110,16 @@ impl LogDeduplicator {
             entry.count += 1;
             if entry.count < self.config.threshold {
                 results.push(line.to_string());
-            }
+            } else {
+                self.total_suppressed += 1;
+                if self.total_suppressed <= 10 || self.total_suppressed % 100 == 0 {
+                    tracing::info!(
+                        "[去重] 已抑制 {} 条日志, 当前: count={} > threshold={}",
+                        self.total_suppressed,
+                        entry.count,
+                        self.config.threshold,
+                    );
+                }
             // count >= threshold: 不输出（抑制）
         } else {
             // 全新条目：输出已达到阈值的摘要（不删除追踪状态）
