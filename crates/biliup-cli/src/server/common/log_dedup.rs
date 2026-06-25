@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+// version-tag: log_dedup_v3 (multi-entry + emit_summaries + diagnostics)
 /// 多条目追踪上限，防止无限增长
 const MAX_ENTRIES: usize = 200;
 

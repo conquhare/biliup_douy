@@ -143,12 +143,11 @@ jobs:
     - name: Install Rust stable
       uses: dtolnay/rust-toolchain@stable
 
-    - name: Force clean rebuild of Rust (avoid sccache stale)
-      shell: bash
-      run: cargo clean
-
     - name: Build Rust extension
       uses: PyO3/maturin-action@v1
+      env:
+        SCCACHE_DISABLE: "1"
+        CARGO_INCREMENTAL: "0"
       with:
         command: build
         args: --release
