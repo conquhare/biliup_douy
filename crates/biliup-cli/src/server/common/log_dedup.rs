@@ -120,7 +120,8 @@ impl LogDeduplicator {
                         self.config.threshold,
                     );
                 }
-            // count >= threshold: 不输出（抑制）
+                // count >= threshold: 不输出（抑制）
+            }
         } else {
             // 全新条目：输出已达到阈值的摘要（不删除追踪状态）
             if self.config.reset_on_change {
