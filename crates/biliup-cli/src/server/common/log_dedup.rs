@@ -100,9 +100,9 @@ impl LogDeduplicator {
             }
             // count >= threshold: 不输出（抑制）
         } else {
-            // 全新条目
+            // 全新条目：输出已达到阈值的摘要（不删除追踪状态）
             if self.config.reset_on_change {
-                self.drain_summaries(&mut results);
+                self.emit_summaries(&mut results);
             }
 
             // 上限保护
@@ -186,7 +186,18 @@ impl LogDeduplicator {
         s
     }
 
-    /// 输出所有达到阈值的条目的摘要，并清空 entries
+    /// 输出所有达到阈值的条目的摘要（不删除条目，用于 reset_on_change 场景）
+    fn emit_summaries(&self, results: &mut Vec<String>) {
+        for (_, entry) in &self.entries {
+            if entry.count >= self.config.threshold {
+                if let Some(summary) = self.make_summary(entry) {
+                    results.push(summary);
+                }
+            }
+        }
+    }
+
+    /// 输出所有达到阈值的条目的摘要，并清空 entries（用于 flush / reset 场景）
     fn drain_summaries(&mut self, results: &mut Vec<String>) {
         let entries: Vec<_> = self.entries.drain().collect();
         for (_, entry) in entries {
@@ -252,9 +263,44 @@ mod tests {
             dedup.process(line1);
         }
         let results = dedup.process(line2);
-        // line2 是全新内容，由于 reset_on_change=true（默认），会清空之前的条目
-        // 输出至少包含 line2 本身
+        // line2 是全新内容，reset_on_change=true 会 emit 摘要（line1 未达阈值故无摘要）
+        // 但不会删除 line1 的追踪条目！line1 的 entry 保留在 map 中
+        // 输出包含 line2 本身
         assert!(results.len() >= 1);
+
+        // 再次出现 line1 时，count 应该继续从 4 开始累积（之前3次+现在1次）
+        let r = dedup.process(line1); // count=4 >= threshold=4 → 抑制
+        // 注意：如果 reset_on_change 错误地清空了 entries，这里 count 会是 1 而非 4
+    }
+
+    #[test]
+    fn test_reset_on_change_preserves_entries() {
+        // 验证 reset_on_change 不删除追踪条目（多房间场景核心修复）
+        let mut config = LogDedupConfig::default();
+        config.threshold = 2;
+        config.reset_on_change = true;
+        let mut dedup = LogDeduplicator::new(config);
+
+        let room_a = "2024-01-01 12:00:00 INFO Room [A] status changed to Idle";
+        let room_b = "2024-01-01 12:00:01 INFO Room [B] status changed to Idle";
+
+        // Room A 出现 2 次（达到阈值）
+        dedup.process(room_a); // count=1, output
+        dedup.process(room_a); // count=2 >= threshold, 抑制
+
+        // Room B 出现（全新消息，触发 reset_on_change）
+        let results = dedup.process(room_b);
+        // 应输出 room_b 本身；room_a 未达额外重复所以没有摘要
+        assert!(results.iter().any(|r| r.contains("Room [B]")), "应输出新消息 room_b");
+
+        // Room A 再次出现时——关键：count 应继续从 3 累积（不是从 1 开始）
+        let results = dedup.process(room_a); // count=3 > threshold, 抑制
+        assert_eq!(results.len(), 0, "room_a count=3 >= threshold=2，应被抑制");
+
+        // flush 应有 room_a 的摘要（extra_count = 3 - 2 = 1）
+        let flush = dedup.flush();
+        assert!(flush.iter().any(|r| r.contains("Room [A]") && r.contains("重复")),
+            "flush 应包含 room_a 的去重摘要，说明条目一直被保留");
     }
 
     #[test]
