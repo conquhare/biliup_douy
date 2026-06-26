@@ -140,7 +140,7 @@ const LogDedupConfig: React.FC = () => {
         <Form.InputNumber
           field="threshold"
           label="重复阈值（条）"
-          min={1}
+          min={2}
           max={20}
           initValue={config.threshold}
           disabled={!config.enabled}

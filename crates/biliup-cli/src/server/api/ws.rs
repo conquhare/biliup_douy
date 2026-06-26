@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 use std::io;
 use std::io::ErrorKind;
 use std::path::PathBuf;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::fs;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncSeekExt, BufReader};
 use tokio::time::{MissedTickBehavior, interval};
@@ -69,6 +69,8 @@ async fn websocket_logs(mut ws: WebSocket, query: LogsQuery) {
 
     let mut tick = interval(Duration::from_millis(500));
     tick.set_missed_tick_behavior(MissedTickBehavior::Skip);
+    let mut last_periodic_flush = Instant::now();
+    const PERIODIC_FLUSH_INTERVAL: Duration = Duration::from_secs(30);
 
     loop {
         tokio::select! {
@@ -133,6 +135,17 @@ async fn websocket_logs(mut ws: WebSocket, query: LogsQuery) {
                         break;
                     }
                     file_size = current_size;
+                }
+
+                // 周期性输出去重摘要（每30秒）
+                if last_periodic_flush.elapsed() >= PERIODIC_FLUSH_INTERVAL {
+                    let summaries = dedup.periodic_flush();
+                    for summary in summaries {
+                        if ws.send(Message::Text(Utf8Bytes::from(summary))).await.is_err() {
+                            break;
+                        }
+                    }
+                    last_periodic_flush = Instant::now();
                 }
             }
         }

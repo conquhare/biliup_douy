@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-// version-tag: log_dedup_v3 (multi-entry + emit_summaries + diagnostics)
+// version-tag: log_dedup_v4 (multi-entry + emit_summaries + periodic_flush + diagnostics)
 /// 多条目追踪上限，防止无限增长
 const MAX_ENTRIES: usize = 200;
 
@@ -151,6 +151,45 @@ impl LogDeduplicator {
     pub fn flush(&mut self) -> Vec<String> {
         let mut results = Vec::new();
         self.drain_summaries(&mut results);
+        results
+    }
+
+    /// 周期性输出：输出所有达到阈值的摘要，并重置它们的计数
+    /// 用于流式阶段让用户感知去重效果
+    pub fn periodic_flush(&mut self) -> Vec<String> {
+        let mut results = Vec::new();
+        let threshold = self.config.threshold;
+        let format = &self.config.abbreviate_format;
+
+        // 收集所有达到阈值的条目，输出摘要，重置计数
+        let mut to_reset: Vec<String> = Vec::new();
+        for (key, entry) in &self.entries {
+            if entry.count >= threshold {
+                let extra_count = entry.count - threshold + 1;
+                results.push(
+                    format
+                        .replace("{count}", &extra_count.to_string())
+                        .replace("{content}", &entry.content),
+                );
+                to_reset.push(key.clone());
+            }
+        }
+
+        for key in &to_reset {
+            if let Some(entry) = self.entries.get_mut(key) {
+                entry.count = 0;
+            }
+        }
+
+        if !results.is_empty() {
+            tracing::info!(
+                "[去重] 周期性输出: {} 条摘要, 累计处理={} 累计抑制={}",
+                results.len(),
+                self.total_processed,
+                self.total_suppressed,
+            );
+        }
+
         results
     }
 
@@ -566,5 +605,31 @@ mod tests {
         }
         let results = dedup.process(&line); // 第5次，count=5 >= 4
         assert_eq!(results.len(), 0, "简单格式也应去重");
+    }
+
+    #[test]
+    fn test_periodic_flush_resets_counts() {
+        let mut config = LogDedupConfig::default();
+        config.threshold = 2;
+        let mut dedup = LogDeduplicator::new(config);
+        let line1 = "2024-01-01 12:00:00 INFO Room A";
+        let line2 = "2024-01-01 12:00:01 INFO Room B";
+
+        // Round 1: both new, output
+        dedup.process(line1);
+        dedup.process(line2);
+        // Round 2: both suppressed (count=2 >= threshold=2)
+        dedup.process(line1);
+        dedup.process(line2);
+
+        // periodic_flush: should emit summaries and reset counts
+        let flush = dedup.periodic_flush();
+        assert!(!flush.is_empty(), "periodic_flush 应输出摘要");
+        assert!(flush.iter().any(|r| r.contains("Room A")), "应包含 Room A 摘要");
+        assert!(flush.iter().any(|r| r.contains("Room B")), "应包含 Room B 摘要");
+
+        // After reset, counts should be 0; next appearance is "new" again
+        let r3 = dedup.process(line1);
+        assert_eq!(r3.len(), 1, "重置后第一次应输出");
     }
 }
