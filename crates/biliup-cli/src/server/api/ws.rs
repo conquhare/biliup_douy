@@ -9,11 +9,16 @@ use std::time::{Duration, Instant};
 use tokio::fs;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncSeekExt, BufReader};
 use tokio::time::{MissedTickBehavior, interval};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 use crate::server::common::log_dedup::{LogDedupConfig, LogDeduplicator};
 
-static ALLOWED_FILES: &[&str] = &["ds_update.log", "download.log", "upload.log"];
+/// 允许监控的日志前缀 → 文件名后缀
+static ALLOWED_LOG_TYPES: &[(&str, &str)] = &[
+    ("ds_update", "log"),
+    ("download", "log"),
+    ("upload", "log"),
+];
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct LogsQuery {
@@ -27,9 +32,22 @@ pub async fn ws_logs(
     ws.on_upgrade(move |socket| websocket_logs(socket, query))
 }
 
+/// 根据请求的文件名解析出 (prefix, suffix)，验证是否在白名单中
+fn parse_log_type(file_param: &str) -> Option<(&'static str, &'static str)> {
+    for (prefix, suffix) in ALLOWED_LOG_TYPES {
+        // 同时支持旧格式 "download.log" 和新格式 "download.2026-06-26.log"
+        if file_param == format!("{}.{}", prefix, suffix)
+            || (file_param.starts_with(prefix) && file_param.ends_with(suffix))
+        {
+            return Some((prefix, suffix));
+        }
+    }
+    None
+}
+
 async fn websocket_logs(mut ws: WebSocket, query: LogsQuery) {
     let file_param = query.file.unwrap_or_else(|| "ds_update.log".to_string());
-    if !ALLOWED_FILES.contains(&file_param.as_str()) {
+    let Some((prefix, suffix)) = parse_log_type(&file_param) else {
         let _ = ws
             .send(Message::Text(
                 format!("不允许访问请求的文件: {}", file_param).into(),
@@ -37,9 +55,22 @@ async fn websocket_logs(mut ws: WebSocket, query: LogsQuery) {
             .await;
         let _ = ws.send(Message::Close(None)).await;
         return;
-    }
+    };
 
-    let log_file = PathBuf::from(&file_param);
+    // 解析实际日志文件路径（支持每日滚动后的新文件名）
+    let cwd = std::path::Path::new("");
+    let mut log_file = match resolve_latest_log_path(cwd, prefix, suffix).await {
+        Ok(path) => path,
+        Err(e) => {
+            let _ = ws
+                .send(Message::Text(
+                    format!("找不到日志文件 ({}.{}): {}", prefix, suffix, e).into(),
+                ))
+                .await;
+            let _ = ws.send(Message::Close(None)).await;
+            return;
+        }
+    };
 
     let config = load_dedup_config().await;
     let mut dedup = LogDeduplicator::new(config);
@@ -71,6 +102,9 @@ async fn websocket_logs(mut ws: WebSocket, query: LogsQuery) {
     tick.set_missed_tick_behavior(MissedTickBehavior::Skip);
     let mut last_periodic_flush = Instant::now();
     const PERIODIC_FLUSH_INTERVAL: Duration = Duration::from_secs(30);
+    // 每60秒检查一次日志滚动（避免频繁 I/O）
+    let mut last_rotation_check = Instant::now();
+    const ROTATION_CHECK_INTERVAL: Duration = Duration::from_secs(60);
 
     loop {
         tokio::select! {
@@ -96,6 +130,45 @@ async fn websocket_logs(mut ws: WebSocket, query: LogsQuery) {
             }
 
             _ = tick.tick() => {
+                // 检查日志是否发生了滚动（文件名变化）
+                if last_rotation_check.elapsed() >= ROTATION_CHECK_INTERVAL {
+                    last_rotation_check = Instant::now();
+                    let cwd = std::path::Path::new("");
+                    match resolve_latest_log_path(cwd, prefix, suffix).await {
+                        Ok(latest) if latest != log_file => {
+                            let _ = ws.send(Message::Text(Utf8Bytes::from(
+                                format!("日志滚动: {} → {}", log_file.display(), latest.display())
+                            ))).await;
+                            // 读取旧文件的尾部（可能还有残留数据）
+                            let meta = match fs::metadata(&log_file).await {
+                                Ok(m) => m,
+                                Err(_) => {
+                                    log_file = latest;
+                                    file_size = 0;
+                                    dedup.reset();
+                                    continue;
+                                }
+                            };
+                            let current_size = meta.len();
+                            if current_size > file_size {
+                                if let Err(e) = send_new_lines_dedup(&mut ws, &log_file, file_size, &mut dedup).await {
+                                    error!("读取旧日志文件尾部错误: {}", e);
+                                }
+                            }
+                            // 切换到新文件
+                            info!("切换到新日志文件: {}", latest.display());
+                            log_file = latest;
+                            file_size = 0;
+                            dedup.reset();
+                            continue;
+                        }
+                        Ok(_) => {} // 文件未变化
+                        Err(_) => {
+                            warn!("解析日志文件路径失败，保持当前文件: {}", log_file.display());
+                        }
+                    }
+                }
+
                 let meta = match fs::metadata(&log_file).await {
                     Ok(m) => m,
                     Err(e) if e.kind() == ErrorKind::NotFound => {

@@ -124,7 +124,13 @@ fn download_with_callback(
             // builds the subscriber.
             .with_timer(local_time.clone())
             .finish();
-        let file_appender = tracing_appender::rolling::never("", "download.log");
+        let file_appender = tracing_appender::rolling::RollingFileAppender::builder()
+            .rotation(tracing_appender::rolling::Rotation::DAILY)
+            .filename_prefix("download")
+            .filename_suffix("log")
+            .max_log_files(7)
+            .build("")
+            .expect("initializing rolling file appender for download failed");
         let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
         let file_layer = tracing_subscriber::fmt::layer()
             .with_ansi(false)
@@ -328,7 +334,13 @@ fn upload(
             // builds the subscriber.
             .with_timer(local_time.clone())
             .finish();
-        let file_appender = tracing_appender::rolling::never("", "upload.log");
+        let file_appender = tracing_appender::rolling::RollingFileAppender::builder()
+            .rotation(tracing_appender::rolling::Rotation::DAILY)
+            .filename_prefix("upload")
+            .filename_suffix("log")
+            .max_log_files(7)
+            .build("")
+            .expect("initializing rolling file appender for upload failed");
         let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
         let file_layer = tracing_subscriber::fmt::layer()
             .with_ansi(false)
