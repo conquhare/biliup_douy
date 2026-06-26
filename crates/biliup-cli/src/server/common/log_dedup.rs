@@ -82,6 +82,8 @@ impl LogDeduplicator {
     pub fn process(&mut self, line: &str) -> Vec<String> {
         let mut results = Vec::new();
 
+        self.total_processed += 1;
+
         if !self.config.enabled {
             results.push(line.to_string());
             return results;

@@ -101,7 +101,7 @@ async fn websocket_logs(mut ws: WebSocket, query: LogsQuery) {
     let mut tick = interval(Duration::from_millis(500));
     tick.set_missed_tick_behavior(MissedTickBehavior::Skip);
     let mut last_periodic_flush = Instant::now();
-    const PERIODIC_FLUSH_INTERVAL: Duration = Duration::from_secs(30);
+    const PERIODIC_FLUSH_INTERVAL: Duration = Duration::from_secs(10);
     // 每60秒检查一次日志滚动（避免频繁 I/O）
     let mut last_rotation_check = Instant::now();
     const ROTATION_CHECK_INTERVAL: Duration = Duration::from_secs(60);
