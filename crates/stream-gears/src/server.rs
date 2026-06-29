@@ -448,7 +448,7 @@ pub(crate) async fn _main(args: &[String]) -> AppResult<()> {
         .filename_prefix("biliup")
         .filename_suffix("log")
         .max_log_files(7)
-        .build("")
+        .build(".")
         .expect("initializing rolling file appender failed");
 
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);

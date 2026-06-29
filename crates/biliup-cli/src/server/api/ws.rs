@@ -58,7 +58,7 @@ async fn websocket_logs(mut ws: WebSocket, query: LogsQuery) {
     };
 
     // 解析实际日志文件路径（支持每日滚动后的新文件名）
-    let cwd = std::path::Path::new("");
+    let cwd = std::path::Path::new(".");
     let mut log_file = match resolve_latest_log_path(cwd, prefix, suffix).await {
         Ok(path) => path,
         Err(e) => {
@@ -133,7 +133,7 @@ async fn websocket_logs(mut ws: WebSocket, query: LogsQuery) {
                 // 检查日志是否发生了滚动（文件名变化）
                 if last_rotation_check.elapsed() >= ROTATION_CHECK_INTERVAL {
                     last_rotation_check = Instant::now();
-                    let cwd = std::path::Path::new("");
+                    let cwd = std::path::Path::new(".");
                     match resolve_latest_log_path(cwd, prefix, suffix).await {
                         Ok(latest) if latest != log_file => {
                             let _ = ws.send(Message::Text(Utf8Bytes::from(

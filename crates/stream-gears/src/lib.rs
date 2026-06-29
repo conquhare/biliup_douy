@@ -129,7 +129,7 @@ fn download_with_callback(
             .filename_prefix("download")
             .filename_suffix("log")
             .max_log_files(7)
-            .build("")
+            .build(".")
             .expect("initializing rolling file appender for download failed");
         let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
         let file_layer = tracing_subscriber::fmt::layer()
@@ -339,7 +339,7 @@ fn upload(
             .filename_prefix("upload")
             .filename_suffix("log")
             .max_log_files(7)
-            .build("")
+            .build(".")
             .expect("initializing rolling file appender for upload failed");
         let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
         let file_layer = tracing_subscriber::fmt::layer()
