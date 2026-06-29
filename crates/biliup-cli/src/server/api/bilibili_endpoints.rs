@@ -59,7 +59,7 @@ pub async fn get_myinfo_endpoint(
     Ok(Json(
         bili.my_info()
             .await
-            .change_context(AppError::Unknown)
+            .change_context(AppError::Custom("获取B站用户信息失败".to_string()))
             .map_err(report_to_response)?,
     ))
 }
@@ -70,15 +70,16 @@ pub async fn get_proxy_endpoint(
     Query(params): Query<HashMap<String, String>>,
 ) -> Result<Bytes, Response> {
     // 代理HTTP请求
+    let url = params.get("url").cloned().unwrap_or_default();
     client
         .client
-        .get(&params["url"])
+        .get(&url)
         .send()
         .await
-        .change_context(AppError::Unknown)
+        .map_err(|e| Report::new(AppError::Custom(format!("代理请求发送失败 (url: {}): {}", url, e))))
         .map_err(report_to_response)?
         .bytes()
         .await
-        .change_context(AppError::Unknown)
+        .map_err(|e| Report::new(AppError::Custom(format!("代理响应读取失败 (url: {}): {}", url, e))))
         .map_err(report_to_response)
 }
