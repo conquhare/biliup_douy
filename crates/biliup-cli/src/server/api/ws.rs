@@ -328,21 +328,22 @@ pub async fn save_dedup_config(config: &LogDedupConfig) -> std::io::Result<()> {
     fs::write(config_path, content).await
 }
 
+/// 找到最新的日志文件。优先 dated 命名（prefix.YYYY-MM-DD.suffix），
+/// 其次回退到 plain 命名（prefix.suffix）。回退时会检查文件是否过期（>24小时未更新
+/// 说明是旧版本 never() 模式遗留的僵尸文件）。
 async fn resolve_latest_log_path(
     dir: &std::path::Path,
     prefix: &str,
     suffix: &str,
 ) -> io::Result<PathBuf> {
-    let active = dir.join(format!("{}.{}", prefix, suffix));
-    if fs::metadata(&active).await.is_ok() {
-        return Ok(active);
-    }
-
-    let mut rd = fs::read_dir(dir).await?;
     let pre = format!("{}.", prefix);
     let suf = format!(".{}", suffix);
+    let plain_name = format!("{}.{}", prefix, suffix);
 
-    let mut candidates: Vec<(String, PathBuf)> = Vec::new();
+    let mut rd = fs::read_dir(dir).await?;
+    let mut dated: Vec<(String, PathBuf)> = Vec::new();
+    let mut plain: Option<PathBuf> = None;
+
     while let Some(ent) = rd.next_entry().await? {
         let path = ent.path();
         if !path.is_file() {
@@ -351,15 +352,76 @@ async fn resolve_latest_log_path(
         let Some(name) = path.file_name().and_then(|s| s.to_str()) else {
             continue;
         };
-        if name.starts_with(&pre) && name.ends_with(&suf) {
-            candidates.push((name.to_string(), path));
+
+        if name == plain_name {
+            plain = Some(path);
+            continue;
+        }
+
+        // 匹配 prefix.YYYY-MM-DD.suffix 格式的 dated 文件
+        if let Some(core) = name.strip_prefix(&pre).and_then(|s| s.strip_suffix(&suf)) {
+            if core.len() == 10
+                && core
+                    .chars()
+                    .enumerate()
+                    .all(|(i, c)| match i {
+                        4 | 7 => c == '-',
+                        _ => c.is_ascii_digit(),
+                    })
+            {
+                dated.push((name.to_string(), path));
+            }
         }
     }
 
-    if candidates.is_empty() {
-        return Err(io::Error::new(ErrorKind::NotFound, "no log file found"));
+    // 优先返回最新的 dated 文件，同样检查是否过期
+    if !dated.is_empty() {
+        dated.sort_by(|a, b| a.0.cmp(&b.0));
+        let latest = dated.last().unwrap().1.clone();
+        if let Err(e) = check_not_stale(&latest).await {
+            return Err(e);
+        }
+        info!("resolve_latest_log_path: 找到 dated 文件 {}", latest.display());
+        return Ok(latest);
     }
 
-    candidates.sort_by(|a, b| a.0.cmp(&b.0));
-    Ok(candidates.last().unwrap().1.clone())
+    // 回退到 plain 文件，同样检查是否过期
+    if let Some(path) = plain {
+        if let Err(e) = check_not_stale(&path).await {
+            return Err(e);
+        }
+        info!("resolve_latest_log_path: 回退到 plain 文件 {}", path.display());
+        return Ok(path);
+    }
+
+    Err(io::Error::new(
+        ErrorKind::NotFound,
+        format!("尚未生成 {prefix}.{suffix} 日志文件 (搜索目录: {})", dir.display()),
+    ))
+}
+
+/// 检查日志文件修改时间是否在 24 小时内。超过阈值视为旧版本遗留文件，拒绝返回。
+async fn check_not_stale(path: &std::path::Path) -> io::Result<()> {
+    let meta = fs::metadata(path).await.map_err(|e| {
+        io::Error::new(
+            ErrorKind::NotFound,
+            format!("无法读取日志文件 {}: {}", path.display(), e),
+        )
+    })?;
+    if let Ok(mtime) = meta.modified() {
+        if let Ok(age) = std::time::SystemTime::now().duration_since(mtime) {
+            const STALE_THRESHOLD: u64 = 86400; // 24 小时
+            if age.as_secs() > STALE_THRESHOLD {
+                return Err(io::Error::new(
+                    ErrorKind::NotFound,
+                    format!(
+                        "日志文件 {} 已过期（{} 小时未更新），新日志生成后自动显示",
+                        path.display(),
+                        age.as_secs() / 3600
+                    ),
+                ));
+            }
+        }
+    }
+    Ok(())
 }
