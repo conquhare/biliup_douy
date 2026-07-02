@@ -1,5 +1,8 @@
+use axum::body::Body;
 use axum::extract::ws::{Message, Utf8Bytes, WebSocket};
 use axum::extract::{Query, WebSocketUpgrade};
+use axum::http::{StatusCode, header};
+use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 use std::collections::VecDeque;
 use std::io;
@@ -16,6 +19,7 @@ use crate::server::common::log_dedup::{LogDedupConfig, LogDeduplicator};
 /// 允许监控的日志前缀 → 文件名后缀
 static ALLOWED_LOG_TYPES: &[(&str, &str)] = &[
     ("ds_update", "log"),
+    ("biliup", "log"),
     ("download", "log"),
     ("upload", "log"),
 ];
@@ -33,7 +37,7 @@ pub async fn ws_logs(
 }
 
 /// 根据请求的文件名解析出 (prefix, suffix)，验证是否在白名单中
-fn parse_log_type(file_param: &str) -> Option<(&'static str, &'static str)> {
+pub(crate) fn parse_log_type(file_param: &str) -> Option<(&'static str, &'static str)> {
     for (prefix, suffix) in ALLOWED_LOG_TYPES {
         // 同时支持旧格式 "download.log" 和新格式 "download.2026-06-26.log"
         if file_param == format!("{}.{}", prefix, suffix)
@@ -328,10 +332,58 @@ pub async fn save_dedup_config(config: &LogDedupConfig) -> std::io::Result<()> {
     fs::write(config_path, content).await
 }
 
+/// 下载日志文件端点：解析 latest dated 文件并作为附件返回，支持滚动后的文件名。
+pub async fn download_log_endpoint(
+    axum::extract::Path(file_param): axum::extract::Path<String>,
+) -> impl IntoResponse {
+    let Some((prefix, suffix)) = parse_log_type(&file_param) else {
+        return (
+            StatusCode::BAD_REQUEST,
+            format!("不允许访问请求的文件: {}", file_param),
+        )
+            .into_response();
+    };
+
+    let cwd = std::path::Path::new(".");
+    let path = match resolve_latest_log_path(cwd, prefix, suffix).await {
+        Ok(p) => p,
+        Err(e) => {
+            return (
+                StatusCode::NOT_FOUND,
+                format!("找不到日志文件 ({}): {}", file_param, e),
+            )
+                .into_response();
+        }
+    };
+
+    let content = match fs::read(&path).await {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("读取日志文件 {} 失败: {}", path.display(), e),
+            )
+                .into_response();
+        }
+    };
+
+    let filename = path.file_name().unwrap_or_default().to_string_lossy();
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
+        .header(
+            header::CONTENT_DISPOSITION,
+            format!("attachment; filename=\"{}\"", filename),
+        )
+        .body(Body::from(content))
+        .unwrap()
+}
+
 /// 找到最新的日志文件。优先 dated 命名（prefix.YYYY-MM-DD.suffix），
 /// 其次回退到 plain 命名（prefix.suffix）。回退时会检查文件是否过期（>24小时未更新
 /// 说明是旧版本 never() 模式遗留的僵尸文件）。
-async fn resolve_latest_log_path(
+pub(crate) async fn resolve_latest_log_path(
     dir: &std::path::Path,
     prefix: &str,
     suffix: &str,

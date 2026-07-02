@@ -215,7 +215,7 @@ export default function LogViewer() {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <Button
                   icon={<IconSave />}
-                  onClick={() => (window.location.href = `/static/${activeTab}.log`)}
+                  onClick={() => (window.location.href = `/v1/logs/${activeTab}.log`)}
                   type="primary"
                   theme="solid"
                   size="small"
@@ -247,10 +247,10 @@ export default function LogViewer() {
               </div>
             }
           >
-            <TabPane tab="主程序运行日志" itemKey="ds_update">
+            <TabPane tab="主程序运行日志" itemKey="biliup">
               <LogContent logs={logs} logContainerRef={logContainerRef} isLoading={isLoading} />
             </TabPane>
-            <TabPane tab="biliup下载和上传日志" itemKey="download">
+            <TabPane tab="biliup下载和上传日志" itemKey="biliup">
               <LogContent logs={logs} logContainerRef={logContainerRef} isLoading={isLoading} />
             </TabPane>
             {/*<TabPane tab="biliup-rs上传日志" itemKey="upload">*/}
