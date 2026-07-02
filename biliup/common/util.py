@@ -49,7 +49,7 @@ def _get_proxy_config():
     return mounts
 
 client = httpx.AsyncClient(
-    http2=True,
+    http2=False,  # HTTP/2 uses asyncio.locks.Event which binds to event loop, causing RuntimeError across loops
     follow_redirects=True,
     timeout=DEFAULT_TIMEOUT,
     limits=DEFAULT_CONNECTION_LIMITS,
@@ -66,7 +66,7 @@ def update_client_proxy():
     mounts = _get_proxy_config()
     if mounts:
         client = httpx.AsyncClient(
-            http2=True,
+            http2=False,  # HTTP/2 uses asyncio.locks.Event which binds to event loop, causing RuntimeError across loops
             follow_redirects=True,
             timeout=DEFAULT_TIMEOUT,
             limits=DEFAULT_CONNECTION_LIMITS,
