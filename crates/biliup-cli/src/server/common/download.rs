@@ -16,6 +16,7 @@ use error_stack::{ResultExt, bail};
 use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Notify;
@@ -108,6 +109,10 @@ pub struct DownloadTask {
     token: CancellationToken,
     done_notify: Notify,
     downloader: DownloaderRuntime,
+    /// 标记 execute 是否已开始执行（用于区分 sync 阻塞模式，避免 stop 永久等待）
+    started: AtomicBool,
+    /// 标记 execute 是否已执行完毕
+    completed: AtomicBool,
 }
 
 impl DownloadTask {
@@ -116,6 +121,8 @@ impl DownloadTask {
             token: CancellationToken::new(),
             done_notify: Notify::new(),
             downloader,
+            started: AtomicBool::new(false),
+            completed: AtomicBool::new(false),
         }
     }
 
@@ -126,6 +133,7 @@ impl DownloadTask {
         mut plugin: Box<dyn DownloadBase>,
         rooms_handle: Arc<Monitor>,
     ) -> AppResult<()> {
+        self.started.store(true, Ordering::SeqCst);
         // 重试配置
         let mut retry_count = 0;
         let max_retries = 3; // 最大重试次数
@@ -226,6 +234,7 @@ impl DownloadTask {
         // 确保状态更新和资源清理
         rooms_handle.wake_waker(ctx.worker_id()).await;
         info!("Download task completed: {:?}", result);
+        self.completed.store(true, Ordering::SeqCst);
         self.done_notify.notify_one();
         Ok(())
     }
@@ -294,7 +303,11 @@ impl DownloadTask {
         // 如果底层下载函数不支持取消，这里不能真正中断正在进行的下载
         self.token.cancel();
         self.downloader.stop().await?;
-        self.done_notify.notified().await;
+        // sync 阻塞模式下 execute 不会被调用，done_notify 永远不会被触发；
+        // 只有在 execute 已开始且尚未结束时才需要等待
+        if self.started.load(Ordering::SeqCst) && !self.completed.load(Ordering::SeqCst) {
+            self.done_notify.notified().await;
+        }
         Ok(())
     }
 }

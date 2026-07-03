@@ -131,7 +131,7 @@ pub async fn delete_streamers_endpoint(
     managers.del_room(id).await;
 
     let live_streamers = del_streamer(&pool, id).await.map_err(report_to_response)?;
-    info!(workers=?live_streamers, "successfully inserted new live streamers");
+    info!(id = id, "successfully deleted live streamers");
     Ok(Json(live_streamers))
 }
 

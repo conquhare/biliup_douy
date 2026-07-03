@@ -12,6 +12,7 @@ use biliup::client::StatelessClient;
 use core::fmt;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
+use std::time::Duration;
 use struct_patch::Patch;
 use tracing::{error, info};
 
@@ -211,10 +212,13 @@ impl Worker {
 
                 *self.downloader_status.write().unwrap() = status;
 
-                if let Some(task) = task
-                    && let Err(e) = task.stop().await
-                {
-                    error!(error = ?e, "Failed to stop downloader");
+                if let Some(task) = task {
+                    // 避免底层 stop 永久阻塞（如 sync 阻塞下载未监听取消信号）
+                    match tokio::time::timeout(Duration::from_secs(5), task.stop()).await {
+                        Ok(Ok(())) => {}
+                        Ok(Err(e)) => error!(error = ?e, "Failed to stop downloader"),
+                        Err(_) => error!("Timeout while stopping downloader; leaving state as updated"),
+                    }
                 }
             }
             Stage::Upload => {
