@@ -18,7 +18,6 @@ use crate::server::common::log_dedup::{LogDedupConfig, LogDeduplicator};
 
 /// 允许监控的日志前缀 → 文件名后缀
 static ALLOWED_LOG_TYPES: &[(&str, &str)] = &[
-    ("ds_update", "log"),
     ("biliup", "log"),
     ("download", "log"),
     ("upload", "log"),
@@ -50,7 +49,7 @@ pub(crate) fn parse_log_type(file_param: &str) -> Option<(&'static str, &'static
 }
 
 async fn websocket_logs(mut ws: WebSocket, query: LogsQuery) {
-    let file_param = query.file.unwrap_or_else(|| "ds_update.log".to_string());
+    let file_param = query.file.unwrap_or_else(|| "biliup.log".to_string());
     let Some((prefix, suffix)) = parse_log_type(&file_param) else {
         let _ = ws
             .send(Message::Text(

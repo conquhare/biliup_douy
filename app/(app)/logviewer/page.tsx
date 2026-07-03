@@ -86,7 +86,7 @@ export default function LogViewer() {
   const [logs, setLogs] = useState<string[]>([])
   const [isConnected, setIsConnected] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('ds_update')
+  const [activeTab, setActiveTab] = useState('biliup')
   const wsRef = useRef<WebSocket | null>(null)
   const logContainerRef = useRef<HTMLDivElement>(null)
 
@@ -250,12 +250,6 @@ export default function LogViewer() {
             <TabPane tab="主程序运行日志" itemKey="biliup">
               <LogContent logs={logs} logContainerRef={logContainerRef} isLoading={isLoading} />
             </TabPane>
-            <TabPane tab="biliup下载和上传日志" itemKey="biliup">
-              <LogContent logs={logs} logContainerRef={logContainerRef} isLoading={isLoading} />
-            </TabPane>
-            {/*<TabPane tab="biliup-rs上传日志" itemKey="upload">*/}
-            {/*  <LogContent logs={logs} logContainerRef={logContainerRef} isLoading={isLoading} />*/}
-            {/*</TabPane>*/}
           </Tabs>
         </Card>
       </Content>
