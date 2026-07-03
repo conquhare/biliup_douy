@@ -346,6 +346,14 @@ class DownloadBase(ABC):
         danmaku_file_name = os.path.splitext(file_name)[0] + '.xml'
         if self.danmaku:
             self.danmaku.save(danmaku_file_name)
+            # 自动生成 ASS 字幕
+            try:
+                from biliup.Danmaku import convert_danmaku_to_ass
+                ass_file = convert_danmaku_to_ass(danmaku_file_name)
+                if ass_file:
+                    logger.info(f"ASS 字幕已自动生成: {ass_file}")
+            except Exception as e:
+                logger.warning(f"自动生成 ASS 字幕失败: {e}")
 
 
     def download_success_callback(self):

@@ -140,7 +140,7 @@ class Douyin(DownloadBase):
 
                 except:
 
-                    logger.exception(f"{self.plugin_msg}: Żȡʧ")
+                    logger.warning(f"[抖音非报错状态日志] {self.plugin_msg}: 获取stream信息失败")
 
                     return False
 
@@ -218,7 +218,7 @@ class Douyin(DownloadBase):
 
         except:
 
-            logger.exception(f"{self.plugin_msg}: ȡֱϢʧ")
+            logger.warning(f"[抖音非报错状态日志] {self.plugin_msg}: 获取直播信息失败 (开播检测中的正常网络波动)")
 
             return False
 
@@ -248,7 +248,7 @@ class Douyin(DownloadBase):
 
         except:
 
-            logger.exception(f"{self.plugin_msg}: ֱʧ")
+            logger.warning(f"[抖音非报错状态日志] {self.plugin_msg}: 直播失败 (服务端返回或网络问题)")
 
             logger.debug(f"{self.plugin_msg}: room_info {room_info}")
 
@@ -360,7 +360,7 @@ class Douyin(DownloadBase):
 
             except:
 
-                logger.exception(f"{self.plugin_msg}: Ѱʧ")
+                logger.warning(f"[抖音非报错状态日志] {self.plugin_msg}: 寻找路径失败 (未开播或页面变动)")
 
                 return False
 

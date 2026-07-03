@@ -54,7 +54,9 @@ def json_loads(text: Union[str, None]) -> Dict[str, Any]:
     try:
         return json.loads(text)
     except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON: {text}") from e
+        # 截断过长的响应内容（如抖音返回的502/504 HTML页面）
+        preview = text[:200] + "..." if len(text) > 200 else text
+        raise ValueError(f"Invalid JSON: {preview}") from e
 
 
 def test_jsengine():

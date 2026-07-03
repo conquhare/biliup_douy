@@ -449,6 +449,20 @@ class BiliBili:
         videos.aid = aid
         context['sync_downloader_map'][str(self.database_row_id)] = videos.__dict__
         logger.info(f"上传完成 {file_name} {context['sync_downloader_map'][str(self.database_row_id)] }")
+
+        # 尝试上传对应字幕
+        base = os.path.splitext(file_name)[0]
+        ass_file = base + '.ass'
+        if os.path.exists(ass_file):
+            try:
+                cid = self._get_latest_cid(aid)
+                if cid:
+                    self._upload_subtitle_file(aid, cid, ass_file)
+                else:
+                    logger.warning(f"字幕文件存在但无法获取 cid，跳过字幕上传: {ass_file}")
+            except Exception as e:
+                logger.warning(f"上传字幕失败: {ass_file}: {e}")
+
         if file_name_callback:
             file_name_callback(self.save_path)
 
@@ -733,6 +747,52 @@ class BiliBili:
                 self.store()
                 continue
             return ret
+
+    def _get_latest_cid(self, aid: int) -> int:
+        """获取稿件中最新的视频分P cid"""
+        try:
+            resp = self.__session.get(
+                f'https://member.bilibili.com/x/vu/web/archive/view?aid={aid}',
+                timeout=10
+            ).json()
+            if resp.get('code') == 0:
+                videos = resp['data'].get('videos', [])
+                if videos:
+                    return videos[-1].get('cid', 0)
+        except Exception as e:
+            logger.warning(f"获取稿件 cid 失败 (aid={aid}): {e}")
+        return 0
+
+    def _upload_subtitle_file(self, aid: int, cid: int, subtitle_file: str):
+        """上传 ASS 字幕文件到B站视频"""
+        if not self.__bili_jct:
+            logger.warning("无法上传字幕: bili_jct 缺失")
+            return
+
+        try:
+            with open(subtitle_file, 'rb') as f:
+                files = {
+                    'file': (os.path.basename(subtitle_file), f, 'text/plain')
+                }
+                data = {
+                    'aid': aid,
+                    'cid': cid,
+                    'lan': 'zh-Hans',
+                    'csrf': self.__bili_jct,
+                    'csrf_token': self.__bili_jct,
+                }
+                resp = self.__session.post(
+                    'https://member.bilibili.com/x/v2/dm/subtitle/upload',
+                    data=data,
+                    files=files,
+                    timeout=30
+                ).json()
+                if resp.get('code') == 0:
+                    logger.info(f"字幕上传成功: {os.path.basename(subtitle_file)} (aid={aid}, cid={cid})")
+                else:
+                    logger.warning(f"字幕上传失败: {resp.get('message', resp)} (aid={aid}, cid={cid})")
+        except Exception as e:
+            logger.warning(f"字幕上传异常 (aid={aid}, cid={cid}): {e}")
 
     def cover_up(self, img: str):
         """
