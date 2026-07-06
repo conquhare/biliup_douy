@@ -450,9 +450,16 @@ class BiliBili:
         context['sync_downloader_map'][str(self.database_row_id)] = videos.__dict__
         logger.info(f"上传完成 {file_name} {context['sync_downloader_map'][str(self.database_row_id)] }")
 
+        # 先触发分段回调：保存弹幕 XML 并生成 ASS 字幕（边录边传模式下视频不落盘，
+        # 弹幕/字幕依赖此回调生成到 save_dir）
+        if file_name_callback:
+            file_name_callback(self.save_path)
+
         # 尝试上传对应字幕
         base = os.path.splitext(file_name)[0]
         ass_file = base + '.ass'
+        if self.save_dir:
+            ass_file = os.path.join(self.save_dir, ass_file)
         if os.path.exists(ass_file):
             try:
                 cid = self._get_latest_cid(aid)
@@ -462,9 +469,6 @@ class BiliBili:
                     logger.warning(f"字幕文件存在但无法获取 cid，跳过字幕上传: {ass_file}")
             except Exception as e:
                 logger.warning(f"上传字幕失败: {ass_file}: {e}")
-
-        if file_name_callback:
-            file_name_callback(self.save_path)
 
     async def upos_stream(self, stream_queue, file_name, total_size, ret):
         # print("--------------, ", file_name)

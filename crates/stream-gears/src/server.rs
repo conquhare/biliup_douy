@@ -265,7 +265,10 @@ impl DownloadBase for PyDownloader {
             if !is_live {
                 return Ok(false);
             }
-            
+
+            // 初始化弹幕客户端（边录边传模式同样需要，否则 self.danmaku 为空，弹幕不会被录制）
+            let _ = instance.call_method0("danmaku_init")?;
+
             let result: bool = instance.call_method0("download")?.extract()?;
             Ok(result)
         }).map_err(|e| Report::new(AppError::Unknown).attach(format!("sync_download failed: {:?}", e)))

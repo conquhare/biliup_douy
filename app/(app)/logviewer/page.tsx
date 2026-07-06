@@ -250,6 +250,9 @@ export default function LogViewer() {
             <TabPane tab="主程序运行日志" itemKey="biliup">
               <LogContent logs={logs} logContainerRef={logContainerRef} isLoading={isLoading} />
             </TabPane>
+            <TabPane tab="下载/上传引擎日志" itemKey="ds_update">
+              <LogContent logs={logs} logContainerRef={logContainerRef} isLoading={isLoading} />
+            </TabPane>
           </Tabs>
         </Card>
       </Content>

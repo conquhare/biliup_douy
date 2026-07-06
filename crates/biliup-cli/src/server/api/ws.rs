@@ -21,6 +21,7 @@ static ALLOWED_LOG_TYPES: &[(&str, &str)] = &[
     ("biliup", "log"),
     ("download", "log"),
     ("upload", "log"),
+    ("ds_update", "log"),
 ];
 
 #[derive(Debug, Deserialize, Clone)]
@@ -390,6 +391,8 @@ pub(crate) async fn resolve_latest_log_path(
     let pre = format!("{}.", prefix);
     let suf = format!(".{}", suffix);
     let plain_name = format!("{}.{}", prefix, suffix);
+    // Python logging.handlers.TimedRotatingFileHandler 的滚动命名：prefix.suffix.YYYY-MM-DD
+    let py_plain_prefix = format!("{}.{}", prefix, suffix);
 
     let mut rd = fs::read_dir(dir).await?;
     let mut dated: Vec<(String, PathBuf)> = Vec::new();
@@ -409,8 +412,24 @@ pub(crate) async fn resolve_latest_log_path(
             continue;
         }
 
-        // 匹配 prefix.YYYY-MM-DD.suffix 格式的 dated 文件
+        // 匹配 prefix.YYYY-MM-DD.suffix 格式的 dated 文件（Rust tracing-appender）
         if let Some(core) = name.strip_prefix(&pre).and_then(|s| s.strip_suffix(&suf)) {
+            if core.len() == 10
+                && core
+                    .chars()
+                    .enumerate()
+                    .all(|(i, c)| match i {
+                        4 | 7 => c == '-',
+                        _ => c.is_ascii_digit(),
+                    })
+            {
+                dated.push((name.to_string(), path));
+                continue;
+            }
+        }
+
+        // 匹配 prefix.suffix.YYYY-MM-DD 格式的 dated 文件（Python TimedRotatingFileHandler）
+        if let Some(core) = name.strip_prefix(&format!("{}.", py_plain_prefix)) {
             if core.len() == 10
                 && core
                     .chars()
