@@ -380,9 +380,9 @@ pub async fn download_log_endpoint(
         .unwrap()
 }
 
-/// 找到最新的日志文件。优先 dated 命名（prefix.YYYY-MM-DD.suffix），
-/// 其次回退到 plain 命名（prefix.suffix）。回退时会检查文件是否过期（>24小时未更新
-/// 说明是旧版本 never() 模式遗留的僵尸文件）。
+/// 找到最新的日志文件。优先 plain 命名（prefix.suffix，即当前写入文件），
+/// 不存在或过期时再回退到 dated 命名（prefix.YYYY-MM-DD.suffix 或 prefix.suffix.YYYY-MM-DD）。
+/// 回退时会检查文件是否过期（>24小时未更新说明是旧版本 never() 模式遗留的僵尸文件）。
 pub(crate) async fn resolve_latest_log_path(
     dir: &std::path::Path,
     prefix: &str,
@@ -444,7 +444,19 @@ pub(crate) async fn resolve_latest_log_path(
         }
     }
 
-    // 优先返回最新的 dated 文件，同样检查是否过期
+    // 优先返回 plain 文件（当前正在写入的文件）。如果不存在或过期，再回退到 dated。
+    if let Some(path) = plain {
+        if let Err(e) = check_not_stale(&path).await {
+            info!("plain 日志 {} 已过期，尝试回退到 dated 滚动文件", path.display());
+            if dated.is_empty() {
+                return Err(e);
+            }
+        } else {
+            info!("resolve_latest_log_path: 使用 plain 文件 {}", path.display());
+            return Ok(path);
+        }
+    }
+
     if !dated.is_empty() {
         dated.sort_by(|a, b| a.0.cmp(&b.0));
         let latest = dated.last().unwrap().1.clone();
@@ -453,15 +465,6 @@ pub(crate) async fn resolve_latest_log_path(
         }
         info!("resolve_latest_log_path: 找到 dated 文件 {}", latest.display());
         return Ok(latest);
-    }
-
-    // 回退到 plain 文件，同样检查是否过期
-    if let Some(path) = plain {
-        if let Err(e) = check_not_stale(&path).await {
-            return Err(e);
-        }
-        info!("resolve_latest_log_path: 回退到 plain 文件 {}", path.display());
-        return Ok(path);
     }
 
     Err(io::Error::new(
