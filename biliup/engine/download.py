@@ -129,6 +129,22 @@ class DownloadBase(ABC):
                 # 同步下载上传器
                 if self.downloader == 'sync-downloader':
                     logger.info(f"{self.plugin_msg}: 使用同步下载器")
+                    # 初始化弹幕客户端（边录边传模式下需要手动调用，
+                    # 否则 self.danmaku 为 None，弹幕不会被录制）
+                    self.danmaku_init()
+                    # 弹幕客户端 start() 是异步方法，需要在事件循环中运行
+                    # 边录边传是同步线程，所以用后台事件循环线程启动弹幕
+                    if self.danmaku:
+                        import asyncio
+                        _danmaku_loop = asyncio.new_event_loop()
+                        def _danmaku_runner():
+                            asyncio.set_event_loop(_danmaku_loop)
+                            _danmaku_loop.run_until_complete(self.danmaku.start())
+                            _danmaku_loop.close()
+                        _danmaku_thread = threading.Thread(target=_danmaku_runner, daemon=True,
+                                                            name=f"danmaku-{self.fname}")
+                        _danmaku_thread.start()
+                        logger.info(f"{self.plugin_msg}: 弹幕录制已启动")
                     stream_info = self.config.get('streamers', {}).get(self.fname, {})
                     stream_info.update({'name': self.fname})
                     stream_info['format_title'] = self.gen_download_filename(True)

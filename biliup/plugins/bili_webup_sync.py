@@ -165,11 +165,16 @@ class BiliWebAsync(UploadBase):
         for t in thread_list:
             t.join()
 
-        try:
-            ret = bili.submit(self.submit_api, videos=videos)
-            logger.info(f"上传成功: {ret}")
-        except Exception as e:
-            logger.error(f"投稿失败: {e}")
+        # 检查是否已有 aid（upload_stream 中已投稿），避免重复投稿
+        if videos.aid is None:
+            try:
+                ret = bili.submit(self.submit_api, videos=videos)
+                logger.info(f"最终投稿成功: {ret}")
+            except Exception as e:
+                logger.error(f"最终投稿失败: {e}")
+        else:
+            logger.info(f"稿件已投稿 (aid={videos.aid})，跳过最终投稿")
+
         file_list = []
         return file_list
 
