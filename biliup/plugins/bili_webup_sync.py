@@ -116,24 +116,35 @@ class BiliWebAsync(UploadBase):
 
         thread_list = []
         while True:
-            # 调试使用 分p 强制停止
-            # if file_index > 10:
-            #     logger.info(f"[consumer debug] 停止下载回调")
-            #     stop_event.set()
-            #     break
-
             file_name = f"{output_prefix}_{file_index}.mkv"
-
-            # if file_name_callback:
-            # file_name_callback(file_name)
             data_size = 0
             video_upload_queue = queue.SimpleQueue()
 
+            # 先读取第一个数据块，空分段直接跳过上传
+            # 避免为 0 字节分段启动上传线程和调用 preupload API
+            try:
+                first_data = self.video_queue.get(timeout=30)
+            except queue.Empty:
+                if stop_event.is_set():
+                    break
+                continue
+
+            if first_data is None:
+                # 空分段（ffmpeg 无输出数据），跳过上传
+                logger.info(f"[consumer] {file_name} 空分段（0字节），跳过上传")
+                stop_event.set()
+                break
+
+            data_size = len(first_data)
+            video_upload_queue.put(first_data)
+
+            # 有数据，启动上传线程
             t = threading.Thread(target=bili.upload_stream, args=(video_upload_queue,
                                  file_name, total_size, self.lines, videos, stop_event, file_name_callback), daemon=True, name=f"upload_{file_index}")
             thread_list.append(t)
             t.start()
 
+            # 继续读取剩余数据
             while True:
                 try:
                     data = self.video_queue.get(timeout=10)
@@ -153,7 +164,7 @@ class BiliWebAsync(UploadBase):
             file_index += 1
             logger.info(f"[consumer] bili.video.videos {bili.video.videos}")
             if data_size < 100:
-                logger.info(f"[consumer] 停止下载回调")
+                logger.info(f"[consumer] 数据量过小 ({data_size} 字节)，停止下载")
                 stop_event.set()
                 video_upload_queue.put(None)
 
@@ -166,14 +177,16 @@ class BiliWebAsync(UploadBase):
             t.join()
 
         # 检查是否已有 aid（upload_stream 中已投稿），避免重复投稿
-        if videos.aid is None:
+        if videos.aid is not None:
+            logger.info(f"稿件已投稿 (aid={videos.aid})，跳过最终投稿")
+        elif videos.videos:
             try:
                 ret = bili.submit(self.submit_api, videos=videos)
                 logger.info(f"最终投稿成功: {ret}")
             except Exception as e:
                 logger.error(f"最终投稿失败: {e}")
         else:
-            logger.info(f"稿件已投稿 (aid={videos.aid})，跳过最终投稿")
+            logger.info("没有有效分段需要投稿，跳过最终投稿")
 
         file_list = []
         return file_list

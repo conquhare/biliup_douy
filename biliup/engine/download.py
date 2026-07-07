@@ -559,6 +559,9 @@ def sync_download(stream_url, headers, segment_duration=60, max_file_size=100, o
     upload_thread.start()
 
     downloader.run()
+    # 下载器结束后通知上传器没有更多数据，避免消费端无限等待
+    video_queue.put(None)
+    downloader.stop_event.set()
     logger.info(f"{stream_info['name']} 下载器结束")
 
 
