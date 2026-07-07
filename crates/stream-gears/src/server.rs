@@ -482,7 +482,17 @@ pub(crate) async fn _main(args: &[String]) -> AppResult<()> {
     info!("Tracing initialized with daily rotation");
 
     match cli.command {
-        Commands::Login => login(cli.user_cookie, cli.proxy.as_deref()).await?,
+        Commands::Login => {
+            // 监听 Ctrl+C / SIGINT，避免二维码轮询阶段无法退出
+            tokio::select! {
+                biased;
+                _ = tokio::signal::ctrl_c() => {
+                    println!("\n已取消登录");
+                    return Ok(());
+                }
+                res = login(cli.user_cookie, cli.proxy.as_deref()) => res?,
+            }
+        }
         Commands::Renew => {
             renew(cli.user_cookie, cli.proxy.as_deref()).await?;
         }

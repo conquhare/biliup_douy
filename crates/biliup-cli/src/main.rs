@@ -45,7 +45,17 @@ async fn main() -> AppResult<()> {
     let user_cookie = expand_path(cli.user_cookie);
 
     match cli.command {
-        Commands::Login => login(user_cookie, cli.proxy.as_deref()).await?,
+        Commands::Login => {
+            // 监听 Ctrl+C / SIGINT，避免二维码轮询阶段无法退出
+            tokio::select! {
+                biased;
+                _ = tokio::signal::ctrl_c() => {
+                    println!("\n已取消登录");
+                    return Ok(());
+                }
+                res = login(user_cookie, cli.proxy.as_deref()) => res?,
+            }
+        }
         Commands::Renew => {
             renew(user_cookie, cli.proxy.as_deref()).await?;
         }

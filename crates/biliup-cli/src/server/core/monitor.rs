@@ -90,8 +90,15 @@ impl Monitor {
                 .await;
             let url = room.get_streamer().url.clone();
             let config = room.get_config();
-            // 使用 checker_sleep 作为单个主播检测间隔，如果不存在则使用 event_loop_interval
-            let check_interval = if config.checker_sleep > 0 {
+            let check_interval = if platform_name == "douyin" {
+                config.douyin_check_interval.unwrap_or_else(|| {
+                    if config.checker_sleep > 0 {
+                        config.checker_sleep
+                    } else {
+                        config.event_loop_interval
+                    }
+                })
+            } else if config.checker_sleep > 0 {
                 config.checker_sleep
             } else {
                 config.event_loop_interval

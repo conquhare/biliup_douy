@@ -16,11 +16,13 @@ import {
     IconHome,
     IconSetting,
     IconHistory,
+    IconUser,
 } from '@douyinfe/semi-icons'
 import Image from 'next/image'
 import ThemeButton from '../ui/ThemeButton'
 import { useSystemTheme, useTheme } from '../lib/utils'
 import { useWindowSize } from 'react-use';
+import UserList from '../ui/UserList'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
     const { Sider } = SeLayout
@@ -32,6 +34,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
     const [openKeys, setOpenKeys] = useState(initOpenKeys)
     const [selectedKeys, setSelectedKeys] = useState<any>([pathname.slice(1)])
+    const [userListVisible, setUserListVisible] = useState(false)
 
     const { width } = useWindowSize()
     const [isCollapsed, setIsCollapsed] = useState(width <= 640)
@@ -161,6 +164,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     itemKey: 'logViewer',
                 },
                 {
+                    text: '用户管理',
+                    icon: (
+                        <div
+                            style={{
+                                backgroundColor: 'rgba(var(--semi-orange-4), 1)',
+                                borderRadius: 'var(--semi-border-radius-medium)',
+                                color: 'var(--semi-color-bg-0)',
+                                display: 'flex',
+                                padding: '4px',
+                            }}
+                        >
+                            <IconUser size="small" />
+                        </div>
+                    ),
+                    itemKey: 'user',
+                    onClick: () => setUserListVisible(true),
+                },
+                {
                     text: '任务平台',
                     icon: (
                         <div
@@ -240,6 +261,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="zh-Hans">
         <body style={{ width: '100%' }}>
+        <UserList visible={userListVisible} onCancel={() => setUserListVisible(false)} />
         <SeLayout className="components-layout-demo semi-light-scrollbar">
             <Sider>
                 <Nav

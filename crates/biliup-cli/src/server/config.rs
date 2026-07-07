@@ -157,6 +157,9 @@ pub struct Config {
     /// 可选值: danmaku(弹幕), like(点赞), member(进场), gift(礼物), social(关注), room_user_seq(统计)
     #[serde(default)]
     pub douyin_danmaku_types: Option<Vec<String>>,
+    /// 抖音直播间检测间隔（秒），覆盖全局 checker_sleep
+    #[serde(default)]
+    pub douyin_check_interval: Option<u64>,
 
     // 弹幕处理设置
     /// 生成ASS字幕
