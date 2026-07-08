@@ -32,8 +32,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         initOpenKeys = ['manager']
     }
 
-    const [openKeys, setOpenKeys] = useState(initOpenKeys)
-    const [selectedKeys, setSelectedKeys] = useState<any>([pathname.slice(1)])
+    const [openKeys, setOpenKeys] = useState<string[]>(initOpenKeys)
+    const [selectedKeys, setSelectedKeys] = useState<string[]>([pathname.slice(1) || 'home'])
+
+    // pathname 变化时同步 selectedKeys 和 openKeys，避免 onSelect 与 Link 导航竞争导致右侧内容不切换
+    useEffect(() => {
+        const key = pathname.slice(1) || 'home'
+        setSelectedKeys([key])
+        if (key === 'streamers' || key === 'history') {
+            setOpenKeys(['manager'])
+        }
+    }, [pathname])
+
     const [userListVisible, setUserListVisible] = useState(false)
 
     const { width } = useWindowSize()
@@ -249,9 +259,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         // return itemElement;
     }, [])
 
-    const onSelect = (data: OnSelectedData) => {
-        setSelectedKeys([...data.selectedKeys])
-    }
     const onOpenChange = (data: any) => {
         setOpenKeys([...data.openKeys])
     }
@@ -276,7 +283,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     items={items}
                     // onCollapseChange={onCollapseChange}
                     onOpenChange={onOpenChange}
-                    onSelect={onSelect}
+                    // onSelect={onSelect}
                     // header={{
                     //     logo: <IconSemiLogo style={{height: '36px', fontSize: 36}}/>,
                     //     text: 'BILIUP'

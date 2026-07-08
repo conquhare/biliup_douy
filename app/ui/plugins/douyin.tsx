@@ -86,6 +86,20 @@ const Douyin: React.FC<Props> = props => {
     }
   }, [initValues, formApi])
 
+  const [selectedQuality, setSelectedQuality] = useState<string>(formApi.getValue('douyin_quality') || 'origin')
+  const [selectedProtocol, setSelectedProtocol] = useState<string>(formApi.getValue('douyin_protocol') || 'flv')
+
+  useEffect(() => {
+    if (initValues) {
+      Object.entries(initValues).forEach(([key, value]) => {
+        formApi.setValue(key, value)
+      })
+      // 同步本地选中态，避免 formApi 不触发订阅导致 UI 不更新
+      setSelectedQuality(formApi.getValue('douyin_quality') || 'origin')
+      setSelectedProtocol(formApi.getValue('douyin_protocol') || 'flv')
+    }
+  }, [initValues, formApi])
+
   const cookieValue = formApi.getValue('user.douyin_cookie') || ''
 
   const checkCookie = async () => {
@@ -119,8 +133,6 @@ const Douyin: React.FC<Props> = props => {
         return <Tag color="grey" type="light">未检测</Tag>
     }
   }, [cookieStatus])
-
-  const selectedQuality = formApi.getValue('douyin_quality') || 'origin'
 
   return (
     <>
@@ -293,7 +305,10 @@ const Douyin: React.FC<Props> = props => {
             {QUALITY_OPTIONS.map(q => (
               <Col key={q.value} span={8} style={{ marginBottom: 12 }}>
                 <div
-                  onClick={() => formApi.setValue('douyin_quality', q.value)}
+                  onClick={() => {
+                    setSelectedQuality(q.value)
+                    formApi.setValue('douyin_quality', q.value)
+                  }}
                   style={{
                     padding: 12,
                     cursor: 'pointer',
@@ -343,19 +358,25 @@ const Douyin: React.FC<Props> = props => {
             </Typography.Text>
             <Space>
               <Tag
-                color={formApi.getValue('douyin_protocol') !== 'hls' ? 'blue' : 'grey'}
-                type={formApi.getValue('douyin_protocol') !== 'hls' ? 'solid' : 'light'}
+                color={selectedProtocol !== 'hls' ? 'blue' : 'grey'}
+                type={selectedProtocol !== 'hls' ? 'solid' : 'light'}
                 style={{ cursor: 'pointer' }}
-                onClick={() => formApi.setValue('douyin_protocol', 'flv')}
+                onClick={() => {
+                  setSelectedProtocol('flv')
+                  formApi.setValue('douyin_protocol', 'flv')
+                }}
               >
                 FLV（推荐）
               </Tag>
               <Tooltip content="HLS 仅供测试，可能不稳定，且切换后部分播放器兼容性变差">
                 <Tag
-                  color={formApi.getValue('douyin_protocol') === 'hls' ? 'blue' : 'grey'}
-                  type={formApi.getValue('douyin_protocol') === 'hls' ? 'solid' : 'light'}
+                  color={selectedProtocol === 'hls' ? 'blue' : 'grey'}
+                  type={selectedProtocol === 'hls' ? 'solid' : 'light'}
                   style={{ cursor: 'pointer' }}
-                  onClick={() => formApi.setValue('douyin_protocol', 'hls')}
+                  onClick={() => {
+                    setSelectedProtocol('hls')
+                    formApi.setValue('douyin_protocol', 'hls')
+                  }}
                 >
                   HLS（仅供测试）
                 </Tag>
