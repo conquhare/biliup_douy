@@ -122,7 +122,8 @@ class BaseDanmakuClient(ABC):
     async def _run(self):
         """运行弹幕录制循环"""
         try:
-            context = {'url': self.url}
+            context = dict(self.context) if self.context else {}
+            context['url'] = self.url
             ws_url, reg_datas = await self.get_ws_info(self.url, context)
 
             import websockets

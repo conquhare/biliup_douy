@@ -36,7 +36,7 @@ class Douyin:
 
             'Referer': 'https://live.douyin.com/',
 
-            'Cookie': context['config'].get('user', {}).get('douyin_cookie', '')
+            'Cookie': context.get('config', {}).get('user', {}).get('douyin_cookie', '')
 
         }
 
@@ -74,7 +74,7 @@ class Douyin:
 
                 "webcast_sdk_version": WEBCAST_SDK_VERSION,
 
-                "room_id": context['room_id'],
+                "room_id": context.get('room_id', ''),
 
                 "sub_room_id": "",
 
@@ -100,7 +100,7 @@ class Douyin:
 
             webcast5_params = {
 
-                "room_id": context['room_id'],
+                "room_id": context.get('room_id', ''),
 
                 "compress": 'gzip',
 
