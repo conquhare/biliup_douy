@@ -326,6 +326,7 @@ const Douyin: React.FC<Props> = props => {
           </Row>
           <Form.Select
             field="douyin_quality"
+            noLabel={true}
             style={{ display: 'none' }}
             showClear={false}
           >
@@ -360,7 +361,7 @@ const Douyin: React.FC<Props> = props => {
                 </Tag>
               </Tooltip>
             </Space>
-            <Form.Select field="douyin_protocol" style={{ display: 'none' }} showClear={false}>
+            <Form.Select field="douyin_protocol" noLabel={true} style={{ display: 'none' }} showClear={false}>
               <Select.Option value="flv">flv</Select.Option>
               <Select.Option value="hls">hls</Select.Option>
             </Form.Select>
