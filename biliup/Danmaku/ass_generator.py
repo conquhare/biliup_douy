@@ -81,9 +81,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
             self._generate_ass(danmaku_list, output_file, title)
             logger.info(f'ASS 字幕已生成: {output_file} ({len(danmaku_list)} 条弹幕)')
+            return output_file
 
         except Exception as e:
             logger.exception(f'生成 ASS 字幕失败: {e}')
+            return None
 
     def generate_from_json(self, json_file: str, output_file: str, title: str = "Danmaku"):
         """从 JSON 文件生成 ASS 字幕"""
@@ -98,9 +100,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             danmaku_list = data.get('danmaku_list', [])
             self._generate_ass(danmaku_list, output_file, title)
             logger.info(f'ASS 字幕已生成: {output_file} ({len(danmaku_list)} 条弹幕)')
+            return output_file
 
         except Exception as e:
             logger.exception(f'生成 ASS 字幕失败: {e}')
+            return None
 
     def _generate_ass(self, danmaku_list: List[Dict[str, Any]], output_file: str, title: str):
         """生成 ASS 文件"""
@@ -244,9 +248,13 @@ def convert_danmaku_to_ass(input_file: str, output_file: str = None, **kwargs) -
     generator = AssGenerator(**kwargs)
 
     if input_file.endswith('.xml'):
-        generator.generate_from_xml(input_file, output_file)
+        result = generator.generate_from_xml(input_file, output_file)
+        if result is None:
+            return None
     elif input_file.endswith('.json'):
-        generator.generate_from_json(input_file, output_file)
+        result = generator.generate_from_json(input_file, output_file)
+        if result is None:
+            return None
     else:
         logger.error(f'不支持的文件格式: {input_file}')
         return None

@@ -391,6 +391,8 @@ class BiliBili:
         logger.info(f"{file_name} 开始上传")
         if self.save_dir:
             self.save_path = os.path.join(self.save_dir, file_name)
+        else:
+            self.save_path = file_name
         cs_upcdn = ['alia', 'bda', 'bda2', 'bldsa', 'qn', 'tx', 'txa']
         jd_upcdn = ['jd-alia', 'jd-bd', 'jd-bldsa', 'jd-tx', 'jd-txa']
         preferred_upos_cdn = None

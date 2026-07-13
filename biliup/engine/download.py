@@ -139,8 +139,17 @@ class DownloadBase(ABC):
                         _danmaku_loop = asyncio.new_event_loop()
                         def _danmaku_runner():
                             asyncio.set_event_loop(_danmaku_loop)
-                            _danmaku_loop.run_until_complete(self.danmaku.start())
-                            _danmaku_loop.close()
+
+                            async def _keep_alive():
+                                await self.danmaku.start()
+                                # 保持事件循环存活，让 _run() 任务能持续接收弹幕
+                                while self.danmaku._running:
+                                    await asyncio.sleep(1)
+
+                            try:
+                                _danmaku_loop.run_until_complete(_keep_alive())
+                            finally:
+                                _danmaku_loop.close()
                         _danmaku_thread = threading.Thread(target=_danmaku_runner, daemon=True,
                                                             name=f"danmaku-{self.fname}")
                         _danmaku_thread.start()
