@@ -38,6 +38,19 @@ class DanmakuClient:
         self.__context = context
         self.__plugin = None
 
+    @property
+    def _running(self):
+        """弹幕是否正在运行（委托给内部插件实例）"""
+        if self.__plugin:
+            return self.__plugin._running
+        return False
+
+    @_running.setter
+    def _running(self, value):
+        """设置弹幕运行状态（委托给内部插件实例）"""
+        if self.__plugin:
+            self.__plugin._running = value
+
     async def start(self):
         try:
             from . import huya, douyu, bilibili, douyin, twitch, youtube, twitcasting

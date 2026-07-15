@@ -184,6 +184,10 @@ class DownloadBase(ABC):
                                 file_name_callback=lambda file_name: self._download_segment_callback(file_name), database_row_id=self.database_row_id,
                                 global_config=self.config,
                                 refresh_url_callback=_url_refresh)
+                    # 下载结束后停止弹幕线程，让 _keep_alive() 退出循环
+                    if self.danmaku:
+                        self.danmaku._running = False
+                        logger.info(f"{self.plugin_msg}: 弹幕录制已标记停止")
                     return True
                 # streamlink无法处理flv,所以回退到ffmpeg
                 if self.downloader == 'streamlink' and '.flv' not in parsed_url_path:
