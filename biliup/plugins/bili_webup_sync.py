@@ -364,14 +364,24 @@ class BiliBili:
             data = bytes(int(1024 * 0.1 * 1024))
         for line in ret['lines']:
             start = time.perf_counter()
-            test = self.__session.request(method, f"https:{line['probe_url']}", data=data, timeout=30)
+            try:
+                test = self.__session.request(method, f"https:{line['probe_url']}", data=data, timeout=30)
+            except Exception as e:
+                # 单条线路探测失败（SSL 证书 / 连接 / 超时等）不应中断整体探测，
+                # 继续尝试剩余候选线路，避免一条线路异常导致整个上传线程崩溃
+                logger.warning(f"线路探测失败，跳过 {line.get('query')}: {type(e).__name__}: {e}")
+                continue
             cost = time.perf_counter() - start
             print(line['query'], cost)
             if test.status_code != 200:
-                return
+                logger.warning(f"线路 {line.get('query')} 返回状态码 {test.status_code}，跳过")
+                continue
             if not min_cost or min_cost > cost:
                 auto_os = line
                 min_cost = cost
+        if auto_os is None:
+            logger.error("所有上传线路探测均失败")
+            return None
         auto_os['cost'] = min_cost
         return auto_os
 
@@ -408,6 +418,9 @@ class BiliBili:
                 preferred_upos_cdn = lines
             else:
                 self._auto_os = self.probe()
+            if not self._auto_os:
+                # 所有候选线路均不可用，抛出明确错误，避免后续以 None 取值产生 TypeError
+                raise RuntimeError("上传线路探测失败：所有候选线路均不可用（详见上方告警日志）")
             logger.info(f"线路选择 => {self._auto_os['os']}: {self._auto_os['query']}. time: {self._auto_os.get('cost')}")
         if self._auto_os['os'] == 'upos':
             upload = self.upos_stream
