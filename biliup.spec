@@ -51,6 +51,7 @@ hiddenimports = [
     # 第三方库
     'lxml.etree',
     'aiohttp',
+    'websockets',  # 弹幕录制 WebSocket 连接
     'charset_normalizer',
     'chardet',
     'certifi',

@@ -184,6 +184,7 @@ jobs:
           --include-package=biliup.engine \
           --include-package=biliup.common \
           --include-package=biliup.plugins \
+          --include-package=websockets \
           --nofollow-import-to=google \
           --include-data-dir="$PROTOBUF_PATH"=google/protobuf \
           --include-data-dir=biliup/Danmaku/douyin_util=biliup/Danmaku/douyin_util \
