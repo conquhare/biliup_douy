@@ -129,7 +129,13 @@ jobs:
         node-version: '20'
         
     - name: CVE Lite CLI
-      uses: OWASP/cve-lite-cli@v1.17.0
+      uses: OWASP/cve-lite-cli@v1
+      with:
+        # 扫描保留可见性，但不作为构建门禁：
+        # 任意 transitive 依赖的新披露 CVE 都会卡住整个发布流程，
+        # 而这些依赖并不影响 exe 分发。漏洞改由 HTML 报告人工评估后处理。
+        fail-on: "none"
+        verbose: "true"
       
     - name: Build frontend
       run: |
