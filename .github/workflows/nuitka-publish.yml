@@ -41,11 +41,22 @@ on:
         default: false
         type: boolean
 
+# 免费用户（公开仓库）配额与硬限制适配：
+#   - Actions 每月额度有限（2000 分钟），每次 Nuitka 全量构建约 45-50 分钟
+#   - 单个 job 最长运行 6 小时，超时会被平台强制终止并仍计入额度
+#   - Windows runner 内存 16GB，Rust/PyO3 与 Nuitka 均为内存大户
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # 新 push 自动取消同分支正在跑的旧构建，避免连续提交时多个 47 分钟 job 并行烧配额
+  cancel-in-progress: true
+
 jobs:
   build:
     permissions:
       contents: write
     runs-on: 'windows-latest'
+    # 正常全量构建约 45-50 分钟；留足余量同时防止卡死 job 空耗 6 小时上限
+    timeout-minutes: 120
     steps:
     - uses: actions/checkout@v4
     - name: Set version
@@ -139,6 +150,10 @@ jobs:
         verbose: "true"
       
     - name: Build frontend
+      env:
+        # Next.js 构建在 Windows runner 上易触发 heap OOM（进程被直接杀掉，无友好报错）。
+        # 显式限制 V8 堆大小，让其抛出可诊断的 JS heap 错误而非静默崩溃。
+        NODE_OPTIONS: '--max-old-space-size=4096'
       run: |
         npm install
         npm run build
@@ -155,6 +170,10 @@ jobs:
       env:
         SCCACHE_DISABLE: "1"
         CARGO_INCREMENTAL: "0"
+        # 关键：rustc 编译 Pyo3 扩展时单个 crate 的峰值内存可达数 GB，
+        # 多 crate 并行编译极易超过 runner 16GB 被 OOM 杀掉（表现为无日志的 exit 137）。
+        # 限制并行度是 Windows runner 上最有效的内存保护手段。
+        CARGO_BUILD_JOBS: "2"
       with:
         command: build
         args: --release
