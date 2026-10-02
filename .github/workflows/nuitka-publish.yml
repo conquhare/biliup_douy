@@ -129,12 +129,13 @@ jobs:
         node-version: '20'
         
     - name: CVE Lite CLI
+      # continue-on-error: 该 action 需要运行时下载 cve-lite-cli 二进制，
+      # 在 CI 网络下常因下载/环境问题直接 exit 1（#83、#84 连续两次阻断构建，
+      # 且 fail-on: none 未能阻止 —— 说明失败发生在扫描之前的工具启动阶段）。
+      # 扫描结果不作为发布门禁，漏洞改由日志人工评估。
+      continue-on-error: true
       uses: OWASP/cve-lite-cli@v1
       with:
-        # 扫描保留可见性，但不作为构建门禁：
-        # 任意 transitive 依赖的新披露 CVE 都会卡住整个发布流程，
-        # 而这些依赖并不影响 exe 分发。漏洞改由 HTML 报告人工评估后处理。
-        fail-on: "none"
         verbose: "true"
       
     - name: Build frontend
