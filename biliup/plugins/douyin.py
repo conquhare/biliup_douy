@@ -1,4 +1,5 @@
 import os
+import time
 from typing import Optional
 from urllib.parse import unquote, urlparse, parse_qs, urlencode, urlunparse
 
@@ -625,13 +626,76 @@ class DouyinUtils:
 
     def get_ttwid() -> Optional[str]:
 
-            if not DouyinUtils._douyin_ttwid:
+            if DouyinUtils._douyin_ttwid:
 
-                page = requests.get("https://live.douyin.com/1-2-3-4-5-6-7-8-9-0", timeout=15)
+                return DouyinUtils._douyin_ttwid
 
-                DouyinUtils._douyin_ttwid = page.cookies.get("ttwid")
+            # ttwid 是抖音下发的访客凭据，WebSocket 握手缺少它会被拒绝升级
+            # （服务端返回 200 而非 101）。这里必须带浏览器 UA，并复用全局代理，
+            # 否则在需要代理的网络环境下会超时拿不到。
+            ua = DouyinUtils.DOUYIN_USER_AGENT
 
-            return DouyinUtils._douyin_ttwid
+            proxies = DouyinUtils.get_proxies()
+
+            for attempt in range(3):
+
+                try:
+
+                    page = requests.get(
+
+                        "https://live.douyin.com/1-2-3-4-5-6-7-8-9-0",
+
+                        timeout=15,
+
+                        headers={'User-Agent': ua, 'Accept': 'text/html,*/*;q=0.8'},
+
+                        proxies=proxies,
+
+                    )
+
+                    ttwid = page.cookies.get("ttwid")
+
+                    if ttwid:
+
+                        DouyinUtils._douyin_ttwid = ttwid
+
+                        return ttwid
+
+                    logger.warning('[抖音] 未获取到 ttwid，Cookie 缺失将导致弹幕握手失败')
+
+                    return None
+
+                except Exception as e:
+
+                    logger.warning(f'[抖音] 获取 ttwid 失败 (第 {attempt + 1}/3 次): {e}')
+
+                    if attempt < 2:
+
+                        time.sleep(1)
+
+            return None
+
+    @staticmethod
+
+    def get_proxies() -> Optional[dict]:
+
+            '''从全局配置读取代理设置，供 requests 使用'''
+
+            try:
+
+                from biliup.common.config import global_config
+
+                proxy = (global_config.get('http_proxy') or '').strip()
+
+                if not proxy:
+
+                    return None
+
+                return {'http': proxy, 'https': proxy}
+
+            except Exception:
+
+                return None
 
 
 

@@ -26,6 +26,12 @@ class BaseDanmakuClient(ABC):
         self.start_time = time.time()
         self._running = False
         self._task: Optional[asyncio.Task] = None
+        # WebSocket 握手请求头，由 get_ws_info() 填充。
+        # 抖音/B站等平台要求携带 Cookie 才会同意协议升级（101），
+        # 缺失时服务端返回 200，websockets 抛 InvalidStatus。
+        self.ws_headers: Optional[Dict[str, str]] = None
+        # 显式代理（websockets 不读系统代理环境变量，需单独指定）
+        self.proxy: Optional[str] = None
 
     @abstractmethod
     async def get_ws_info(self, url: str, context: dict) -> tuple:
@@ -128,7 +134,28 @@ class BaseDanmakuClient(ABC):
 
             import websockets
 
-            async with websockets.connect(ws_url) as websocket:
+            # 握手必须携带 Cookie（含 ttwid），否则抖音服务端拒绝升级连接：
+            # 返回 HTTP 200 而非 101 Switching Protocols，websockets 抛
+            # InvalidStatus: server rejected WebSocket connection: HTTP 200
+            connect_kwargs = {}
+            ws_headers = self.ws_headers if isinstance(self.ws_headers, dict) else None
+            if ws_headers:
+                connect_kwargs['additional_headers'] = ws_headers
+            # 支持显式指定代理（websockets 不读系统代理环境变量）
+            proxy = self.proxy
+            if not proxy:
+                try:
+                    from biliup.common.util import get_proxy_url
+                    proxy = get_proxy_url()
+                except Exception:
+                    proxy = None
+            if proxy:
+                # websockets >= 14 使用 proxy 参数；更早版本同样接受 proxy，
+                # 但部分版本对 None/空值敏感，故仅在有值时传入
+                connect_kwargs['proxy'] = proxy
+                logger.debug(f'弹幕 WebSocket 走代理: {proxy}')
+
+            async with websockets.connect(ws_url, **connect_kwargs) as websocket:
                 # 发送注册数据
                 if reg_datas:
                     for data in reg_datas:

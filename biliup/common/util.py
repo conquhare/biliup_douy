@@ -5,6 +5,7 @@ import os
 import httpx
 from datetime import datetime, timezone
 import logging
+from typing import Optional
 
 try:
     import ssl
@@ -25,27 +26,46 @@ DEFAULT_TIMEOUT = httpx.Timeout(
 DEFAULT_MAX_RETRIES = 2
 DEFAULT_CONNECTION_LIMITS = httpx.Limits(max_connections=100, max_keepalive_connections=100)
 
+def get_proxy_url() -> Optional[str]:
+    """获取统一的代理地址（优先 https，其次 http）
+
+    供 requests / websockets 等需要显式指定代理的客户端使用。
+    websockets 库不读取系统代理环境变量，必须显式传入 proxy 参数。
+    """
+    https_proxy = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
+    http_proxy = os.environ.get('HTTP_PROXY') or os.environ.get('http_proxy')
+    proxy = https_proxy or http_proxy
+    if not proxy:
+        try:
+            from biliup.config import config
+            proxy = config.get('https_proxy') or config.get('http_proxy')
+        except Exception:
+            proxy = None
+    return proxy or None
+
 def _get_proxy_config():
     """从环境变量或配置中获取代理设置"""
     # 优先使用环境变量
     http_proxy = os.environ.get('HTTP_PROXY') or os.environ.get('http_proxy')
     https_proxy = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
-    
-    # 如果环境变量未设置，尝试从配置文件中读取
-    if not http_proxy or not https_proxy:
-        try:
-            from biliup.config import config
-            http_proxy = http_proxy or config.get('http_proxy')
-            https_proxy = https_proxy or config.get('https_proxy')
-        except:
-            pass
-    
+
+    # 各自独立回退到配置文件：原先用 `if not http_proxy or not https_proxy`
+    # 会在只设置了其中一个环境变量时，漏掉另一个配置项
+    try:
+        from biliup.config import config
+        if not http_proxy:
+            http_proxy = config.get('http_proxy')
+        if not https_proxy:
+            https_proxy = config.get('https_proxy')
+    except Exception:
+        pass
+
     mounts = {}
     if http_proxy:
         mounts["http://"] = httpx.AsyncHTTPTransport(proxy=http_proxy)
     if https_proxy:
         mounts["https://"] = httpx.AsyncHTTPTransport(proxy=https_proxy)
-    
+
     return mounts
 
 client = httpx.AsyncClient(

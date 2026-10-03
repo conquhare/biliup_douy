@@ -4,6 +4,7 @@
 
 import gzip
 import logging
+import time
 
 import aiohttp
 
@@ -23,6 +24,9 @@ class Douyin:
     heartbeat = b':\x02hb'
 
     heartbeatInterval = 10
+
+    # 最近一次 get_ws_info 构造的握手请求头，由基类 _run() 取用
+    last_ws_headers: dict = {}
 
 
 
@@ -98,65 +102,90 @@ class Douyin:
 
             # logger.info(f"signature: {signature}")
 
+            # 参数集与端点对齐上游活跃实现（LiukerSun/DouyinDanmu v2.3.1 / 2026-09-30）：
+            # 抖音已把 app_name / browser_* / cursor / im_path / internal_ext / tz_name
+            # 等字段列为握手必需项，缺失时 WSS 端点直接返回 200 而非 101。
             webcast5_params = {
+
+                "aid": "6383",
+
+                "app_name": "douyin_web",
 
                 "room_id": context.get('room_id', ''),
 
                 "compress": 'gzip',
 
-                # "app_name": "douyin_web",
-
                 "version_code": VERSION_CODE,
 
                 "webcast_sdk_version": WEBCAST_SDK_VERSION,
 
-                # "update_version_code": "1.0.14-beta.0",
+                "update_version_code": WEBCAST_SDK_VERSION,
 
-                # "cookie_enabled": "true",
+                "cookie_enabled": "true",
 
-                # "screen_width": "1920",
+                "screen_width": "1536",
 
-                # "screen_height": "1080",
+                "screen_height": "864",
 
-                # "browser_online": "true",
+                "browser_online": "true",
 
-                # "tz_name": "Asia/Shanghai",
+                "browser_language": "zh-CN",
 
-                # "cursor": "t-1718899404570_r-1_d-1_u-1_h-7382616636258522175",
+                "browser_name": "Mozilla",
 
-                # "internal_ext": "internal_src:dim|wss_push_room_id:7382580251462732598|wss_push_did:7344670681018189347|first_req_ms:1718899404493|fetch_time:1718899404570|seq:1|wss_info:0-1718899404570-0-0|wrds_v:7382616716703957597",
+                "browser_platform": "Win32",
 
-                # "host": "https://live.douyin.com",
+                "browser_version": "5.0 (Windows NT 10.0; Win64; x64)",
+
+                "tz_name": "Asia/Shanghai",
+
+                # cursor 需随 user_unique_id 与时间戳动态生成
+                "cursor": f"d-1_u-1_fh-{USER_UNIQUE_ID}_t-{int(time.time() * 1000)}_r-1",
+
+                "internal_ext": (
+                    f"internal_src:dim|wss_push_room_id:{context.get('room_id', '')}"
+                    f"|wss_push_did:{USER_UNIQUE_ID}"
+                ),
+
+                "host": "https://live.douyin.com",
 
                 "live_id": "1",
 
                 "did_rule": "3",
 
-                # "endpoint": "live_pc",
+                "endpoint": "live_pc",
 
-                # "support_wrds": "1",
+                "support_wrds": "1",
 
                 "user_unique_id": USER_UNIQUE_ID,
 
-                # "im_path": "/webcast/im/fetch/",
+                "im_path": "/webcast/im/fetch/",
 
                 "identity": "audience",
 
-                # "need_persist_msg_count": "15",
+                "need_persist_msg_count": "15",
 
-                # "insert_task_id": "",
+                "heartbeatDuration": "0",
 
-                # "live_reason": "",
+                "device_platform": "web",
 
-                # "heartbeatDuration": "0",
+                "device_type": "",
+
+                "sub_channel_id": "",
+
+                "sub_room_id": "",
 
                 "signature": signature,
 
             }
 
-            wss_url = f"wss://webcast5-ws-web-lf.douyin.com/webcast/im/push/v2/?{'&'.join([f'{k}={v}' for k, v in webcast5_params.items()])}"
+            wss_url = f"wss://webcast100-ws-web-lq.douyin.com/webcast/im/push/v2/?{'&'.join([f'{k}={v}' for k, v in webcast5_params.items()])}"
 
             url = DouyinUtils.build_request_url(wss_url)
+
+            # 把握手请求头交回给基类：websockets.connect() 必须显式收到 Cookie，
+            # 否则抖音服务端拒绝升级连接（返回 200 而非 101）。
+            Douyin.last_ws_headers = headers
 
             return url, []
 
@@ -224,7 +253,12 @@ class DanmakuClient(BaseDanmakuClient):
 
     async def get_ws_info(self, url: str, context: dict) -> tuple:
         """获取 WebSocket 连接信息"""
-        return await Douyin.get_ws_info(url, context)
+        ws_url, reg_datas = await Douyin.get_ws_info(url, context)
+        # 把握手请求头（Cookie / UA / Referer）绑定到当前实例，
+        # 供基类 _run() 调用 websockets.connect(additional_headers=...) 使用。
+        # 缺失 Cookie 时抖音返回 200 而非 101，连接必然失败。
+        self.ws_headers = dict(Douyin.last_ws_headers or {})
+        return ws_url, reg_datas
 
     def decode_msg(self, data: bytes) -> tuple:
         """解码弹幕消息"""
