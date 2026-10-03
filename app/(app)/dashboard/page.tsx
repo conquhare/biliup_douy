@@ -140,7 +140,10 @@ const Dashboard: React.FC = () => {
                 onSubmit={async values => {
                   try {
                     await trigger(values)
-                    Toast.success('保存成功')
+                    // trigger 成功后 SWR 会 revalidate，导致含 Toast 容器的
+                    // ConfigProvider 重挂载，提示在重渲染瞬间被丢弃。
+                    // 延后一帧弹出，确保提示可见。
+                    setTimeout(() => Toast.success('保存成功'), 100)
                   } catch (e: any) {
                     // error handling
                     Notification.error({
