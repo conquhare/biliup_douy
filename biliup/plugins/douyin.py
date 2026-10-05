@@ -679,23 +679,38 @@ class DouyinUtils:
 
     def get_proxies() -> Optional[dict]:
 
-            '''从全局配置读取代理设置，供 requests 使用'''
+            '''从全局配置读取代理设置，供 requests 使用
 
-            try:
+            注意：不要用 from biliup.common.config import global_config ——
+            该模块在源码树和 Nuitka 产物中都不存在，会被 except 静默吞掉，
+            导致代理始终为 None（表现为 ttwid 获取 / 握手 Read timed out）。
+            可靠来源依次为：
+              1) 环境变量（启动脚本注入）
+              2) stream_gears 注入的模块级 config
+            '''
 
-                from biliup.common.config import global_config
+            # 1) 环境变量
+            proxy = (os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
+                     or os.environ.get('HTTP_PROXY') or os.environ.get('http_proxy') or '').strip()
 
-                proxy = (global_config.get('http_proxy') or '').strip()
+            # 2) Rust 注入到插件模块全局的 config（download.py 用的就是它）
+            if not proxy:
 
-                if not proxy:
+                from biliup.common.util import get_proxy_url
 
-                    return None
+                try:
 
-                return {'http': proxy, 'https': proxy}
+                    proxy = (get_proxy_url() or '').strip()
 
-            except Exception:
+                except Exception:
+
+                    proxy = ''
+
+            if not proxy:
 
                 return None
+
+            return {'http': proxy, 'https': proxy}
 
 
 

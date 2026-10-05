@@ -31,34 +31,68 @@ def get_proxy_url() -> Optional[str]:
 
     供 requests / websockets 等需要显式指定代理的客户端使用。
     websockets 库不读取系统代理环境变量，必须显式传入 proxy 参数。
+
+    ⚠️ 不要试图 from biliup.config import config ——
+    biliup/config.py 只在源码开发时由插件机制提供，Nuitka 编译出的 exe 里
+    **不存在该文件**（已实测：exe 运行目录无 config.py，import 报
+    PackageNotFoundError），import 必然失败。exe 场景下代理只能来自环境变量，
+    或由插件侧显式下发。
     """
-    https_proxy = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
-    http_proxy = os.environ.get('HTTP_PROXY') or os.environ.get('http_proxy')
-    proxy = https_proxy or http_proxy
-    if not proxy:
+    proxy = (os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
+             or os.environ.get('HTTP_PROXY') or os.environ.get('http_proxy') or '').strip()
+    if proxy:
+        return proxy
+
+    # 回退：扫描已加载模块，找 Rust 注入到插件模块 globals 的 config
+    cfg = _find_injected_config()
+    if cfg is not None:
         try:
-            from biliup.config import config
-            proxy = config.get('https_proxy') or config.get('http_proxy')
+            return (cfg.get('https_proxy') or cfg.get('http_proxy') or '').strip() or None
         except Exception:
-            proxy = None
-    return proxy or None
+            return None
+    return None
+
+
+def _find_injected_config():
+    """在 sys.modules 中查找被注入到插件模块全局的 config 对象
+
+    Rust 侧把配置以 `config` 为名注入各插件模块的 globals（download.py 里的
+    裸 `config` 即来源于此），而不是提供一个可 import 的 biliup.config 模块。
+    """
+    import sys as _sys
+    cfg = globals().get('config')
+    if cfg is not None:
+        return cfg
+    for mod in list(_sys.modules.values()):
+        if mod is None:
+            continue
+        try:
+            cfg = getattr(mod, 'config', None)
+        except Exception:
+            continue
+        if isinstance(cfg, dict) and ('https_proxy' in cfg or 'http_proxy' in cfg
+                                       or 'streamers' in cfg):
+            return cfg
+    return None
 
 def _get_proxy_config():
-    """从环境变量或配置中获取代理设置"""
-    # 优先使用环境变量
+    """从环境变量获取代理设置
+
+    ⚠️ biliup/config.py 在 Nuitka 编译的 exe 中不存在，这里只依赖环境变量。
+    若 exe 需要走代理，用启动脚本注入 HTTP_PROXY/HTTPS_PROXY。
+    """
     http_proxy = os.environ.get('HTTP_PROXY') or os.environ.get('http_proxy')
     https_proxy = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
 
-    # 各自独立回退到配置文件：原先用 `if not http_proxy or not https_proxy`
-    # 会在只设置了其中一个环境变量时，漏掉另一个配置项
-    try:
-        from biliup.config import config
-        if not http_proxy:
-            http_proxy = config.get('http_proxy')
-        if not https_proxy:
-            https_proxy = config.get('https_proxy')
-    except Exception:
-        pass
+    cfg = globals().get('config')
+    if (not http_proxy or not https_proxy) and cfg is not None:
+        try:
+            if not http_proxy:
+                http_proxy = cfg.get('http_proxy')
+            if not https_proxy:
+                https_proxy = cfg.get('https_proxy')
+        except Exception:
+            pass
 
     mounts = {}
     if http_proxy:
