@@ -189,9 +189,14 @@ jobs:
         CERTIFI_PATH=$(python -c "import certifi; print(certifi.where())")
         echo "certifi 证书路径: $CERTIFI_PATH"
 
-        # 获取 protobuf 包路径（用于作为数据文件包含）
-        PROTOBUF_PATH=$(python -c "import google.protobuf; import os; print(os.path.dirname(google.protobuf.__file__))")
-        echo "protobuf 包路径: $PROTOBUF_PATH"
+        # 抖音弹幕解码需要 google.protobuf
+        # 原方案「--nofollow-import-to=google + --include-data-dir 作为数据文件」
+        # 失效：google 是 namespace package（无 __init__.py），数据文件方式落地后
+        # Python 不认 google 为包 → ModuleNotFoundError: No module named 'google'
+        # #86 exe 实测证实：运行目录完全没有 google/ 目录，decode_msg 每条弹幕都抛异常
+        # 重新评估：protobuf 仅 1.6MB / 54 个 .py，编译压力可控，
+        # 且有 _upb C 扩展（原 --low-memory 注释里的担心已不适用于当前版本）
+        python -c "import google.protobuf; print('protobuf', google.protobuf.__version__)"
 
         # 使用 Nuitka 编译文件夹模式（单文件模式与 Windows asyncio 不兼容）
         # --standalone: 独立运行（不依赖系统 Python）
@@ -200,8 +205,6 @@ jobs:
         # --nofollow-import-to=yt_dlp: 排除 yt_dlp 模块（太大导致编译器内存不足）
         # --nofollow-import-to=certifi: 排除 certifi 模块（使用 certifi_patch.py 中的 stub 替代）
         # --include-data-files=certifi: 包含 certifi 证书文件（供 stub 使用）
-        # 注意: google.protobuf 的 descriptor_pb2 文件太大，编译会导致 C 编译器内存不足
-        # 解决方案: 排除 protobuf 编译，作为 Python 源码运行（通过 include-data-dir 包含）
         # 优化: 排除未使用的依赖模块，减少编译时间和内存
         python -m nuitka \
           --standalone \
@@ -211,8 +214,9 @@ jobs:
           --include-package=biliup.common \
           --include-package=biliup.plugins \
           --include-package=websockets \
-          --nofollow-import-to=google \
-          --include-data-dir="$PROTOBUF_PATH"=google/protobuf \
+          --include-package=google \
+          --include-package=google.protobuf \
+          --include-package=google.protobuf.internal \
           --include-data-dir=biliup/Danmaku/douyin_util=biliup/Danmaku/douyin_util \
           --include-data-files=public/logo.png=public/logo.png \
           --include-data-files="$CERTIFI_PATH"=certifi/cacert.pem \

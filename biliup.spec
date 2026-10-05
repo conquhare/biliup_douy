@@ -58,9 +58,17 @@ hiddenimports = [
     'httpcore',
     'httpx',
     'requests',
+    # 抖音弹幕 protobuf 解码：douyin.py 的 _get_protobuf_modules() 是
+    # 函数内延迟 import，静态分析抓不到，必须显式声明。
+    # google 是 namespace package，collect_all 才能把它整套收进来
+    'google',
+    'google.protobuf',
 ]
 tmp_ret = collect_all('biliup.plugins')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+# protobuf 全量收集（namespace package 无法靠 hiddenimports 自动补全子模块）
+tmp_pb = collect_all('google.protobuf')
+datas += tmp_pb[0]; binaries += tmp_pb[1]; hiddenimports += tmp_pb[2]
 # datas += copy_metadata('biliup')
 
 a = Analysis(
