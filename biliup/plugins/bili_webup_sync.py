@@ -489,10 +489,28 @@ class BiliBili:
             file_name_callback(self.save_path)
 
         # 尝试上传对应字幕
-        base = os.path.splitext(file_name)[0]
-        ass_file = base + '.ass'
-        if self.save_dir:
-            ass_file = os.path.join(self.save_dir, ass_file)
+        # ⚠️ 必须用 self.save_path 而不是 file_name 推导：
+        # 边录边传是异步分片上传，弹幕在【最后一段】结束时才 save()，
+        # 但此刻 file_name 仍是【当前段】的名字。实测 3 段录制时：
+        #   当前段 file_name = xxx_1.mkv → 推导 xxx_1.ass
+        #   实际生成          = xxx_2.ass（最后一段的回调产物）
+        # 导致 os.path.exists 恒为 False，字幕上传被静默跳过（连 warning 都不打）。
+        ass_file = os.path.splitext(self.save_path)[0] + '.ass'
+        if not os.path.exists(ass_file):
+            # 退路：save_dir 下按前缀找最新生成的 ass（文件名带分片序号）
+            try:
+                prefix = os.path.splitext(os.path.basename(self.save_path))[0]
+                stem = prefix.rsplit('_', 1)[0]  # 去掉 _1 / _2 分片后缀
+                candidates = []
+                search_dir = self.save_dir or os.path.dirname(self.save_path) or '.'
+                for name in os.listdir(search_dir):
+                    if name.startswith(stem) and name.endswith('.ass'):
+                        path = os.path.join(search_dir, name)
+                        candidates.append((os.path.getmtime(path), path))
+                if candidates:
+                    ass_file = max(candidates)[1]
+            except Exception as e:
+                logger.warning(f"查找字幕文件失败: {e}")
         if os.path.exists(ass_file):
             try:
                 cid = self._get_latest_cid(aid)
@@ -502,6 +520,10 @@ class BiliBili:
                     logger.warning(f"字幕文件存在但无法获取 cid，跳过字幕上传: {ass_file}")
             except Exception as e:
                 logger.warning(f"上传字幕失败: {ass_file}: {e}")
+        else:
+            # 静默跳过是最坏的失败方式：弹幕录了、ASS 生成了、投稿成功了，
+            # 用户却完全看不到字幕没上传。必须显式告警。
+            logger.warning(f"未找到 ASS 字幕文件，跳过字幕上传: {ass_file}")
 
     async def upos_stream(self, stream_queue, file_name, total_size, ret):
         # print("--------------, ", file_name)
