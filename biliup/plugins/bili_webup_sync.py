@@ -530,7 +530,9 @@ class BiliBili:
         ass_file = resolve_ass_file(self.save_path, self.save_dir)
         if os.path.exists(ass_file):
             try:
-                cid = self._get_latest_cid(aid)
+                # 传分P 标题（xxx_1），多分P 时精确匹配到本次上传的那一P
+                part_title = os.path.splitext(os.path.basename(self.save_path))[0]
+                cid = self._get_latest_cid(aid, part_title)
                 if cid:
                     self._upload_subtitle_file(aid, cid, ass_file)
                 else:
@@ -824,19 +826,38 @@ class BiliBili:
                 continue
             return ret
 
-    def _get_latest_cid(self, aid: int) -> int:
-        """获取稿件中最新的视频分P cid"""
-        try:
-            resp = self.__session.get(
-                f'https://member.bilibili.com/x/vu/web/archive/view?aid={aid}',
-                timeout=10
-            ).json()
-            if resp.get('code') == 0:
-                videos = resp['data'].get('videos', [])
-                if videos:
-                    return videos[-1].get('cid', 0)
-        except Exception as e:
-            logger.warning(f"获取稿件 cid 失败 (aid={aid}): {e}")
+    # 候选 cid 查询接口，按顺序尝试。
+    # 第一个 member.bilibili.com/x/vu/web/archive/view 已于实测返回 404 HTML
+    #（.json() 抛 "Expecting value: line 1 column 1"），保留仅作兜底。
+    _CID_APIS = (
+        'https://api.bilibili.com/x/web-interface/view?aid={aid}',
+        'https://member.bilibili.com/x/vu/web/archive/view?aid={aid}',
+    )
+
+    def _get_latest_cid(self, aid: int, part_title: str = None) -> int:
+        """获取稿件中最新的视频分P cid。
+
+        part_title 给定时优先按分P 标题精确匹配（边录边传是多分P 场景，
+        只取最后一P 有可能拿到别的分P）；匹配不到再退回最后一个。
+        """
+        for tpl in self._CID_APIS:
+            try:
+                resp = self.__session.get(tpl.format(aid=aid), timeout=10)
+                data = resp.json().get('data') or {}
+                pages = data.get('pages') or data.get('videos') or []
+                if not pages:
+                    continue
+                if part_title:
+                    for p in pages:
+                        # 分P 标题在B站会带上 _1 / _2 分片后缀，做前缀宽松匹配
+                        title = p.get('part') or p.get('title') or ''
+                        if title and (title == part_title
+                                      or title.startswith(part_title)
+                                      or part_title.startswith(title)):
+                            return p.get('cid', 0)
+                return pages[-1].get('cid', 0)
+            except Exception as e:
+                logger.warning(f"获取稿件 cid 失败 (aid={aid}, api={tpl}): {e}")
         return 0
 
     def _upload_subtitle_file(self, aid: int, cid: int, subtitle_file: str):
