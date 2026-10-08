@@ -175,21 +175,12 @@ class SyncDownloader:
 
         file_index = 1
         retry_count = 0
+        url_refresh_attempted = False  # 本次失效是否已尝试过刷新 URL
         while True:
             if self.stop_event.is_set():
                 break
             if retry_count >= 5:
-                # 最后一次尝试：通过回调刷新流地址
-                if self.refresh_url_callback:
-                    new_url = self.refresh_url_callback()
-                    if new_url and new_url != self.stream_url:
-                        logger.info(
-                            f"[run] 流地址已刷新，重置重试计数 (旧={self.stream_url[:80]}...)"
-                        )
-                        self.stream_url = new_url
-                        retry_count = 0
-                        continue
-                logger.info("[run] 这个直播流已经失效，停止下载器")
+                logger.info("[run] 连续 5 段无数据，停止下载器")
                 return
 
             output_filename = f"{self.output_prefix}{file_index:03d}.mkv"
@@ -205,16 +196,30 @@ class SyncDownloader:
                                                    self.headers, self.segment_duration)
                 if not self.run_ffmpeg_with_url(ffmpeg_cmd, output_filename):
                     retry_count += 1
-                    if self.refresh_url_callback and retry_count > 1:
-                        new_url = self.refresh_url_callback()
+                    logger.warning(
+                        f"[run] 第 {retry_count}/5 次尝试无数据（流可能已失效或过期）"
+                    )
+                    # ⭐ 首次失败就刷新流地址，而不是等5 次都失败之后。
+                    # 抖音 flv/ws URL 有效期很短（通常 1-2 小时），
+                    # 失效后同一个 URL 必然持续 404 —— 旧逻辑白等 5 次
+                    # （约 80 秒）才去刷新，而那时拿到的多半还是同一批过期 URL。
+                    if self.refresh_url_callback and not url_refresh_attempted:
+                        url_refresh_attempted = True
+                        try:
+                            new_url = self.refresh_url_callback()
+                        except Exception as e:
+                            logger.warning(f"[run] 刷新流地址异常: {e}")
+                            new_url = None
                         if new_url and new_url != self.stream_url:
                             logger.info(
-                                f"[run] 下载失败，流地址已刷新 (重试 {retry_count}/5)"
+                                f"[run] 流地址已刷新，重置重试计数 (旧={self.stream_url[:80]}...)"
                             )
                             self.stream_url = new_url
                             retry_count = 0
+                            url_refresh_attempted = False
                             time.sleep(1)
                             continue
+                        logger.warning("[run] 刷新流地址未返回新地址，继续重试")
                     time.sleep(1)
                     continue
             else:
@@ -238,16 +243,27 @@ class SyncDownloader:
                 ffmpeg_cmd = self.build_ffmpeg_cmd("pipe:0", output_filename, None, self.segment_duration)
                 if not self.run_streamlink_with_ffmpeg(streamlink_cmd, ffmpeg_cmd, output_filename):
                     retry_count += 1
-                    if self.refresh_url_callback and retry_count > 1:
-                        new_url = self.refresh_url_callback()
+                    logger.warning(
+                        f"[run] 第 {retry_count}/5 次尝试无数据（HLS 路径）"
+                    )
+                    # 同非 HLS 路径：首次失败即刷新，避免在失效 URL 上白等 5 次
+                    if self.refresh_url_callback and not url_refresh_attempted:
+                        url_refresh_attempted = True
+                        try:
+                            new_url = self.refresh_url_callback()
+                        except Exception as e:
+                            logger.warning(f"[run] 刷新流地址异常: {e}")
+                            new_url = None
                         if new_url and new_url != self.stream_url:
                             logger.info(
                                 f"[run] 下载失败，流地址已刷新 (重试 {retry_count}/5)"
                             )
                             self.stream_url = new_url
                             retry_count = 0
+                            url_refresh_attempted = False
                             time.sleep(1)
                             continue
+                        logger.warning("[run] 刷新流地址未返回新地址，继续重试")
                     time.sleep(1)
                     continue
 
@@ -255,6 +271,9 @@ class SyncDownloader:
             # if file_index != 1:
             self.video_queue.put(None)  # 通知消费者线程本段录制结束
             file_index += 1
+            # 成功录到新的一段后重置状态，下一次失效时允许重新刷新 URL
+            retry_count = 0
+            url_refresh_attempted = False
 
 
 def main():

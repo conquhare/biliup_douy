@@ -542,19 +542,37 @@ impl RoomsActor {
     fn push_back(&mut self, id: i64) -> Option<Arc<dyn DownloadPlugin + Send + Sync>> {
         // 在总数组中找不到，说明该房间已被移除我们也不放回
         let worker = self.get_worker(id)?;
-        
+
         // 检查当前状态
         let current_status = worker.downloader_status.read().unwrap().clone();
-        
+
         // 如果当前是Working状态，说明下载任务还在运行
         // 此时不应该放回队列，等待下载任务完成后再调用 push_back
         if matches!(current_status, WorkerStatus::Working(_)) {
-            warn!("Room [{}] is still working, deferring push_back", worker.live_streamer.url);
+            // ⚠️ 这里不能静默丢弃。
+            // push_back 是把房间放回轮询队列的唯一途径，一旦此处 return None，
+            // 该房间就永久从队列消失 —— 表现为「开播了但永远不再检测」，
+            // 且没有任何错误日志（2026-10-07 实际发生：两个房间整天 0 次轮询）。
+            // 出现 Working 状态通常是下载线程尚未复位造成的时序竞态，
+            // 因此这里主动排到队尾，让后续轮询周期重新尝试入队。
+            warn!(
+                "Room [{}] 仍在 Working，改为排到队尾等待下次轮询（避免永久掉出队列）",
+                worker.live_streamer.url
+            );
+            let plugin = self.matches(&worker.live_streamer.url);
+            if let Some(plugin) = plugin {
+                if let Some(queue) = self.platforms.get_mut(plugin.name()) {
+                    queue.push_back(worker.clone());
+                    // 状态保持 Working 不变 —— 只有真正空闲时才置 Idle，
+                    // 否则会把「正在录制」误报成「空闲」，掩盖真实状态
+                    return Some(plugin);
+                }
+            }
             return None;
         }
-        
+
         if let WorkerStatus::Pause = current_status {
-            // 暂停状态则不放回
+            // 暂停状态则不放回（这是用户主动行为，静默是合理的）
             warn!("Paused room [{}]", worker.live_streamer.url);
             return None;
         }
