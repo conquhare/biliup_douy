@@ -225,6 +225,19 @@ class Douyin(DownloadBase):
 
             self.room_title = room_info['title']
 
+            # ⚠️ 抖音插件此前从不设置 live_cover_url，导致全局 use_live_cover=true
+            # 对抖音完全无效且无任何日志（用户以为开了封面，实际从未下载）。
+            # 抖音房间信息里封面字段是 cover（dict）或 cover_url。
+            cover_info = room_info.get('cover') or {}
+            if isinstance(cover_info, dict):
+                cover_url = cover_info.get('url_list') or cover_info.get('url')
+                if isinstance(cover_url, list) and cover_url:
+                    cover_url = cover_url[0]
+            else:
+                cover_url = room_info.get('cover_url')
+            if isinstance(cover_url, str) and cover_url:
+                self.live_cover_url = cover_url
+
         except:
 
             logger.warning(f"[抖音非报错状态日志] {self.plugin_msg}: 获取直播信息失败 (开播检测中的正常网络波动)")
@@ -504,7 +517,15 @@ class Douyin(DownloadBase):
 
             video_file = file_name
 
-
+            # ⚠️ 边录边传（sync-downloader）模式下视频不落盘，file_name 恒不存在，
+            # 于是 render_video 永远被跳过 —— 而配置里 danmaku_render_video=true，
+            # 用户会以为开了功能，实际静默不执行（连一条日志都没有）。
+            # 这里显式判断并告知，避免"功能没生效"伪装成"功能不存在"。
+            has_video = os.path.exists(video_file)
+            if not has_video and getattr(self, 'downloader', None) == 'sync-downloader':
+                logger.info(
+                    f"{self.plugin_msg}: 边录边传模式视频不落盘，"
+                    f"跳过弹幕视频合成（danmaku_render_video 对该模式无效）")
 
             if os.path.exists(danmaku_file):
 
@@ -516,7 +537,7 @@ class Douyin(DownloadBase):
 
                         danmaku_file=danmaku_file,
 
-                        video_file=video_file if os.path.exists(video_file) else None,
+                        video_file=video_file if has_video else None,
 
                         progress_callback=self._danmaku_progress_callback
 
