@@ -8,6 +8,7 @@ import {
   IconClear,
   IconSave,
 } from '@douyinfe/semi-icons'
+import StatusBar from '@/app/ui/status-bar'
 
 // 日志内容组件
 interface LogContentProps {
@@ -58,8 +59,9 @@ const LogContent = ({ logs, logContainerRef, isLoading }: LogContentProps) => {
       className="log-container"
       ref={logContainerRef}
       style={{
-        height: 'calc(100% - 40px)', // 减去 tabs 的高度
-        maxHeight: 'calc(100vh - 180px)', // 设置最大高度
+        // 父容器已是 flex column，本区域占据剩余空间（状态栏在上方）
+        flex: 1,
+        minHeight: 0,
         overflow: 'auto',
         padding: 12,
         backgroundColor: 'var(--semi-color-bg-1)',
@@ -248,10 +250,16 @@ export default function LogViewer() {
             }
           >
             <TabPane tab="主程序运行日志" itemKey="biliup">
-              <LogContent logs={logs} logContainerRef={logContainerRef} isLoading={isLoading} />
+              <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <StatusBar logs={logs} />
+                <LogContent logs={logs} logContainerRef={logContainerRef} isLoading={isLoading} />
+              </div>
             </TabPane>
             <TabPane tab="下载/上传引擎日志" itemKey="ds_update">
-              <LogContent logs={logs} logContainerRef={logContainerRef} isLoading={isLoading} />
+              <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <StatusBar logs={logs} />
+                <LogContent logs={logs} logContainerRef={logContainerRef} isLoading={isLoading} />
+              </div>
             </TabPane>
           </Tabs>
         </Card>
