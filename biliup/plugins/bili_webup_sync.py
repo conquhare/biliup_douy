@@ -34,6 +34,41 @@ from ..engine.upload import UploadBase, logger
 logger = logging.getLogger('biliup.engine.bili_web_sync')
 
 
+def resolve_ass_file(save_path, save_dir=None):
+    """根据录制路径定位实际生成的 ASS 字幕文件。
+
+    抽成模块级纯函数（不依赖 self / 网络），便于在没有开播的情况下
+    用单元测试验证多段录制下的文件名错位问题。
+
+    背景：边录边传是异步分片上传，弹幕在【最后一段】结束时才 save()，
+    但此刻传入的save_path 仍是【当前段】的名字。实测 3 段录制时：
+      当前段 save_path = xxx_1.mkv → 直接推导 xxx_1.ass
+      实际生成         = xxx_2.ass（最后一段的回调产物）
+    导致 os.path.exists 恒为 False，字幕上传被静默跳过。
+
+    返回：存在的 ass 路径；找不到时返回推导出的期望路径（供调用方告警打印）。
+    """
+    ass_file = os.path.splitext(save_path)[0] + '.ass'
+    if not save_path or os.path.exists(ass_file):
+        return ass_file
+
+    # 退路：save_dir 下按前缀找最新生成的 ass（文件名带分片序号）
+    try:
+        prefix = os.path.splitext(os.path.basename(save_path))[0]
+        stem = prefix.rsplit('_', 1)[0]  # 去掉 _1 / _2 分片后缀
+        candidates = []
+        search_dir = save_dir or os.path.dirname(save_path) or '.'
+        for name in os.listdir(search_dir):
+            if name.startswith(stem) and name.endswith('.ass'):
+                path = os.path.join(search_dir, name)
+                candidates.append((os.path.getmtime(path), path))
+        if candidates:
+            return max(candidates)[1]
+    except Exception as e:
+        logger.warning(f"查找字幕文件失败: {e}")
+    return ass_file
+
+
 @Plugin.upload(platform="bili_web_sync")
 class BiliWebAsync(UploadBase):
     def __init__(
@@ -484,33 +519,15 @@ class BiliBili:
         logger.info(f"上传完成 {file_name} {context['sync_downloader_map'][str(self.database_row_id)] }")
 
         # 先触发分段回调：保存弹幕 XML 并生成 ASS 字幕（边录边传模式下视频不落盘，
-        # 弹幕/字幕依赖此回调生成到 save_dir）
+        #弹幕/字幕依赖此回调生成到 save_dir）
         if file_name_callback:
             file_name_callback(self.save_path)
 
         # 尝试上传对应字幕
         # ⚠️ 必须用 self.save_path 而不是 file_name 推导：
         # 边录边传是异步分片上传，弹幕在【最后一段】结束时才 save()，
-        # 但此刻 file_name 仍是【当前段】的名字。实测 3 段录制时：
-        #   当前段 file_name = xxx_1.mkv → 推导 xxx_1.ass
-        #   实际生成          = xxx_2.ass（最后一段的回调产物）
-        # 导致 os.path.exists 恒为 False，字幕上传被静默跳过（连 warning 都不打）。
-        ass_file = os.path.splitext(self.save_path)[0] + '.ass'
-        if not os.path.exists(ass_file):
-            # 退路：save_dir 下按前缀找最新生成的 ass（文件名带分片序号）
-            try:
-                prefix = os.path.splitext(os.path.basename(self.save_path))[0]
-                stem = prefix.rsplit('_', 1)[0]  # 去掉 _1 / _2 分片后缀
-                candidates = []
-                search_dir = self.save_dir or os.path.dirname(self.save_path) or '.'
-                for name in os.listdir(search_dir):
-                    if name.startswith(stem) and name.endswith('.ass'):
-                        path = os.path.join(search_dir, name)
-                        candidates.append((os.path.getmtime(path), path))
-                if candidates:
-                    ass_file = max(candidates)[1]
-            except Exception as e:
-                logger.warning(f"查找字幕文件失败: {e}")
+        # 但此刻 file_name 仍是【当前段】的名字（详见 resolve_ass_file 文档）。
+        ass_file = resolve_ass_file(self.save_path, self.save_dir)
         if os.path.exists(ass_file):
             try:
                 cid = self._get_latest_cid(aid)
