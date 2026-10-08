@@ -518,9 +518,20 @@ pub async fn get_status(
 
     let mut sw = Vec::new();
     for worker in &workers {
+        // uploader_status 的锁在未初始化时 read() 会 panic（unwrap），
+        // 导致整个 /v1/status 返回 500 —— 状态查询是排障入口，不能因它不可用。
+        // 这里统一兜底为 "Unknown"，保证接口始终可用。
+        let uploader_status = match worker.uploader_status.read() {
+            Ok(s) => format!("{:?}", s),
+            Err(_) => "Unknown".to_string(),
+        };
+        let downloader_status = match worker.downloader_status.read() {
+            Ok(s) => format!("{:?}", s),
+            Err(_) => "Unknown".to_string(),
+        };
         sw.push(serde_json::json!({
-            "downloader_status": format!("{:?}", worker.downloader_status.read()),
-            "uploader_status": format!("{:?}", worker.uploader_status.read().unwrap()),
+            "downloader_status": downloader_status,
+            "uploader_status": uploader_status,
             "live_streamer": worker.live_streamer,
             "upload_streamer": worker.upload_streamer,
         }));

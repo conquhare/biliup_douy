@@ -367,6 +367,15 @@ impl DActor {
                     ctx.change_status(Stage::Download, WorkerStatus::Working(task.clone()))
                         .await;
 
+                    // 录制开始：之前从开播到结束长达十几分钟没有任何日志，
+                    // 用户无法从控制台确认「到底在不在录」。
+                    // 状态只在 push_back 时打印，而 Working 状态期间不会重复打印，
+                    // 因此这里显式记录一次。
+                    info!(
+                        "录制中 (Working) {} —— Ctrl+C 结束时会等待当前分段上传完成",
+                        ctx.live_streamer().url
+                    );
+
                     process(&[], &ctx.live_streamer().preprocessor).await;
 
                     match downloader.sync_download(&mut ctx) {
@@ -387,7 +396,8 @@ impl DActor {
                     }
 
                     process(&[], &ctx.live_streamer().downloaded_processor).await;
-                    
+
+                    info!("录制结束，状态回到 Idle: {}", ctx.live_streamer().url);
                     ctx.change_status(Stage::Download, WorkerStatus::Idle).await;
                     return;
                 }
