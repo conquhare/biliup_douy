@@ -95,6 +95,14 @@ class Douyin(DownloadBase):
 
                     self.__sec_uid = match1(next_url, r"sec_uid=(.*?)&")
 
+                    # ⚠️ 该分支原先只取 sec_uid，room_id 一直是 None。
+                    # 弹幕 WSS 的 room_id 参数为空 → 服务端不推送任何消息，
+                    # 表现为「弹幕录制已启动」但 10 分钟内 0 条、无任何报错。
+                    # 重定向 URL 里带 room_id，一并提取。
+                    rid = match1(next_url, r"room_id=(\d+)") or match1(next_url, r"/(\d{6,})")
+                    if rid:
+                        self.__room_id = rid
+
                 else:
 
                     raise
@@ -391,11 +399,61 @@ class Douyin(DownloadBase):
 
                 }
 
+                # sec_uid 格式房间（douyin.com/user/xxx）的 room_id 在各条解析分支中
+                # 都可能缺失，导致弹幕 WSS 的 room_id 参数为空 → 服务端不推消息。
+                # 现象：日志显示「弹幕录制已启动」，但长时间 0 条且无任何报错。
+                if not self._Douyin__room_id and self._Douyin__sec_uid:
+                    self._Douyin__room_id = self._resolve_room_id()
+
+                if not self._Douyin__room_id:
+                    logger.warning(
+                        f"{self.plugin_msg}: 无法确定 room_id，弹幕可能收不到数据"
+                    )
+
                 self.danmaku = DanmakuClient(self.url, self.gen_download_filename(), content)
 
             else:
 
                 logger.error(f"¼ƶĻٰװһ Javascript  pip install quickjs")
+
+    def _resolve_room_id(self) -> Optional[str]:
+
+        '''通过 H5 接口补齐 room_id（sec_uid 格式房间必需）
+
+        实测：web 接口（/webcast/room/web/enter/）不接受 sec_uid 作 web_rid，
+        会返回 {"data":{"message":...,"prompts":...}} 而没有房间信息；
+        H5 接口（/webcast/room/reflow/info/）才是按 sec_user_id 定位的正确入口。
+        '''
+
+        sec_uid = getattr(self, '_Douyin__sec_uid', None)
+        if not sec_uid:
+            return None
+
+        loop = asyncio.get_event_loop()
+
+        # H5 接口：room_id 传空，靠 sec_user_id 定位
+        try:
+            info = loop.run_until_complete(self.get_h5_room_info(sec_uid, ''))
+            data = (info or {}).get('data') or {}
+            room = data.get('room') or {}
+            rid = data.get('room_id') or room.get('id_str')
+            if rid:
+                logger.debug(f"{self.plugin_msg}: H5 解析到 room_id={rid}")
+                return str(rid)
+        except Exception as e:
+            logger.debug(f"{self.plugin_msg}: H5 接口获取 room_id 失败: {e}")
+
+        # 兜底：web 接口（部分 sec_uid 形态可能有效）
+        try:
+            info = loop.run_until_complete(self.get_web_room_info(sec_uid))
+            data = (info or {}).get('data') or {}
+            rid = data.get('room_id') or (data.get('room') or {}).get('id_str')
+            if rid:
+                return str(rid)
+        except Exception as e:
+            logger.debug(f"{self.plugin_msg}: web 接口获取 room_id 失败: {e}")
+
+        return None
 
     def download(self):
         """覆写父类 download 方法，添加直播流地址过期重试机制。
