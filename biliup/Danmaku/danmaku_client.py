@@ -134,6 +134,12 @@ class BaseDanmakuClient(ABC):
 
             import websockets
 
+            # 接收异常重试策略（详见接收循环内的注释：连接已断开时不应无限重试）
+            self.MAX_RECV_ERRORS = 10
+            self.RECV_ERROR_BACKOFF_BASE = 1.0
+            self.RECV_ERROR_BACKOFF_MAX = 30.0
+            consecutive_errors = 0
+
             # 握手必须携带 Cookie（含 ttwid），否则抖音服务端拒绝升级连接：
             # 返回 HTTP 200 而非 101 Switching Protocols，websockets 抛
             # InvalidStatus: server rejected WebSocket connection: HTTP 200
@@ -177,17 +183,37 @@ class BaseDanmakuClient(ABC):
                         for msg in msgs:
                             await self._process_message(msg)
 
+                        # 成功收到消息 → 重置失败计数
+                        consecutive_errors = 0
+
                     except asyncio.TimeoutError:
                         logger.debug('弹幕接收超时')
                         continue
                     except Exception as e:
-                        logger.exception(f'弹幕处理错误: {e}')
-                        await asyncio.sleep(1)
+                        # ⚠️ 连接已断开时 recv() 会立即抛异常（如 keepalive ping timeout）。
+                        # 若这里只sleep 1 秒后 continue，while self._running 仍为 True
+                        # → 每秒重试一次，会把日志刷成几万条ERROR（实测 10-06 刷了 5995 条）
+                        # 而实际连接早已不可能恢复。改为：连续失败超阈值即退出本轮，
+                        # 由 save()/上层决定是否重连。
+                        consecutive_errors += 1
+                        if consecutive_errors >= self.MAX_RECV_ERRORS:
+                            logger.error(
+                                f'弹幕连接连续 {consecutive_errors} 次异常，判定连接已失效，'
+                                f'停止本轮接收（最后错误: {e}）')
+                            break
+                        # 指数退避，避免疯狂重试
+                        backoff = min(self.RECV_ERROR_BACKOFF_MAX,
+                                      self.RECV_ERROR_BACKOFF_BASE * (2 ** (consecutive_errors - 1)))
+                        logger.warning(
+                            f'弹幕接收异常（第 {consecutive_errors}/{self.MAX_RECV_ERRORS} 次，'
+                            f'{backoff:.1f}s 后重试）: {e}')
+                        await asyncio.sleep(backoff)
 
                 heartbeat_task.cancel()
 
         except Exception as e:
-            logger.exception(f'弹幕录制错误: {e}')
+            # 网络类异常很常见，用 error 即可；不再打完整堆栈刷屏
+            logger.error(f'弹幕录制错误: {e}')
 
     async def _heartbeat(self, websocket):
         """发送心跳包"""

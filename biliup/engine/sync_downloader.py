@@ -183,10 +183,12 @@ class SyncDownloader:
                 logger.info("[run] 连续 5 段无数据，停止下载器")
                 return
 
-            output_filename = f"{self.output_prefix}{file_index:03d}.mkv"
-            # print(f"\n[run] ========== 准备录制第 {file_index} 段：{output_filename} ==========")
-            # logging.info(f"\n[run] == 当前下载流地址：{self.stream_url} ==")
-            logger.info(f"\n[run] == 准备录制第 {file_index} 段：{output_filename} ==")
+            # ⚠️ 这只是给日志看的临时名，边录边传下真正落地的文件名是
+            # upload_stream 里的 f"{output_prefix}_{file_index}.mkv"（下划线分隔）。
+            # 这里若也用 {file_index:03d} 会拼成 "...22_51001"（5 位段号），
+            # 与实际分P 名"xxx_1.mkv" 不一致，排查问题时极易误判。
+            log_filename = f"{self.output_prefix}_{file_index}.mkv"
+            logger.info(f"\n[run] == 准备录制第 {file_index} 段：{log_filename} ==")
             output_filename = "-"
             is_hls = '.m3u8' in urlparse(self.stream_url).path
             if not is_hls:

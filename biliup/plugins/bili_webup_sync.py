@@ -497,6 +497,20 @@ class BiliBili:
             return
         video_part['title'] = video_part['title'][:80]
 
+        # ⭐ 尾巴分段过滤：下播/断流瞬间产生的最后一段往往只有几百 KB，
+        # 但preupload 申请时声明的 total_size 是整个段的配额（常见 1.5GB），
+        # 结果 B站稿件里会出现一个几秒的垃圾分P（实测10-09 场次第 2 段仅 519286 字节）。
+        # 阈值取 1MB：低于此值视为无效尾巴段，不追加分P、不触发弹幕保存回调。
+        # size 为 None 说明拿不到真实体积（旧链路），保守放行不做过滤。
+        MIN_VALID_SEGMENT_BYTES = 1 * 1024 * 1024
+        actual_size = video_part.pop('size', None)
+        if actual_size is not None and actual_size < MIN_VALID_SEGMENT_BYTES:
+            logger.warning(
+                f"{file_name} 实际仅 {actual_size} 字节（< 1MB），判定为无效尾巴分段，"
+                f"跳过投稿。本场有效分P 已保留，如无有效分段请手动确认投稿。")
+            stop_event.set()
+            return
+
         if str(self.database_row_id) in context["sync_downloader_map"]:
             context_data = context["sync_downloader_map"][str(self.database_row_id)].copy()
             context_data.pop('subtitle', None)
@@ -630,7 +644,9 @@ class BiliBili:
                 r = self.__session.post(url, params=p, json={"parts": parts}, headers=headers, timeout=15).json()
                 if r.get('OK') == 1:
                     logger.info(f'{file_name} uploaded >> {total_size / 1000 / 1000 / cost:.2f}MB/s. {r}')
-                    return {"title": splitext(file_name)[0], "filename": splitext(basename(upos_uri))[0], "desc": ""}
+                    # size 一并返回：调用方用它判断是否属于无效尾巴分段
+                    return {"title": splitext(file_name)[0], "filename": splitext(basename(upos_uri))[0],
+                            "desc": "", "size": n}
                 raise IOError(r)
             except IOError:
                 logger.info(f"请求合并分片 {file_name} 时出现问题，尝试重连，次数：" + str(attempt))
