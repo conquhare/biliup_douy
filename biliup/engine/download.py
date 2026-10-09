@@ -29,6 +29,24 @@ from .sync_downloader import SyncDownloader
 # from biliup.app import context
 logger = logging.getLogger('biliup')
 
+# ── 边录边传（sync-downloader）单段体积上限估算 ──────────────────────
+# 背景：单段体积上限这一个值同时决定两件事，必须保持一致 ——
+#   1) ffmpeg 的 -fs（到量即结束本段）
+#   2) preupload 申报的 total_size；而 queue_reader_generator 里
+#      total_chunks = total_size // chunk_size 是**硬上限**，
+#      实际数据超出即被静默丢弃（会造成视频尾部丢失）。
+# 所以抬高它 = 同时抬高录制上限与申报大小，不会引入数据丢失。
+#
+# 为什么不能只靠 file_size 卡死：1.5GB / 30min ≈ 6.7Mbps，
+# 高码率流会在到达 30 分钟前就被 -fs 提前切断，segment_time 形同虚设。
+# 因此按时长 × 码率上限估算，并保证不小于 file_size，让 segment_time 真正生效。
+#
+# ⚠️ 这个值同时是**数据安全下限**：若实际码率超过它，产出就会超过 total_size，
+# 而 total_chunks 是硬上限 → 超出部分被静默丢弃（视频尾部丢失）。
+# 30Mbps 可覆盖绝大多数直播流（含 4K）；封顶 8GB 与 stream_gears 一致。
+SYNC_SEGMENT_BITRATE_CEILING_MBPS = 30   # 码率上限估算，同时是数据安全下限
+SYNC_MAX_SEGMENT_MB = 8 * 1024           # 封顶，与 stream_gears 的 8GB 上限一致
+
 
 class DownloadBase(ABC):
     def __init__(self, fname, url, config, suffix=None, opt_args=None):
@@ -100,6 +118,66 @@ class DownloadBase(ABC):
             return False
 
         return True
+
+    def _segment_time_seconds(self):
+        """把配置里的 segment_time（'HH:MM:SS'）解析为秒数。
+
+        供 sync-downloader（边录边传）使用 —— 该下载器此前只按 file_size 切段，
+        导致配置里的 segment_time 完全不生效（整场录制只有 1 个分P）。
+
+        解析失败或未配置时返回 0，表示「不按时长切段」，
+        此时仍然保留 -fs 体积上限，两者共存不冲突。
+        """
+        raw = self.segment_time
+        if not raw:
+            return 0
+        parts = str(raw).split(':')
+        try:
+            parts = [int(p) for p in parts]
+        except ValueError:
+            logger.warning(f"{self.plugin_msg}: segment_time 格式非法({raw})，仅按文件大小分段")
+            return 0
+        if len(parts) == 3:
+            h, m, s = parts
+        elif len(parts) == 2:
+            h, (m, s) = 0, parts
+        else:
+            logger.warning(f"{self.plugin_msg}: segment_time 格式非法({raw})，仅按文件大小分段")
+            return 0
+        seconds = h * 3600 + m * 60 + s
+        return seconds if seconds > 0 else 0
+
+    def _sync_max_file_size_mb(self, segment_seconds):
+        """算边录边传的单段体积上限（MB）。
+
+        segment_time 存在时按时长估算（时长优先），否则退回 file_size；
+        两者取较大值 —— 这样高码率下允许单段超过 file_size，
+        同时 total_size 与 -fs 始终一致，不会触发数据丢弃。
+        """
+        file_size_mb = int(self.file_size / 1024 / 1024)
+        if not segment_seconds:
+            return file_size_mb
+        estimated_mb = int(segment_seconds * SYNC_SEGMENT_BITRATE_CEILING_MBPS / 8)
+        result = max(file_size_mb, estimated_mb)
+        if result > SYNC_MAX_SEGMENT_MB:
+            logger.warning(
+                f"{self.plugin_msg}: 单段体积估算 {result}MB 超过封顶 {SYNC_MAX_SEGMENT_MB}MB，"
+                f"已按封顶值录制（{segment_seconds}s @ {SYNC_SEGMENT_BITRATE_CEILING_MBPS}Mbps 理论上限）。"
+                f"此时若实际码率超过 {SYNC_MAX_SEGMENT_MB * 8 / segment_seconds:.0f}Mbps，"
+                f"超出的数据会被丢弃；建议调小 segment_time 或调大 file_size")
+            result = SYNC_MAX_SEGMENT_MB
+        # ⚠️ 必须向上对齐到 10MB：queue_reader_generator 要求
+        # total_size % chunk_size == 0，否则直接抛 ValueError 导致上传失败。
+        # B站 preupload 返回的 chunk_size 常见为 10MB 的整数倍，10MB 对齐最安全。
+        aligned = ((result + 9) // 10) * 10
+        if aligned != result:
+            logger.debug(
+                f"{self.plugin_msg}: 单段体积上限 {result}MB 向上对齐为 {aligned}MB（适配 B站 chunk_size）")
+        result = aligned
+        logger.info(
+            f"{self.plugin_msg}: 单段体积上限 {result}MB"
+            f"（file_size={file_size_mb}MB，按 {segment_seconds}s 码率上限估算 {estimated_mb}MB，取较大者）")
+        return result
 
     def download(self):
         self.update_headers(self.stream_headers)
@@ -177,8 +255,10 @@ class DownloadBase(ABC):
                             logger.debug(f"{self.plugin_msg}: URL 刷新跳过")
                         return None
 
+                    segment_seconds = self._segment_time_seconds()
                     sync_download(self.raw_stream_url, self.stream_headers,
-                                max_file_size=int(self.file_size / 1024 / 1024),
+                                segment_duration=segment_seconds,
+                                max_file_size=self._sync_max_file_size_mb(segment_seconds),
                                 output_prefix=self.gen_download_filename(True),
                                 stream_info=stream_info,
                                 file_name_callback=lambda file_name: self._download_segment_callback(file_name), database_row_id=self.database_row_id,
@@ -538,8 +618,9 @@ def stream_gears_download(url, headers, file_name, segment_time=None, file_size=
         raise
 
 
-def sync_download(stream_url, headers, segment_duration=60, max_file_size=100, output_prefix="segment", stream_info=None, file_name_callback: Callable[[str], None] = None, database_row_id=0, global_config=None, refresh_url_callback=None):
-    logger.info(f"启动同步下载器 max_file_size {max_file_size}MB")
+def sync_download(stream_url, headers, segment_duration=0, max_file_size=100, output_prefix="segment", stream_info=None, file_name_callback: Callable[[str], None] = None, database_row_id=0, global_config=None, refresh_url_callback=None):
+    logger.info(f"启动同步下载器 max_file_size {max_file_size}MB"
+                + (f"，分段时长 {segment_duration}s" if segment_duration else "，仅按文件大小分段"))
     video_queue = queue.SimpleQueue()
 
     def upload(video_queue, stream_info, stop_event: threading.Event):

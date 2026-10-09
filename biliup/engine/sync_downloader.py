@@ -148,7 +148,21 @@ class SyncDownloader:
         for i in [
             "-fflags", "+genpts",
             "-i", input_source,  # 输入源
-            # "-t", str(segment_duration),
+        ]:
+            cmd.append(i)
+
+        # ⭐ 时间分段：'-t' 必须放在 '-i' 之后（作为输出选项）。
+        # 此前该行被注释掉 且 download.py 从未传入 segment_time
+        # → sync-downloader 完全按 '-fs' 体积切段，整场录制只产出 1 个分P。
+        # 与 '-fs'（体积上限）共存：两者都是"上限"语义，任一先到即结束本段。
+        try:
+            seg = int(segment_duration)
+        except (TypeError, ValueError):
+            seg = None
+        if seg:
+            cmd += ["-t", str(seg)]
+
+        for i in [
             "-fs", f"{self.max_file_size}M",
             "-c:v", "copy",
             "-c:a", "copy",

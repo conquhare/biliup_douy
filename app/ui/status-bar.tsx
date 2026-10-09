@@ -55,11 +55,35 @@ function shortName(url?: string, remark?: string): string {
 }
 
 /**
+ * 剥掉 ds_update.log 每行的日志前缀，只保留消息正文。
+ *
+ * 实际行格式（Rust tracing 转发的 Python logger）：
+ *   2026-10-09 01:31:29,045 bili_webup_sync.py[line:633](Pid:9384 Name:upload_1) INFO 小纯同学… - chunks-…
+ *
+ * 前缀可能跨行（消息体内含换行时会看到多条 py[line:NNN] 片段），所以只匹配
+ * 「行首时间戳 … 第一个 level 标记」这一段。剥不掉时原样返回，交给上层正则兜底。
+ */
+function stripLogPrefix(line?: string): string {
+  if (!line) return ''
+  // 时间戳：2026-10-09 01:31:29,045
+  const m = line.match(
+    /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}[.,]\d+\s+.*?\b(?:DEBUG|INFO|WARN|WARNING|ERROR|CRITICAL)\b\s+/
+  )
+  return m ? line.slice(m[0].length) : line
+}
+
+/**
  * 从日志行提取上传进度。
  * 匹配 biliup 的分片上传日志（见 biliup/plugins/bili_webup_sync.py）：
  *   xxx.mkv - chunks-(20/155) - down - speed: 3.70Mbps
  *   xxx.mkv - chunks-20 - up status: 200 - speed: 40.30Mbps
- *   upload_1 线路选择 => upos: upcdn=tx&probe_version=20221109.
+ *   xxx.mkv 开始上传
+ *
+ * ⚠️ ds_update.log 每行都带前缀，形如：
+ *   2026-10-09 01:31:29,045 bili_webup_sync.py[line:633](Pid:9384 Name:upload_1) INFO 小纯同学…
+ * 若直接用 `^(.+?\.mkv)` 从行首匹配，惰性量词会把「时间戳 + 文件名 + 行号 + 线程名 + INFO」
+ * 整段吞进文件名；而每行时间戳都不同 → Map 的 key 每次都是新值 → 顶栏永远显示最后一条，
+ * 看起来像"卡住不动"。因此必须先把日志前缀剥掉。
  *
  * 只看末尾若干行：上传进度是高频滚动的，扫描全量没有意义。
  */
@@ -69,17 +93,17 @@ function parseUploads(logs: string[]): UploadInfo[] {
   const from = Math.max(0, logs.length - 400)
 
   for (let i = from; i < logs.length; i++) {
-    const ln = logs[i]
+    const ln = stripLogPrefix(logs[i])
     if (!ln) continue
 
-    // 「开始上传 xxx.mkv」—— 初始化条目，保证上传刚开始就能显示
-    let m = ln.match(/开始上传\s+(.+?\.mkv)/)
+    // 「xxx.mkv 开始上传」—— 初始化条目，保证上传刚开始就能显示
+    let m = ln.match(/^(.+?\.mkv)\s+开始上传/)
     if (m) {
       map.set(m[1], { name: m[1], seg: '0', total: '?', speed: '?' })
       continue
     }
 
-    // 「chunks-20 - up status: 200 - speed: 40.30Mbps」—— 最新进度
+    // 「xxx.mkv - chunks-20 - up status: 200 - speed: 40.30Mbps」—— 最新进度
     m = ln.match(/^(.+?\.mkv)\s+-\s+chunks-(\d+)\s+-\s+up\s+status:.*?speed:\s*([\d.]+)Mbps/)
     if (m) {
       const prev = map.get(m[1])
@@ -87,10 +111,19 @@ function parseUploads(logs: string[]): UploadInfo[] {
       continue
     }
 
-    // 「chunks-(20/155) - down - speed: 3.70Mbps」—— 能拿到总段数
+    // 「xxx.mkv - chunks-(20/155) - down - speed: 3.70Mbps」—— 能拿到总段数
     m = ln.match(/^(.+?\.mkv)\s+-\s+chunks-\((\d+)\/(\d+)\)(?:.*?speed:\s*([\d.]+)Mbps)?/)
     if (m) {
       map.set(m[1], { name: m[1], seg: m[2], total: m[3], speed: m[4] ?? '?' })
+      continue
+    }
+
+    // 「xxx.mkv uploaded >> 12.34MB/s. …」/「上传完成 …」—— 该段已结束，
+    // 必须从Map 移除。否则上传早已完成，顶栏仍永久显示「↑ 上传中: xxx N/N」，
+    // 看起来就像"状态栏卡住不动"。
+    m = ln.match(/^(.+?\.mkv)\s+uploaded\s*>>/) || ln.match(/^上传完成\s+(.+?\.mkv)/)
+    if (m) {
+      map.delete(m[1])
     }
   }
 
