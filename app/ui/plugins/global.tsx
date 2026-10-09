@@ -1,12 +1,182 @@
 'use client'
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import styles from '../../styles/dashboard.module.scss'
 import { Form, Select, Space, useFormApi, Collapse } from '@douyinfe/semi-ui'
 import { IconUpload, IconDownload } from '@douyinfe/semi-icons'
 import DanmakuConfig from './DanmakuConfig'
+import {
+  FILE_SIZE_GB_OPTIONS,
+  SEGMENT_MINUTE_OPTIONS,
+  GB,
+  MB,
+  formatBytes,
+  estimateSegmentBytes,
+  resolveQuality,
+  segmentTimeToSeconds,
+  secondsToSegmentTime,
+} from '@/app/lib/segment-presets'
+
+/** 字节数 → 最接近的 GB 档位；不匹配任何档位时返回 'custom' */
+function bytesToGbOption(bytes?: number | null): number | 'custom' {
+  if (!bytes || bytes <= 0) return 4
+  const hit = FILE_SIZE_GB_OPTIONS.find((gb) => Math.abs(gb * GB - bytes) < 1)
+  return hit ?? 'custom'
+}
+
+/** 秒 → 最接近的分钟档位；无时长返回 'none'，不匹配返回 'custom' */
+function secondsToMinuteOption(seconds: number): number | 'custom' | 'none' {
+  if (!seconds || seconds <= 0) return 'none'
+  const hit = SEGMENT_MINUTE_OPTIONS.find((m) => m * 60 === seconds)
+  return hit ?? 'custom'
+}
 
 const Global: React.FC = () => {
   const formApi = useFormApi()
+
+  // 读取当前画质（房间级 override 优先，其次全局），用于体积预估
+  const quality = useMemo(() => {
+    const streamer = formApi.getValue('streamers') ?? {}
+    const first = Object.values(streamer)[0] as any
+    const roomQuality = first?.override?.douyin_quality ?? null
+    const globalQuality = formApi.getValue('douyin_quality') ?? null
+    return resolveQuality(roomQuality, globalQuality)
+  }, [formApi.getValue('streamers'), formApi.getValue('douyin_quality')])
+
+  // 当前分段时长（秒）
+  const segmentSeconds = useMemo(() => {
+    const minutes = formApi.getValue('segment_time_minutes')
+    if (minutes === 'none' || minutes === undefined || minutes === null) return 0
+    if (minutes === 'custom') return segmentTimeToSeconds(formApi.getValue('segment_time'))
+    return Number(minutes) * 60
+  }, [formApi.getValue('segment_time_minutes'), formApi.getValue('segment_time')])
+
+  // 当前体积上限（字节）
+  const sizeBytes = useMemo(() => {
+    const gb = formApi.getValue('file_size_gb')
+    if (gb === 'custom') return Number(formApi.getValue('file_size')) || 0
+    if (gb === undefined || gb === null) return 0
+    return Number(gb) * GB
+  }, [formApi.getValue('file_size_gb'), formApi.getValue('file_size')])
+
+  // 实时预估与风险提示
+  const sizeAdvice = useMemo(() => {
+    const est = estimateSegmentBytes(quality, segmentSeconds)
+    const segText =
+      segmentSeconds > 0
+        ? `${segmentSeconds >= 3600 ? `${segmentSeconds / 3600} 小时` : `${segmentSeconds / 60} 分钟`}`
+        : '（未按时长切段）'
+
+    if (!est) {
+      return {
+        level: 'warn' as const,
+        title: '当前仅按体积切段',
+        detail:
+          `未设置分段时长，单段大小将由 file_size（${formatBytes(sizeBytes)}）决定。` +
+          '若录制很久，建议同时设置分段时长，避免单段体积过大。',
+      }
+    }
+
+    const { minBytes, maxBytes } = est
+    const measured = quality.measuredMbps
+    const base =
+      `画质 ${quality.label}` +
+      (measured ? `（本项目实测 ${measured} Mbps）` : `（常见 ${quality.minMbps}~${quality.maxMbps} Mbps）`) +
+      ` · 分段 ${segText} → 单段约 ${formatBytes(minBytes)} ~ ${formatBytes(maxBytes)}`
+
+    if (!sizeBytes) {
+      return {
+        level: 'warn' as const,
+        title: '未设置体积上限',
+        detail: base + '。建议把 file_size 设到区间上限之上，否则高码率时可能被提前切断。',
+      }
+    }
+
+    if (sizeBytes < minBytes) {
+      return {
+        level: 'danger' as const,
+        title: `体积上限偏小：${formatBytes(sizeBytes)} < 单段需要 ${formatBytes(minBytes)}`,
+        detail:
+          base +
+          `。在 ${formatBytes(sizeBytes)} 处就会切段，` +
+          `若码率高于 ${((sizeBytes * 8) / segmentSeconds / 1e6).toFixed(1)}Mbps 则` +
+          '时长设置形同虚设；同时申报的 total_size 偏小，存在尾部数据被丢弃的风险。',
+      }
+    }
+
+    if (sizeBytes < maxBytes) {
+      return {
+        level: 'warn' as const,
+        title: `体积上限偏小：${formatBytes(sizeBytes)}（建议 ≥ ${formatBytes(maxBytes)}）`,
+        detail:
+          base +
+          `。低码率下够用，但码率超过 ${((sizeBytes * 8) / segmentSeconds / 1e6).toFixed(1)}Mbps 时` +
+          '会退化为按体积切段（每段短于设定时长）。',
+      }
+    }
+
+    return {
+      level: 'ok' as const,
+      title: `配置合理（${formatBytes(sizeBytes)} ≥ 单段 ${formatBytes(maxBytes)}）`,
+      detail: base + '。将以设定时长切段，体积上限不会误触。',
+    }
+  }, [quality, segmentSeconds, sizeBytes])
+
+  // 存量配置反解：把后端的字节数/时间串映射到新档位，避免升级后变空值
+  useEffect(() => {
+    const rawSize = formApi.getValue('file_size')
+    const rawTime = formApi.getValue('segment_time')
+    if (rawSize || rawTime) {
+      if (formApi.getValue('file_size_gb') === undefined) {
+        formApi.setValue('file_size_gb', bytesToGbOption(Number(rawSize) || 0))
+      }
+      if (formApi.getValue('segment_time_minutes') === undefined) {
+        const secs = segmentTimeToSeconds(rawTime)
+        const opt = secondsToMinuteOption(secs)
+        if (opt === 'custom') formApi.setValue('segment_time', rawTime)
+        formApi.setValue('segment_time_minutes', opt)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 档位 → 后端原始字段 的同步。
+  // 不依赖提交时机（formApi.submit 不可覆写），改为 onValueChange 立即回写，
+  // 这样表单里file_size / segment_time 始终是后端认识的类型。
+  const syncFromPreset = useMemo(() => {
+    return (changed: string) => {
+      if (changed === 'file_size_gb') {
+        const gb = formApi.getValue('file_size_gb')
+        if (gb !== 'custom') {
+          formApi.setValue(
+            'file_size',
+            gb === undefined || gb === null ? undefined : Number(gb) * GB
+          )
+        }
+      }
+      if (changed === 'segment_time_minutes') {
+        const minutes = formApi.getValue('segment_time_minutes')
+        if (minutes === 'none') {
+          formApi.setValue('segment_time', undefined)
+        } else if (minutes !== 'custom' && minutes !== undefined && minutes !== null) {
+          formApi.setValue('segment_time', secondsToSegmentTime(Number(minutes) * 60))
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formApi])
+
+  useEffect(() => {
+    // Semi FormApi 未在类型中暴露 onValueChange；同步已在各 Select 的
+    // onChange 里直接调用 syncFromPreset，此处仅兜底处理自定义输入框。
+    const anyApi = formApi as unknown as {
+      onValueChange?: (cb: (changed: string) => void) => (() => void) | void
+    }
+    const handler = anyApi.onValueChange?.((changed: string) => syncFromPreset(changed))
+    return () => {
+      if (typeof handler === 'function') handler()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formApi, syncFromPreset])
 
   return (
     <>
@@ -108,57 +278,125 @@ const Global: React.FC = () => {
             />
           </>
         ) : null}
-        <Form.InputNumber
+        <Form.Select
           label="视频分段大小(file_size)"
           extraText={
             <div style={{ fontSize: '14px' }}>
-              录制文件大小限制，超过此大小将文件分割。下载回放时无法使用。
+              单段体积上限，超过即自动切段。
               <br />
-              单位以Byte表示，例如4294967296(4GB)
+              <span style={{ color: 'var(--semi-color-warning)' }}>
+                体积上限同时是 B站 申报的 total_size（硬上限，超出部分会被丢弃）。
+              </span>
+              {' '}因此不宜设得小于「分段时长 × 画质码率」，否则会出现
+              <b> 视频尾部被静默截断</b> 且没有任何报错。
             </div>
           }
-          field="file_size"
-          placeholder=""
-          suffix={'Byte'}
+          field="file_size_gb"
+          placeholder="请选择分段体积上限"
           style={{ width: '100%' }}
-          fieldStyle={{
-            alignSelf: 'stretch',
-            padding: 0,
-          }}
-        />
-        <Form.Input
-          field="segment_time"
+          onChange={() => syncFromPreset('file_size_gb')}
+        >
+          {FILE_SIZE_GB_OPTIONS.map((gb) => (
+            <Form.Select.Option key={gb} value={gb}>
+              {gb < 1 ? `${gb * 1024} MB` : `${gb} GB`}
+            </Form.Select.Option>
+          ))}
+          <Form.Select.Option value="custom">自定义（手动填写字节数）</Form.Select.Option>
+        </Form.Select>
+        {formApi.getValue('file_size_gb') === 'custom' ? (
+          <Form.InputNumber
+            label="自定义分段大小(字节)"
+            extraText={
+              <div style={{ fontSize: '14px' }}>
+                单位 Byte。1 GB = {GB} 字节；1 MB = {MB} 字节。
+                <br />
+                留空则不设置体积上限（仅按下方分段时长切段）。
+              </div>
+            }
+            field="file_size"
+            placeholder={`例如 ${GB * 2}（2GB）`}
+            suffix={'Byte'}
+            style={{ width: '100%', marginTop: -12 }}
+            fieldStyle={{ alignSelf: 'stretch', padding: 0 }}
+            rules={[
+              {
+                // Semi的 validator 签名固定为 5 参；此处显式声明以匹配类型
+                validator: ((
+                  _rule: unknown,
+                  value: unknown,
+                  callback: (error?: string) => void
+                ) => {
+                  const fail = (msg: string) => {
+                    callback(msg)
+                    return false
+                  }
+                  const pass = () => {
+                    callback()
+                    return true
+                  }
+                  if (value === undefined || value === null || value === '') return pass()
+                  if (typeof value !== 'number' || !Number.isFinite(value)) {
+                    return fail('请输入数字')
+                  }
+                  if (value <= 0) return fail('必须大于 0')
+                  if (value % MB !== 0) {
+                    return fail(`必须是 ${MB} 字节(1MB) 的整数倍，否则 B站分块上传会失败`)
+                  }
+                  return pass()
+                }) as never,
+              },
+            ]}
+            stopValidateWithError={true}
+          />
+        ) : null}
+        <Form.Select
+          field="segment_time_minutes"
+          label="视频分段时间(segment_time)"
           extraText={
             <div style={{ fontSize: '14px' }}>
-              录制文件时间限制，超过此时间将文件分割。
+              单段时长上限，超过即自动切段。建议 30 分钟——B站按分P 展示，过长不利观看与上传稳定性。
               <br />
-              格式为&apos;00:00:00&apos;(时:分:秒)
+              填「仅按体积」则不按时长切段（仅 file_size 生效）。
             </div>
           }
-          label="视频分段时间(segment_time)"
-          placeholder="01:00:00"
+          placeholder="请选择分段时长"
           style={{ width: '100%' }}
-          fieldStyle={{
-            alignSelf: 'stretch',
-            padding: 0,
+          onChange={() => syncFromPreset('segment_time_minutes')}
+        >
+          {SEGMENT_MINUTE_OPTIONS.map((m) => (
+            <Form.Select.Option key={m} value={m}>
+              {m >= 60 ? `${m / 60} 小时` : `${m} 分钟`}
+            </Form.Select.Option>
+          ))}
+          <Form.Select.Option value="none">仅按体积切段（不按时长）</Form.Select.Option>
+        </Form.Select>
+
+        {/* 实时预估：把「配了会怎样」提前暴露，避免静默截尾 */}
+        <div
+          style={{
+            margin: '-8px 0 12px',
+            padding: '10px 12px',
+            borderRadius: 4,
+            background: 'var(--semi-color-fill-1)',
+            borderLeft: `3px solid ${
+              sizeAdvice.level === 'danger'
+                ? 'var(--semi-color-danger)'
+                : sizeAdvice.level === 'warn'
+                  ? 'var(--semi-color-warning)'
+                  : 'var(--semi-color-success)'
+            }`,
+            fontSize: 13,
+            lineHeight: '20px',
           }}
-          showClear={true}
-          rules={[
-            {
-              pattern: /^[^\u4e00-\u9fa5]*$/,
-              message: '不能使用中文冒号',
-            },
-            {
-              pattern: /^[0-9:]*$/,
-              message: '只能包含数字和英文冒号',
-            },
-            {
-              pattern: /^[0-9]{2,4}:[0-5][0-9]:[0-5][0-9]$/,
-              message: '时间格式不符合规范',
-            },
-          ]}
-          stopValidateWithError={true}
-        />
+        >
+          <div style={{ color: 'var(--semi-color-text-1)', fontWeight: 500 }}>
+            {sizeAdvice.title}
+          </div>
+          <div style={{ color: 'var(--semi-color-text-2)', marginTop: 2 }}>
+            {sizeAdvice.detail}
+          </div>
+        </div>
+
         <Form.Input
           field="filename_prefix"
           extraText={
