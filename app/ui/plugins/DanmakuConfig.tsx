@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { Form, Select, Collapse, useFormApi, Typography } from '@douyinfe/semi-ui'
 import ErrorBoundary from '../ErrorBoundary'
 
@@ -12,13 +12,6 @@ type DanmakuConfigProps = {
 const DanmakuConfigContent: React.FC<DanmakuConfigProps> = ({ prefix = '', platformName = '平台' }) => {
   const field = (name: string) => (prefix ? `${prefix}.${name}` : name)
   const formApi = useFormApi()
-  const [count, setCount] = useState(0)
-  const typesField = field('douyin_danmaku_types')
-
-  useEffect(() => {
-    const values = formApi.getValue(typesField)
-    setCount(Array.isArray(values) ? values.length : 0)
-  }, [formApi, typesField])
 
   return (
     <>
@@ -32,33 +25,6 @@ const DanmakuConfigContent: React.FC<DanmakuConfigProps> = ({ prefix = '', platf
           padding: 0,
         }}
       />
-
-      <Form.Select
-        field={typesField}
-        extraText={
-          <div style={{ fontSize: '14px' }}>
-            选择要录制的弹幕消息类型，为空则录制所有类型。
-            <br />
-            已选 {count}/6 种消息类型
-          </div>
-        }
-        label="弹幕类型筛选"
-        style={{ width: '100%' }}
-        fieldStyle={{
-          alignSelf: 'stretch',
-          padding: 0,
-        }}
-        showClear={true}
-        multiple
-        onChange={(value: any) => setCount(Array.isArray(value) ? value.length : 0)}
-      >
-        <Select.Option value="danmaku">弹幕消息</Select.Option>
-        <Select.Option value="like">点赞消息</Select.Option>
-        <Select.Option value="member">进场消息</Select.Option>
-        <Select.Option value="gift">礼物消息</Select.Option>
-        <Select.Option value="social">关注消息</Select.Option>
-        <Select.Option value="room_user_seq">统计消息</Select.Option>
-      </Form.Select>
 
       {/* ASS字幕生成 */}
       <Form.Switch
