@@ -399,6 +399,12 @@ impl DActor {
 
                     info!("录制结束，状态回到 Idle: {}", ctx.live_streamer().url);
                     ctx.change_status(Stage::Download, WorkerStatus::Idle).await;
+                    // ⚠️ 必须放回轮询队列：开播检测命中时房间已被 next() 从 platforms 队列
+                    // pop 出（monitor.rs pop_front），此后只有 wake_waker 能把它放回。
+                    // 漏掉这一步，该房间会永久不再被检测 —— 表现为「开播了却不录制」，
+                    // 且全程没有任何错误日志（2026-10-14 实际发生：4 个房间同批消失）。
+                    // 非 sync 路径在 download.rs:235 有调用，此分支不可例外。
+                    self.rooms_handle.wake_waker(ctx.worker_id()).await;
                     return;
                 }
 
