@@ -646,7 +646,8 @@ def sync_download(stream_url, headers, segment_duration=0, max_file_size=100, ou
         logger.info(f"{stream_info['name']} 上传器结束")
 
     downloader = SyncDownloader(stream_url, headers, segment_duration, max_file_size, output_prefix, video_queue,
-                                refresh_url_callback=refresh_url_callback)
+                                refresh_url_callback=refresh_url_callback,
+                                save_dir=(global_config or {}).get('sync_save_dir'))
 
     # 启动上传器
     upload_thread = threading.Thread(target=upload, args=(video_queue, stream_info, downloader.stop_event), daemon=True)

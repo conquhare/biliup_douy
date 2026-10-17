@@ -46,7 +46,8 @@ class SyncDownloader:
                  max_file_size=100,
                  output_prefix="segment_",
                  video_queue=None,
-                 refresh_url_callback=None):
+                 refresh_url_callback=None,
+                 save_dir=None):
         """
         :param stream_url:          拉流地址
         :param headers:             HTTP 请求头
@@ -65,9 +66,73 @@ class SyncDownloader:
         self.max_file_size = max_file_size
         self.output_prefix = output_prefix
         self.refresh_url_callback = refresh_url_callback
+        self.save_dir = save_dir
 
         self.video_queue: queue.SimpleQueue = video_queue
         self.stop_event = threading.Event()
+
+        # tee 落盘状态（save_dir 为空时全程禁用，行为与改动前完全一致）
+        self._tee_file = None
+        self._tee_path = None
+        self._tee_buf = bytearray()
+
+    # ==== tee 落盘：边录边传的同时把每段视频写一份本地文件 ====
+    # 背景：压制弹幕（ffmpeg ass= 滤镜）需要视频文件，而边录边传原本只把
+    # ffmpeg stdout 推队列上传、从不落盘 → danmaku_render_video 必然被跳过。
+    # 这里在 put(queue) 之外补一份本地写入，使"边录边传 + 本地留存/压制"可兼得。
+    _TEE_FLUSH_SIZE = 1 << 20  # 1MB 缓冲后再落盘，避免 500 字节块级 write 拖慢 IO
+
+    def _open_tee(self, file_index: int):
+        """打开当前段的本地留存文件；save_dir 未配置或打开失败时静默降级为仅上传。"""
+        if not self.save_dir:
+            return
+        try:
+            os.makedirs(self.save_dir, exist_ok=True)
+            self._tee_path = os.path.join(
+                self.save_dir, f"{self.output_prefix}_{file_index}.mkv")
+            self._tee_file = open(self._tee_path, "wb")
+            self._tee_buf = bytearray()
+            logger.info(f"[tee] 本地留存视频分P: {self._tee_path}")
+        except Exception as e:
+            logger.warning(f"[tee] 打开本地留存文件失败，本次仅上传不落盘: {e}")
+            self._tee_file = None
+            self._tee_path = None
+
+    def _close_tee(self, discard: bool = False):
+        """关闭（必要时删除）当前段本地留存文件。discard=True 用于录制失败的不完整段。"""
+        if self._tee_file is None:
+            return
+        try:
+            if self._tee_buf:
+                self._tee_file.write(self._tee_buf)
+                self._tee_buf = bytearray()
+            self._tee_file.close()
+            logger.info(f"[tee] 本地留存文件已写出: {self._tee_path}")
+        except Exception as e:
+            logger.warning(f"[tee] 关闭本地留存文件异常: {e}")
+        if discard:
+            try:
+                if self._tee_path and os.path.exists(self._tee_path):
+                    os.remove(self._tee_path)
+            except Exception as e:
+                logger.warning(f"[tee] 删除不完整的本地留存文件失败: {e}")
+        self._tee_file = None
+        self._tee_path = None
+
+    def _emit(self, data: bytes):
+        """推上传队列 + 写本地留存文件（双路输出）。"""
+        self.video_queue.put(data)
+        if self._tee_file is None:
+            return
+        self._tee_buf += data
+        if len(self._tee_buf) < self._TEE_FLUSH_SIZE:
+            return
+        try:
+            self._tee_file.write(self._tee_buf)
+            self._tee_buf = bytearray()
+        except Exception as e:
+            logger.warning(f"[tee] 写本地留存文件失败，后续仅上传不落盘: {e}")
+            self._close_tee()
 
     def run_ffmpeg_with_url(self, ffmpeg_cmd, output_filename):
         with subprocess.Popen(ffmpeg_cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE) as ffmpeg_proc:
@@ -80,13 +145,13 @@ class SyncDownloader:
                     if err:
                         logger.error("[run] ffmpeg err " + err.decode("utf-8", errors="replace"))
                     return False
-                self.video_queue.put(data)  # 将第一个数据放入队列
+                self._emit(data)  # 将第一个数据放入队列
                 while True:
                     data = ffmpeg_proc.stdout.read(self.read_block_size)
                     if not data:
                         logger.info("[run] ffmpeg stdout 已到达 EOF。结束本段写入。")
                         break
-                    self.video_queue.put(data)
+                    self._emit(data)
             ffmpeg_proc.wait()
             # 输出 ffmpeg 的错误信息（如果有的话）
             # err = ffmpeg_proc.stderr.read()
@@ -116,14 +181,14 @@ class SyncDownloader:
                             logger.error("[run] streamlink err " + streamlink_err.decode("utf-8", errors="replace"))
                         return False
 
-                    self.video_queue.put(data)  # 将第一个数据放入队列
+                    self._emit(data)  # 将第一个数据放入队列
                     # 继续读取剩余数据
                     while True:
                         data = ffmpeg_proc.stdout.read(self.read_block_size)
                         if not data:
                             logger.info("[run] ffmpeg stdout 已到达 EOF。结束本段写入。")
                             break
-                        self.video_queue.put(data)
+                        self._emit(data)
 
                 ffmpeg_proc.wait()
                 logger.info("[run] ffmpeg 已到达输出大小并退出。结束本段写入。")
@@ -204,6 +269,7 @@ class SyncDownloader:
             log_filename = f"{self.output_prefix}_{file_index}.mkv"
             logger.info(f"\n[run] == 准备录制第 {file_index} 段：{log_filename} ==")
             output_filename = "-"
+            self._open_tee(file_index)  # 本段开始 tee 落盘（save_dir 未配置则为 no-op）
             is_hls = '.m3u8' in urlparse(self.stream_url).path
             if not is_hls:
                 # print("[run] 输入源不是 HLS 地址，将直接使用 ffmpeg 进行录制。", self.stream_url)
@@ -211,6 +277,7 @@ class SyncDownloader:
                 ffmpeg_cmd = self.build_ffmpeg_cmd(self.stream_url, output_filename,
                                                    self.headers, self.segment_duration)
                 if not self.run_ffmpeg_with_url(ffmpeg_cmd, output_filename):
+                    self._close_tee(discard=True)  # 本段无数据，丢弃不完整的留存文件
                     retry_count += 1
                     logger.warning(
                         f"[run] 第 {retry_count}/5 次尝试无数据（流可能已失效或过期）"
@@ -258,6 +325,7 @@ class SyncDownloader:
                 # output_filename = "-"
                 ffmpeg_cmd = self.build_ffmpeg_cmd("pipe:0", output_filename, None, self.segment_duration)
                 if not self.run_streamlink_with_ffmpeg(streamlink_cmd, ffmpeg_cmd, output_filename):
+                    self._close_tee(discard=True)  # 本段无数据，丢弃不完整的留存文件
                     retry_count += 1
                     logger.warning(
                         f"[run] 第 {retry_count}/5 次尝试无数据（HLS 路径）"
@@ -284,6 +352,7 @@ class SyncDownloader:
                     continue
 
             # 6. 进入下一段
+            self._close_tee()  # 本段结束，flush 并关闭本地留存文件
             # if file_index != 1:
             self.video_queue.put(None)  # 通知消费者线程本段录制结束
             file_index += 1

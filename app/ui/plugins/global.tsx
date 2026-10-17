@@ -241,6 +241,7 @@ const Global: React.FC = () => {
               field="sync_save_dir"
               label="同步下载器本地保存目录(sync_save_dir)"
               placeholder=""
+              extraText="保存弹幕/字幕文件。填写后，边录边传的视频分P 也会同时落盘到此目录（文件名与上传分P 一致），供弹幕压制或本地留存；留空则视频不落盘。"
               style={{ width: '100%' }}
               fieldStyle={{
                 alignSelf: 'stretch',
