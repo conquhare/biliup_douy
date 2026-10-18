@@ -311,6 +311,33 @@ jobs:
         name: biliup-windows-exe-nuitka-${{ steps.version.outputs.VERSION }}
         path: biliup-*.zip
 
+    # 永久修复：把构建产物发布到 builds 分支（公开仓库，raw.githubusercontent.com 免鉴权可拉取），
+    # 绕开 GitHub 对「PAT 下载 workflow artifact / release asset」的 403 限制（2025 起）。
+    # 本机部署脚本改为从
+    #   https://raw.githubusercontent.com/${{ github.repository }}/builds/biliup-dist.zip
+    # 经代理拉取，无需 gh / PAT 下载权限。
+    - name: Publish to builds branch (raw CDN)
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        set -e
+        ZIP="biliup-${{ steps.version.outputs.VERSION }}-x86_64-windows-nuitka.zip"
+        [ -f "$ZIP" ] || ZIP=$(ls biliup-*.zip | head -1)
+        echo "publishing $ZIP ($(du -h "$ZIP" | cut -f1))"
+        cp "$ZIP" /tmp/biliup-dist.zip
+        git config user.email "deliver-bot@users.noreply.github.com"
+        git config user.name "deliver-bot"
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        git checkout --orphan builds
+        git rm -rf --cached . >/dev/null 2>&1 || true
+        git clean -fd >/dev/null 2>&1 || true
+        cp /tmp/biliup-dist.zip biliup-dist.zip
+        git add biliup-dist.zip
+        git commit -m "build ${{ github.sha }}"
+        git push -f origin builds
+        echo "::notice::raw URL https://raw.githubusercontent.com/${{ github.repository }}/builds/biliup-dist.zip"
+
     - name: Create Release
       if: github.event.inputs.release == 'true'
       uses: softprops/action-gh-release@v1
