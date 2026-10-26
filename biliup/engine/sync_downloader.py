@@ -12,6 +12,13 @@ from urllib.parse import urlparse
 
 logger = logging.getLogger('biliup.engine.sync_downloader')
 
+# ⭐ 读超时（秒）：连续这么久没从 ffmpeg stdout 读到任何数据，即判定流已中断。
+# 没有它时 `stdout.read()` 会**永久阻塞**（直播结束但 TCP 连接不关、ffmpeg 不退出），
+# 房间永远停在「录制中」，且无任何错误日志。
+# 实测（2026-10-26）：蕾古司auv 卡死 ~25h、蓝调野僧爱画画 ~1.5h，均靠人工杀 ffmpeg 才恢复。
+# 触发后本段结束 → 上层重试逻辑会刷新 URL 重开一段（若主播仍在播则自动续录）。
+STALL_TIMEOUT_SEC = 120
+
 
 def pad_file_to_size(filename, min_file_size):
     """
@@ -134,11 +141,39 @@ class SyncDownloader:
             logger.warning(f"[tee] 写本地留存文件失败，后续仅上传不落盘: {e}")
             self._close_tee()
 
+    def _read_with_timeout(self, stream, size, timeout):
+        """带超时地读 stream。
+
+        返回：
+            bytes - 读到的数据（b'' 表示 EOF）
+            None  - 超时未读到任何数据（判定流中断，调用方应终止本段）
+        """
+        buf = queue.Queue(maxsize=1)
+
+        def _reader():
+            try:
+                buf.put(stream.read(size))
+            except Exception:
+                buf.put(b'')
+
+        t = threading.Thread(target=_reader, daemon=True)
+        t.start()
+        try:
+            return buf.get(timeout=timeout)
+        except queue.Empty:
+            return None
+
     def run_ffmpeg_with_url(self, ffmpeg_cmd, output_filename):
         with subprocess.Popen(ffmpeg_cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE) as ffmpeg_proc:
             logger.info("[run] 启动 ffmpeg...")
             if output_filename == "-":
-                data = ffmpeg_proc.stdout.read(self.read_block_size)  # 读取第一个 data
+                data = self._read_with_timeout(
+                    ffmpeg_proc.stdout, self.read_block_size, STALL_TIMEOUT_SEC)
+                if data is None:
+                    logger.warning(
+                        f"[run] ffmpeg 启动后 {STALL_TIMEOUT_SEC}s 内无任何输出，判定流已失效，终止本段")
+                    ffmpeg_proc.kill()
+                    return False
                 if not data:  # 如果第一个 data 为空
                     logger.info("[run] ffmpeg 没有输出数据，返回 False")
                     err = ffmpeg_proc.stderr.read()
@@ -147,7 +182,18 @@ class SyncDownloader:
                     return False
                 self._emit(data)  # 将第一个数据放入队列
                 while True:
-                    data = ffmpeg_proc.stdout.read(self.read_block_size)
+                    data = self._read_with_timeout(
+                        ffmpeg_proc.stdout, self.read_block_size, STALL_TIMEOUT_SEC)
+                    if data is None:
+                        # ⭐ 流中断：ffmpeg 不退出、read() 永久阻塞 → 必须主动 kill
+                        logger.warning(
+                            f"[run] ffmpeg 连续 {STALL_TIMEOUT_SEC}s 无数据，判定流已中断，"
+                            f"终止本段并回收 ffmpeg 进程")
+                        try:
+                            ffmpeg_proc.kill()
+                        except Exception:
+                            pass
+                        break
                     if not data:
                         logger.info("[run] ffmpeg stdout 已到达 EOF。结束本段写入。")
                         break
@@ -167,7 +213,14 @@ class SyncDownloader:
                 if output_filename == "-":
                     logger.info("[run] 读取 ffmpeg stdout...")
                     # 读取第一个数据
-                    data = ffmpeg_proc.stdout.read(self.read_block_size)
+                    data = self._read_with_timeout(
+                        ffmpeg_proc.stdout, self.read_block_size, STALL_TIMEOUT_SEC)
+                    if data is None:
+                        logger.warning(
+                            f"[run] ffmpeg 启动后 {STALL_TIMEOUT_SEC}s 内无输出，判定流已失效，终止本段")
+                        streamlink_proc.kill()
+                        ffmpeg_proc.kill()
+                        return False
                     if not data:  # 如果第一个数据为空
                         logger.info("[run] ffmpeg 没有输出数据，返回 False")
                         streamlink_proc.kill()  # 终止 streamlink 进程
@@ -184,7 +237,17 @@ class SyncDownloader:
                     self._emit(data)  # 将第一个数据放入队列
                     # 继续读取剩余数据
                     while True:
-                        data = ffmpeg_proc.stdout.read(self.read_block_size)
+                        data = self._read_with_timeout(
+                            ffmpeg_proc.stdout, self.read_block_size, STALL_TIMEOUT_SEC)
+                        if data is None:
+                            logger.warning(
+                                f"[run] ffmpeg 连续 {STALL_TIMEOUT_SEC}s 无数据，判定流已中断，终止本段")
+                            try:
+                                streamlink_proc.kill()
+                                ffmpeg_proc.kill()
+                            except Exception:
+                                pass
+                            break
                         if not data:
                             logger.info("[run] ffmpeg stdout 已到达 EOF。结束本段写入。")
                             break

@@ -850,31 +850,52 @@ class BiliBili:
         'https://member.bilibili.com/x/vu/web/archive/view?aid={aid}',
     )
 
-    def _get_latest_cid(self, aid: int, part_title: str = None) -> int:
-        """获取稿件中最新的视频分P cid。
+    def _get_latest_cid(self, aid: int, part_title: str = None, max_wait: int = 180) -> int:
+        """获取稿件中最新的视频分P cid（带轮询等待，直到稿件可见）。
 
         part_title 给定时优先按分P 标题精确匹配（边录边传是多分P 场景，
         只取最后一P 有可能拿到别的分P）；匹配不到再退回最后一个。
+
+        ⭐ 必须轮询等待的原因（2026-10-26 实测修正）：
+        投稿刚返回 aid 时稿件**尚未入库**——`x/web-interface/view` 的 pages 为空，
+        另一个接口直接返回非 JSON（空响应）。而调用方在上传完成**约 1 秒后**就查 cid，
+        原实现一旦拿不到就立刻 return 0 → 字幕上传被 100% 跳过。
+        日志证据：2026-10-20 ~ 10-26 每一次都是
+        「字幕文件存在但无法获取 cid，跳过字幕上传」，即 preSave 修复从未真正生效。
+        故改为轮询等待稿件可见，最多 max_wait 秒。
         """
-        for tpl in self._CID_APIS:
-            try:
-                resp = self.__session.get(tpl.format(aid=aid), timeout=10)
-                data = resp.json().get('data') or {}
-                pages = data.get('pages') or data.get('videos') or []
-                if not pages:
-                    continue
-                if part_title:
-                    for p in pages:
-                        # 分P 标题在B站会带上 _1 / _2 分片后缀，做前缀宽松匹配
-                        title = p.get('part') or p.get('title') or ''
-                        if title and (title == part_title
-                                      or title.startswith(part_title)
-                                      or part_title.startswith(title)):
-                            return p.get('cid', 0)
-                return pages[-1].get('cid', 0)
-            except Exception as e:
-                logger.warning(f"获取稿件 cid 失败 (aid={aid}, api={tpl}): {e}")
-        return 0
+        deadline = time.time() + max_wait
+        attempt = 0
+        last_err = ''
+        while True:
+            attempt += 1
+            for tpl in self._CID_APIS:
+                try:
+                    resp = self.__session.get(tpl.format(aid=aid), timeout=10)
+                    data = resp.json().get('data') or {}
+                    pages = data.get('pages') or data.get('videos') or []
+                    if not pages:
+                        continue
+                    if part_title:
+                        for p in pages:
+                            # 分P 标题在B站会带上 _1 / _2 分片后缀，做前缀宽松匹配
+                            title = p.get('part') or p.get('title') or ''
+                            if title and (title == part_title
+                                          or title.startswith(part_title)
+                                          or part_title.startswith(title)):
+                                return p.get('cid', 0)
+                    return pages[-1].get('cid', 0)
+                except Exception as e:
+                    last_err = f"{tpl}: {e}"
+                    logger.warning(f"获取稿件 cid 失败 (aid={aid}, api={tpl}): {e}")
+            if time.time() >= deadline:
+                logger.warning(
+                    f"等待稿件可见超时（{max_wait}s），放弃获取 cid (aid={aid})；最后错误: {last_err}")
+                return 0
+            wait = 20
+            logger.info(
+                f"稿件 {aid} 暂不可见（可能仍在转码/入库），{wait}s 后重试 cid 查询（第 {attempt} 次）")
+            time.sleep(wait)
 
     def _wait_subtitle_permission(self, aid: int, cid: int, max_wait: int = 360) -> bool:
         """轮询等待平台开放人工字幕提交权限。
