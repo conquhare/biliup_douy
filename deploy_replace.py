@@ -82,7 +82,29 @@ def kill_running():
     log("警告: 端口仍未释放")
 
 def start_detached():
-    """自行拉起 biliup.exe（用 cmd /c start 脱离当前 shell，monitor 任务作兜底）。"""
+    """拉起 biliup.exe。
+
+    ⚠️ 首选「任务计划 biliup-monitor」：Task Scheduler 启动的进程有独立会话，
+    不会随当前 shell / 后台任务被回收。
+    ⚠️ 不要用 `cmd /c start` 兜底：实测它拉起的 exe 在后台 shell 结束时会被一起杀掉
+    （表现为流水线明明验证通过，几秒后端口只剩 TIME_WAIT、进程消失）。
+    """
+    # 优先：触发任务计划（进程归属 Task Scheduler，能长期存活）
+    try:
+        r = subprocess.run(
+            ["powershell", "-NonInteractive", "-NoProfile", "-Command",
+             "Start-ScheduledTask -TaskName biliup-monitor"],
+            cwd=RUN, capture_output=True, text=True, errors="replace", timeout=60,
+        )
+        if r.returncode == 0:
+            log("已触发任务计划 biliup-monitor 拉起（推荐：脱离 shell，可长期存活）")
+            return True
+        log(f"Start-ScheduledTask 返回 {r.returncode}: "
+            f"{(r.stderr or r.stdout or '').strip()[:150]}")
+    except Exception as e:
+        log(f"触发任务计划失败: {repr(e)[:120]}")
+
+    # 兜底：直接拉起（仅在当前 shell 存活期间有效）
     exe = os.path.join(RUN, "biliup.exe")
     try:
         subprocess.Popen(
@@ -93,10 +115,10 @@ def start_detached():
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-        log("已用 cmd /c start 拉起 biliup.exe（脱离 shell）")
+        log("已用 cmd /c start 拉起 biliup.exe（兜底，可能随 shell 退出被回收）")
         return True
     except Exception as e:
-        log(f"start 拉起失败（依赖 monitor 任务兜底）: {repr(e)[:120]}")
+        log(f"start 拉起失败: {repr(e)[:120]}")
         return False
 
 def deploy():

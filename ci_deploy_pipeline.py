@@ -24,8 +24,10 @@ import deploy_replace  # noqa: E402
 
 REPO = "conquhare/biliup_douy"
 API = f"https://api.github.com/repos/{REPO}"
-RUN_ID = "40350762862"          # 本次 CI run
-WANT_SHA = "276e3ba2492bcd7cd3a5c16ac54acf2553bbf0b0"  # 推送后的远程 commit
+# 用法: python ci_deploy_pipeline.py [run_id] [want_sha]
+RUN_ID = sys.argv[1] if len(sys.argv) > 1 else "40379969214"
+WANT_SHA = (sys.argv[2] if len(sys.argv) > 2
+            else "b37516e8ca35ada53c1ad196f7c707fbf1cc9c70")  # 推送后的远程 commit
 ZIP = deploy_replace.ZIP
 DONE = deploy_replace.DONE
 LOG = os.path.join(deploy_replace.BUILD, "ci_deploy_pipeline.log")
