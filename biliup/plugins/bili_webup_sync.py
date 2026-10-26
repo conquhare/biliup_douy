@@ -223,6 +223,17 @@ class BiliWebAsync(UploadBase):
         else:
             logger.info("没有有效分段需要投稿，跳过最终投稿")
 
+        # 边录边传：全部投稿完成后，按分P切片统一上传整场弹幕字幕。
+        # ⚠️ 必须在最终投稿之后——分P时长要等转码出来才能切片。
+        if videos.aid is not None and str(database_row_id) in context["sync_downloader_map"]:
+            try:
+                last_part = (videos.videos or [{}])[-1].get('title') or ''
+                ass_path = resolve_ass_file(
+                    os.path.join(self.save_dir or '', last_part + '.mkv'), self.save_dir)
+                bili._finalize_subtitles(videos.aid, ass_path)
+            except Exception as e:
+                logger.warning(f"弹幕字幕统一上传失败（不影响录制与投稿）: {e}")
+
         file_list = []
         return file_list
 
@@ -537,26 +548,11 @@ class BiliBili:
         if file_name_callback:
             file_name_callback(self.save_path)
 
-        # 尝试上传对应字幕
-        # ⚠️ 必须用 self.save_path 而不是 file_name 推导：
-        # 边录边传是异步分片上传，弹幕在【最后一段】结束时才 save()，
-        # 但此刻 file_name 仍是【当前段】的名字（详见 resolve_ass_file 文档）。
-        ass_file = resolve_ass_file(self.save_path, self.save_dir)
-        if os.path.exists(ass_file):
-            try:
-                # 传分P 标题（xxx_1），多分P 时精确匹配到本次上传的那一P
-                part_title = os.path.splitext(os.path.basename(self.save_path))[0]
-                cid = self._get_latest_cid(aid, part_title)
-                if cid:
-                    self._upload_subtitle_file(aid, cid, ass_file)
-                else:
-                    logger.warning(f"字幕文件存在但无法获取 cid，跳过字幕上传: {ass_file}")
-            except Exception as e:
-                logger.warning(f"上传字幕失败: {ass_file}: {e}")
-        else:
-            # 静默跳过是最坏的失败方式：弹幕录了、ASS 生成了、投稿成功了，
-            # 用户却完全看不到字幕没上传。必须显式告警。
-            logger.warning(f"未找到 ASS 字幕文件，跳过字幕上传: {ass_file}")
+        # ⚠️ 这里【不】逐段上传字幕，原因（实测踩过）：
+        #   ① 弹幕 ASS 是整场累计时间轴，此刻挂到当前分P 必然整体错位；
+        #   ② 直播中稿件被持续追加分P、反复转码，字幕接口此时不可用，
+        #      旧代码在此轮询 allow_submit 6 分钟纯属浪费（还会占住上传线程）。
+        # 正确时机：全部投稿完成后由 upload() -> _finalize_subtitles 按分P切片统一上传。
 
     async def upos_stream(self, stream_queue, file_name, total_size, ret):
         # print("--------------, ", file_name)
@@ -897,121 +893,152 @@ class BiliBili:
                 f"稿件 {aid} 暂不可见（可能仍在转码/入库），{wait}s 后重试 cid 查询（第 {attempt} 次）")
             time.sleep(wait)
 
-    def _wait_subtitle_permission(self, aid: int, cid: int, max_wait: int = 360) -> bool:
-        """轮询等待平台开放人工字幕提交权限。
+    # ------------------------------------------------------------------ 字幕
 
-        allow_submit==False 多为投稿刚完成、转码/审核未结束的时序问题
-        （owner 自己过审的视频人工字幕提交是开着的，创作中心→字幕→添加字幕支持
-        .ass/.srt）。最多等待 max_wait 秒（默认 6 分钟），每 ~30s 探测一次；
-        超时仍 False 才判定为平台真正关闭。
+    def _ass_to_bcc(self, ass_path: str, offset: float = 0.0, duration: float = None):
+        """ASS -> B站字幕接口要求的 BCC 结构。
 
-        返回 True 表示可提交（含探测异常时超时放行，避免漏传）。
+        BCC 由 B站字幕保存接口 x/v2/dm/subtitle/draft/save 直接消费
+        （2026-10-27 在真实稿件 BV1MUno6bEup 上端到端验证通过：2023 条弹幕
+        成功挂载到稿件分P）。body 每项 {from, to, location, content}，单位秒。
+
+        offset/duration 用于把整场累计的弹幕切成各分P 片段：只保留
+        [offset, offset+duration) 区间，并把时间轴平移到 0 起点。
+        duration=None 表示一直取到结尾（用于最后一个分P）。
+        """
+        def to_sec(t):
+            try:
+                h, m, s = t.strip().split(':')
+                return int(h) * 3600 + int(m) * 60 + float(s)
+            except Exception:
+                return None
+
+        body = []
+        # 安全边界：弹幕条目自身有停留时长（实测 4s），切片末尾会溢出到分P外；
+        # B站会判 79014「字幕时间点超过视频时间长度」，故留 1s 余量。
+        hard_end = None if duration is None else max(duration - 1.0, 0.0)
+        end_limit = None if hard_end is None else offset + hard_end
+        with open(ass_path, encoding='utf-8', errors='replace') as f:
+            for line in f:
+                if not line.startswith('Dialogue'):
+                    continue
+                cols = line.rstrip('\n').split(',', 9)
+                if len(cols) < 10:
+                    continue
+                start, end = to_sec(cols[1]), to_sec(cols[2])
+                if start is None or end is None:
+                    continue
+                if start < offset or (end_limit is not None and start >= end_limit):
+                    continue
+                text = re.sub(r'\{[^}]*\}', '', cols[9])
+                text = text.replace('\\N', '\n').replace('\\n', '\n').strip()
+                if not text:
+                    continue
+                to = min(end - offset, hard_end) if hard_end is not None else end - offset
+                body.append({'from': round(start - offset, 3), 'to': round(to, 3),
+                             'location': 2, 'content': text})
+        return {'font_size': 0.4, 'font_color': '#FFFFFF', 'background_alpha': 0.5,
+                'background_color': '#9C27B0', 'Stroke': 'none', 'body': body}
+
+    def _get_aid_info(self, aid, max_wait=180):
+        """取稿件 bvid 与分P 列表 [(cid, 时长秒, 分P标题)]。
+
+        刚投稿时新分P 的时长还是 0（未转码），必须等到拿到时长才能切片，否则
+        字幕整体错位。最多等 max_wait 秒。
         """
         deadline = time.time() + max_wait
-        interval = 30
-        attempt = 0
+        last_err = '未知'
         while True:
-            attempt += 1
             try:
-                r = self.__session.get(
-                    'https://api.bilibili.com/x/player/wbi/v2',
-                    params={'aid': aid, 'cid': cid}, timeout=10)
-                sub = (r.json().get('data') or {}).get('subtitle') or {}
-                if sub.get('allow_submit') is not False:
-                    return True
-                existing = [s.get('lan') for s in (sub.get('subtitles') or [])]
-                if time.time() >= deadline:
-                    logger.warning(
-                        f"B站已关闭该稿件的人工字幕提交权限（allow_submit=False，"
-                        f"现有字幕语言={existing or '无'}）。"
-                        f"弹幕 ASS 仍会正常生成到本地，但无法自动上传。"
-                        f"如需字幕请在创作中心网页端手动上传。")
-                    return False
-                logger.info(
-                    f"字幕提交权限暂未开放（转码/审核中），{interval}s 后第 {attempt + 1} 次重试 "
-                    f"（allow_submit=False, 现有字幕={existing or '无'}）")
+                r = self.__session.get('https://api.bilibili.com/x/web-interface/view',
+                                       params={'aid': aid}, timeout=15).json()
+                if r.get('code') == 0:
+                    d = r.get('data') or {}
+                    pages = [(p['cid'], p.get('duration') or 0, p.get('part') or '')
+                             for p in (d.get('pages') or [])]
+                    total = sum(p[1] for p in pages)
+                    if d.get('bvid') and pages and total > 0:
+                        return d['bvid'], pages
+                    last_err = f'分P时长未就绪(pages={len(pages)}, 总时长={total}s)'
+                else:
+                    last_err = f"code={r.get('code')} {r.get('message')}"
             except Exception as e:
-                # 探测失败不致命：短暂等待后重试；超过 deadline 则放行（避免漏传）
-                if time.time() >= deadline:
-                    logger.warning(f"探测字幕提交权限失败，超时放行（不影响录制）: {e}")
-                    return True
-                logger.warning(f"探测字幕提交权限失败，{interval}s 后重试: {e}")
-            time.sleep(interval)
+                last_err = repr(e)[:120]
+            if time.time() >= deadline:
+                logger.warning(f'获取稿件分P信息超时（{max_wait}s），放弃本次字幕上传 '
+                               f'(aid={aid})；最后状态: {last_err}')
+                return None, []
+            logger.info(f'稿件分P信息未就绪（{last_err}），20s 后重试')
+            time.sleep(20)
 
-    def _upload_subtitle_file(self, aid: int, cid: int, subtitle_file: str):
-        """把 ASS 字幕文件作为人工字幕上传到B站视频（字幕通道）。
+    def _save_subtitle_bcc(self, bvid, cid, bcc, tag='', lan='zh'):
+        """把 BCC 字幕保存（=发布）到稿件指定分P。
 
-        流程（参照 bilibilicli 创作中心网页端实测，owner 自己过审的视频
-        人工字幕提交是开着的）：
-          1. x/upload/web/image?bucket=subtitle  上传字幕文件，拿回 data.location
-          2. x/v2/dm/subtitle/draft/preSave       把该 URL 绑定到稿件分P(cid)
-        preSave 直接对已发布视频生效，无需再走视频草稿 add/edit。
-        B站按 cid 关联，aid 传 0；lan 用 zh-CN（与 AI 字幕 ai-zh 独立成轨）。
+        ⭐ 实测要点（2026-10-27 真机验证，勿改回旧写法）：
+          - 端点 x/v2/dm/subtitle/draft/save（POST urlencoded），data 直接放 BCC
+            JSON：**不需要**先 x/upload/web/image 传文件，也不需要 preSave；
+          - lan 必须是短码（zh / en / ja…，官方表
+            i0.hdslb.com/bfs/subtitle/subtitle_lan.json），
+            zh-CN / zh-Hans 会被判 79011「不合法的语言」；
+          - 必须带 bvid + oid(cid) + type=1 + submit=true + sign=false；
+          - 上传 .ass 走老接口会被判 79008「字幕不合法」，故统一转 BCC；
+          - allow_submit=False **不影响**本接口生效（旧代码据此跳过上传是错的，
+            导致字幕 100% 不上传）。
         """
         if not self.__bili_jct:
-            logger.warning("无法上传字幕: bili_jct 缺失")
-            return
-
-        # 前置：等视频转码完成、平台开放人工字幕提交权限。
-        # allow_submit==False 多为投稿刚完成、转码/审核未结束的时序问题，
-        # 轮询等待转码完成后再上传，而非直接放弃（见 _wait_subtitle_permission）。
-        if not self._wait_subtitle_permission(aid, cid):
-            return
-
-        # 第1 步：上传字幕文件到 B 站存储，拿回 subtitle_url
-        ext = os.path.splitext(subtitle_file)[1].lower()
-        content_type = 'application/x-subrip' if ext == '.srt' else 'application/octet-stream'
+            logger.warning('无法上传字幕: bili_jct 缺失')
+            return False
+        if not (bcc or {}).get('body'):
+            logger.info(f'字幕片段为空，跳过: {tag}')
+            return False
         try:
-            with open(subtitle_file, 'rb') as f:
-                up = self.__session.post(
-                    'https://api.bilibili.com/x/upload/web/image',
-                    params={'bucket': 'subtitle', 'csrf': self.__bili_jct},
-                    data={'csrf': self.__bili_jct, 'content_type': content_type},
-                    files={'file': (os.path.basename(subtitle_file), f, content_type)},
-                    headers={'referer': 'https://member.bilibili.com/'},
-                    timeout=30).json()
-            if up.get('code') != 0:
-                logger.warning(f"字幕文件上传失败: {up.get('message', up)} (aid={aid})")
-                return
-            subtitle_url = ((up.get('data') or {}).get('location') or '')
-            if not subtitle_url:
-                logger.warning(f"字幕文件上传未返回 URL: {up} (aid={aid})")
-                return
-            subtitle_url = re.sub(r'^https?:', 'http:', subtitle_url)
-            logger.info(f"字幕文件已上传至B站: {subtitle_url} (aid={aid}, cid={cid})")
-        except Exception as e:
-            logger.warning(f"字幕文件上传异常 (aid={aid}): {e}")
-            return
-
-        # 第 2 步：preSave 把 URL 绑定到该分P（oid=cid）。
-        # 这是字幕专用草稿预存接口，区别于视频稿件草稿 x/vupre/web/draft/*。
-        lan = 'zh-CN'
-        try:
-            files_json = json.dumps(
-                [{'url': subtitle_url, 'lan': lan, 'subtitle_id': 0}],
-                ensure_ascii=False)
             payload = {
-                'oid': str(cid),
-                'type': '1',
-                'files': files_json,
-                'aid': '0',
-                'csrf': self.__bili_jct,
-                'csrf_token': self.__bili_jct,
+                'lan': lan, 'submit': 'true', 'csrf': self.__bili_jct,
+                'sign': 'false', 'bvid': bvid, 'type': '1', 'oid': str(cid),
+                'data': json.dumps(bcc, ensure_ascii=False),
             }
-            resp = self.__session.post(
-                'https://api.bilibili.com/x/v2/dm/subtitle/draft/preSave',
+            r = self.__session.post(
+                'https://api.bilibili.com/x/v2/dm/subtitle/draft/save',
                 data=payload,
-                headers={'referer': 'https://member.bilibili.com/'},
-                timeout=20)
-            body = resp.json()
+                headers={
+                    'origin': 'https://account.bilibili.com',
+                    'referer': f'https://account.bilibili.com/subtitle/edit/#/editor'
+                               f'?bvid={bvid}&cid={cid}',
+                },
+                timeout=60)
+            body = r.json()
             if body.get('code') == 0:
-                logger.info(f"字幕上传成功: {os.path.basename(subtitle_file)} "
-                            f"(aid={aid}, cid={cid}, lan={lan})")
-            else:
-                logger.warning(f"字幕绑定失败 [{body.get('code')}]: "
-                               f"{body.get('message')} (aid={aid}, cid={cid})")
+                logger.info(f'字幕上传成功: {tag}（{len(bcc["body"])} 条, '
+                            f'cid={cid}, lan={lan}）')
+                return True
+            logger.warning(f'字幕保存失败 [{body.get("code")}]: '
+                           f'{body.get("message")} ({tag}, cid={cid})')
         except Exception as e:
-            logger.warning(f"字幕绑定异常 (aid={aid}, cid={cid}): {e}")
+            logger.warning(f'字幕保存异常 ({tag}, cid={cid}): {e}')
+        return False
+
+    def _finalize_subtitles(self, aid, ass_file=None):
+        """录制结束后统一上传弹幕字幕（边录边传专用）。
+
+        ⭐ 边录边传（sync）模式下弹幕 ASS 是**整场累计**时间轴——实测同场次
+        _5/_6/_7/_8.ass 每条都从 0:00:03 覆盖到 3:26:12。整份挂到任一分P 都会
+        整体错位，必须按各分P真实时长切片后逐 P 上传。
+        """
+        if not ass_file:
+            ass_file = resolve_ass_file(self.save_path, self.save_dir)
+        if not ass_file or not os.path.exists(ass_file):
+            logger.warning(f'未找到 ASS 字幕文件，跳过字幕上传: {ass_file}')
+            return
+        bvid, pages = self._get_aid_info(aid)
+        if not bvid or not pages:
+            return
+        # 每个分P 都按 B站返回的真实时长切片（含最后一个）：
+        # 弹幕 ASS 常比视频总时长更长（直播结束后仍在录），不截断会被判 79014。
+        offset = 0.0
+        for idx, (cid, dur, title) in enumerate(pages, 1):
+            bcc = self._ass_to_bcc(ass_file, offset=offset, duration=dur)
+            self._save_subtitle_bcc(bvid, cid, bcc, tag=f'P{idx} {title}')
+            offset += dur
 
     def cover_up(self, img: str):
         """
