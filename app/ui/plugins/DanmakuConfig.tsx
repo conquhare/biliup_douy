@@ -105,7 +105,7 @@ const DanmakuConfigContent: React.FC<DanmakuConfigProps> = ({ prefix = '', platf
       {/* 视频合成 */}
       <Form.Switch
         field={field('danmaku_render_video')}
-        extraText="使用FFmpeg将ASS字幕合成到视频中，生成带弹幕的视频文件。需要安装FFmpeg。"
+        extraText="使用FFmpeg将ASS字幕压制到视频中，生成带弹幕的视频。边录边传模式下开启后，会在原稿（多P）之外额外投稿一个【弹幕版】独立视频。需安装FFmpeg，并配置本地落盘目录(sync_save_dir)。"
         label="合成弹幕视频"
         fieldStyle={{
           alignSelf: 'stretch',

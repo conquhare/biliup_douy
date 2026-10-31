@@ -517,15 +517,18 @@ class Douyin(DownloadBase):
 
             video_file = file_name
 
-            # ⚠️ 边录边传（sync-downloader）模式下视频不落盘，file_name 恒不存在，
-            # 于是 render_video 永远被跳过 —— 而配置里 danmaku_render_video=true，
-            # 用户会以为开了功能，实际静默不执行（连一条日志都没有）。
-            # 这里显式判断并告知，避免"功能没生效"伪装成"功能不存在"。
+            # ⚠️ 边录边传（sync-downloader）模式下 video_file 是【单段】tee 落盘文件，
+            # 但弹幕是全场累计时间轴（每段 save 都写出完整 danmaku_list），
+            # 若在此逐段压制，弹幕时间轴会与单段视频错位 → 必错。
+            # 因此分段回调里【不】逐段压制，留到全部录完后由 sync_download
+            # 统一合并视频 + 压制全场弹幕，再作为独立稿件上传。
             has_video = os.path.exists(video_file)
-            if not has_video and getattr(self, 'downloader', None) == 'sync-downloader':
+            is_sync = getattr(self, 'downloader', None) == 'sync-downloader'
+            if is_sync and has_video:
                 logger.info(
-                    f"{self.plugin_msg}: 边录边传模式视频不落盘，"
-                    f"跳过弹幕视频合成（danmaku_render_video 对该模式无效）")
+                    f"{self.plugin_msg}: 边录边传模式：分段回调跳过逐段弹幕压制"
+                    f"（将在全部录完后统一合成弹幕版视频）")
+            video_file_for_render = video_file if (has_video and not is_sync) else None
 
             if os.path.exists(danmaku_file):
 
@@ -537,7 +540,7 @@ class Douyin(DownloadBase):
 
                         danmaku_file=danmaku_file,
 
-                        video_file=video_file if has_video else None,
+                        video_file=video_file_for_render,
 
                         progress_callback=self._danmaku_progress_callback
 

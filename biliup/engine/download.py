@@ -256,6 +256,17 @@ class DownloadBase(ABC):
                         return None
 
                     segment_seconds = self._segment_time_seconds()
+
+                    # 弹幕合成需要本地落盘（合并分段 + 压制），若未配置 sync_save_dir
+                    # 则自动用临时目录，保证「合成弹幕视频」开关能端到端生效。
+                    _danmaku_render = bool(getattr(self, 'danmaku_processor', None)
+                                          and getattr(self.danmaku_processor.config, 'render_video', False))
+                    _save_dir = (self.config or {}).get('sync_save_dir')
+                    if _danmaku_render and not _save_dir:
+                        _save_dir = os.path.join(os.getcwd(), 'danmaku_tmp')
+                        logger.info(f"{self.plugin_msg}: 已开启弹幕合成但未配置 sync_save_dir，"
+                                    f"自动使用临时落盘目录: {_save_dir}")
+
                     sync_download(self.raw_stream_url, self.stream_headers,
                                 segment_duration=segment_seconds,
                                 max_file_size=self._sync_max_file_size_mb(segment_seconds),
@@ -263,7 +274,9 @@ class DownloadBase(ABC):
                                 stream_info=stream_info,
                                 file_name_callback=lambda file_name: self._download_segment_callback(file_name), database_row_id=self.database_row_id,
                                 global_config=self.config,
-                                refresh_url_callback=_url_refresh)
+                                refresh_url_callback=_url_refresh,
+                                save_dir=_save_dir,
+                                danmaku_render_video=_danmaku_render)
                     # 下载结束后停止弹幕线程，让 _keep_alive() 退出循环
                     if self.danmaku:
                         self.danmaku._running = False
@@ -618,10 +631,14 @@ def stream_gears_download(url, headers, file_name, segment_time=None, file_size=
         raise
 
 
-def sync_download(stream_url, headers, segment_duration=0, max_file_size=100, output_prefix="segment", stream_info=None, file_name_callback: Callable[[str], None] = None, database_row_id=0, global_config=None, refresh_url_callback=None):
+def sync_download(stream_url, headers, segment_duration=0, max_file_size=100, output_prefix="segment", stream_info=None, file_name_callback: Callable[[str], None] = None, database_row_id=0, global_config=None, refresh_url_callback=None, save_dir=None, danmaku_render_video=False):
     logger.info(f"启动同步下载器 max_file_size {max_file_size}MB"
                 + (f"，分段时长 {segment_duration}s" if segment_duration else "，仅按文件大小分段"))
     video_queue = queue.SimpleQueue()
+    # save_dir 统一来源：显式传入优先，否则取全局 sync_save_dir。
+    # tee 落盘与弹幕合成都依赖它，单一来源避免不一致。
+    if save_dir is None:
+        save_dir = (global_config or {}).get('sync_save_dir')
 
     def upload(video_queue, stream_info, stop_event: threading.Event):
         data = dict(stream_info)
@@ -636,7 +653,7 @@ def sync_download(stream_url, headers, segment_duration=0, max_file_size=100, ou
         if global_config:
             filtered_info['submit_api'] = global_config.get('submit_api')
             filtered_info['lines'] = global_config.get('lines', 'AUTO')
-            filtered_info['save_dir'] = global_config.get('sync_save_dir')
+            filtered_info['save_dir'] = save_dir
         filtered_info['principal'] = ""
         filtered_info["data"] = stream_info
         uploader = BiliWebAsync(**filtered_info, video_queue=video_queue)
@@ -645,9 +662,15 @@ def sync_download(stream_url, headers, segment_duration=0, max_file_size=100, ou
                         file_name_callback=file_name_callback, database_row_id=database_row_id)
         logger.info(f"{stream_info['name']} 上传器结束")
 
+        # ⚠️ 弹幕版：边录边传主流程（原始多P稿件）结束后，若开启 danmaku_render_video，
+        # 把全场累计弹幕压制到合并后的视频，作为【独立稿件】上传（两套、两个视频）。
+        _render_and_upload_danmaku_video(
+            save_dir, output_prefix, stream_info, global_config, database_row_id,
+            danmaku_render_video=danmaku_render_video)
+
     downloader = SyncDownloader(stream_url, headers, segment_duration, max_file_size, output_prefix, video_queue,
                                 refresh_url_callback=refresh_url_callback,
-                                save_dir=(global_config or {}).get('sync_save_dir'))
+                                save_dir=save_dir)
 
     # 启动上传器
     upload_thread = threading.Thread(target=upload, args=(video_queue, stream_info, downloader.stop_event), daemon=True)
@@ -658,6 +681,177 @@ def sync_download(stream_url, headers, segment_duration=0, max_file_size=100, ou
     video_queue.put(None)
     downloader.stop_event.set()
     logger.info(f"{stream_info['name']} 下载器结束")
+
+
+def _safe_remove(path):
+    """尽力删除文件，忽略一切异常（清理中间产物用）。"""
+    try:
+        if path and os.path.exists(path):
+            os.remove(path)
+    except Exception:
+        pass
+
+
+def _concat_videos(seg_paths: List[str], out_path: str) -> bool:
+    """用 ffmpeg concat demuxer 把多段 mkv 无损拼接成一条连续时间轴的视频。
+
+    concat demuxer 会自动把后续分段的 DTS/PTS 偏移到前一段之后，
+    因此 -c copy 也能得到时间轴连续、播放无缝的结果（弹幕压制依赖此连续性）。
+    """
+    if not seg_paths:
+        return False
+    list_path = out_path + '.concat.txt'
+    try:
+        with open(list_path, 'w', encoding='utf-8') as f:
+            for p in seg_paths:
+                # -safe 0 下需要合法路径；Windows 反斜杠统一转正斜杠避免被当转义
+                safe = p.replace('\\', '/')
+                f.write(f"file '{safe}'\n")
+        cmd = ['ffmpeg', '-y', '-loglevel', 'error',
+               '-f', 'concat', '-safe', '0', '-i', list_path,
+               '-c', 'copy', out_path]
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if proc.returncode != 0:
+            logger.error(f"[danmaku-video] 拼接视频失败: "
+                         f"{proc.stderr.decode('utf-8', 'ignore')[-800:]}")
+            return False
+        return os.path.exists(out_path) and os.path.getsize(out_path) > 0
+    except Exception as e:
+        logger.exception(f"[danmaku-video] 拼接视频异常: {e}")
+        return False
+    finally:
+        _safe_remove(list_path)
+
+
+def _render_and_upload_danmaku_video(save_dir, output_prefix, stream_info, global_config, database_row_id,
+                                  danmaku_render_video=None):
+    """边录边传结束后，把全场累计弹幕压制到合并视频，作为独立稿件上传。
+
+    设计约束（必读）：边录边传的弹幕是【累计】时间轴 —— 每段
+    _download_segment_callback 都调用 danmaku.save() 写出完整 danmaku_list，
+    所以单段 XML 里的弹幕时间戳覆盖全场。若逐段压制，弹幕时间轴会与单段视频
+    错位。故此处：
+      1) 合并所有分段 tee 文件为一条连续时间轴视频；
+      2) 取【最后一段】那份含全场弹幕的 XML → ASS；
+      3) 压制得到一条弹幕版视频；
+      4) 用 BiliWeb 文件上传器作为【独立稿件】提交（与原始多P稿件分离）。
+    """
+    # 有效性以调用方传入的「已解析」开关为准；未传时回退到全局配置（兼容旧调用）。
+    if danmaku_render_video is None:
+        _ov = (stream_info or {}).get('override', {})
+        if isinstance(_ov, dict) and 'danmaku_render_video' in _ov:
+            danmaku_render_video = bool(_ov['danmaku_render_video'])
+        else:
+            danmaku_render_video = bool((global_config or {}).get('danmaku_render_video', False))
+    if not danmaku_render_video:
+        logger.info("[danmaku-video] 未开启 danmaku_render_video，跳过弹幕版上传")
+        return
+    if not save_dir or not os.path.isdir(save_dir):
+        logger.warning(
+            "[danmaku-video] 未配置本地落盘目录(sync_save_dir)，无法生成弹幕版，跳过。"
+            "（开启「合成弹幕视频」需同时启用本地落盘）")
+        return
+
+    # 1. 收集分段 tee 文件（按数字序号排序，保证拼接顺序）
+    pat = re.compile(re.escape(output_prefix) + r'_(\d+)\.mkv$')
+    seg_files = []
+    try:
+        for name in os.listdir(save_dir):
+            m = pat.match(name)
+            if m:
+                seg_files.append((int(m.group(1)), os.path.join(save_dir, name)))
+    except Exception as e:
+        logger.warning(f"[danmaku-video] 读取落盘目录失败: {e}")
+        return
+    seg_files.sort()
+    seg_paths = [p for _, p in seg_files]
+    if not seg_paths:
+        logger.warning(f"[danmaku-video] 落盘目录未找到任何分段文件 {output_prefix}_*.mkv，跳过")
+        return
+
+    # 2. 合并为连续时间轴视频
+    merged = os.path.join(save_dir, f"{output_prefix}__danmaku_src.mkv")
+    if not _concat_videos(seg_paths, merged):
+        return
+
+    # 3. 取最后一段的累计弹幕 XML → ASS（覆盖全场弹幕）
+    last_idx = seg_files[-1][0]
+    last_xml = os.path.join(save_dir, f"{output_prefix}_{last_idx}.xml")
+    if not os.path.exists(last_xml):
+        xmls = [os.path.join(save_dir, n) for n in os.listdir(save_dir)
+                if n.startswith(output_prefix) and n.endswith('.xml')]
+        if not xmls:
+            logger.warning("[danmaku-video] 未找到任何弹幕 XML，跳过")
+            _safe_remove(merged)
+            return
+        last_xml = max(xmls, key=os.path.getmtime)
+    try:
+        from biliup.Danmaku import convert_danmaku_to_ass
+        _cfg = global_config or {}
+        ass_file = convert_danmaku_to_ass(
+            last_xml,
+            font_name=_cfg.get('danmaku_ass_font', 'Microsoft YaHei'),
+            font_size=_cfg.get('danmaku_ass_fontsize', 25),
+            color=_cfg.get('danmaku_ass_color', '00FFFFFF'),
+            danmaku_speed=_cfg.get('danmaku_ass_speed', 8),
+            line_count=_cfg.get('danmaku_ass_line_count', 12),
+        )
+    except Exception as e:
+        logger.exception(f"[danmaku-video] 生成 ASS 失败: {e}")
+        ass_file = None
+    if not ass_file or not os.path.exists(ass_file):
+        logger.warning("[danmaku-video] ASS 字幕生成失败，跳过弹幕版上传")
+        _safe_remove(merged)
+        return
+
+    # 4. 压制弹幕视频（合并源 → 弹幕版 mp4）
+    out_mp4 = os.path.join(save_dir, f"{output_prefix}__danmaku.mp4")
+    try:
+        from biliup.Danmaku.video_renderer import render_danmaku_video
+        result = render_danmaku_video(
+            merged, ass_file, out_mp4,
+            use_gpu=(global_config or {}).get('danmaku_use_gpu', False),
+            video_codec=(global_config or {}).get('danmaku_video_codec', 'libx264'),
+            preset=(global_config or {}).get('danmaku_preset', 'medium'),
+            crf=(global_config or {}).get('danmaku_crf', 23),
+        )
+    except Exception as e:
+        logger.exception(f"[danmaku-video] 压制弹幕视频异常: {e}")
+        result = None
+    _safe_remove(merged)  # 合并中间文件可回收
+    if not result or not os.path.exists(out_mp4):
+        logger.error("[danmaku-video] 弹幕视频压制失败，跳过上传")
+        return
+
+    # 5. 作为独立稿件上传（与原始多P稿件分离，两套、两个视频）
+    try:
+        from biliup.plugins.bili_webup import BiliWeb
+        from biliup.engine.upload import UploadBase
+        desc = (global_config or {}).get('description') or ''
+        # 用副本改写标题/简介，避免与原始稿件同名难以区分（原始稿件已提交完，不受影响）
+        _data = dict(stream_info)
+        _data['format_title'] = (stream_info.get('format_title') or '') + '【弹幕版】'
+        uploader2 = BiliWeb(
+            principal="",
+            data=_data,
+            user=(global_config or {}).get('user', {}),
+            user_cookie=(global_config or {}).get('user_cookie', 'cookies.json'),
+            submit_api=(global_config or {}).get('submit_api'),
+            copyright=(global_config or {}).get('copyright', 2),
+            lines=(global_config or {}).get('lines', 'AUTO'),
+            tid=(global_config or {}).get('tid', 122),
+            tags=(global_config or {}).get('tags'),
+            description=f"{desc}【弹幕版】",
+            dynamic=(global_config or {}).get('dynamic', ''),
+        )
+        uploader2.upload([UploadBase.FileInfo(video=out_mp4, danmaku=None)],
+                         database_row_id=database_row_id)
+        logger.info(f"[danmaku-video] 弹幕版视频已作为独立稿件上传: {out_mp4}")
+    except Exception as e:
+        logger.exception(f"[danmaku-video] 弹幕版视频上传失败: {e}")
+    finally:
+        # 上传完成，清理压制产物（原始 tee 分段按 sync_save_dir 策略保留）
+        _safe_remove(out_mp4)
 
 
 def get_valid_filename(name):
