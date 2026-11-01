@@ -37,6 +37,83 @@ const DanmakuConfigContent: React.FC<DanmakuConfigProps> = ({ prefix = '', platf
         }}
       />
 
+      {/* 弹幕视频合成：开启后会额外投稿一个【弹幕版】独立视频 */}
+      <Form.Switch
+        field={field('danmaku_render_video')}
+        extraText="将ASS弹幕压制到视频，并在原稿之外【额外投稿一个弹幕版独立视频】。需安装FFmpeg；边录边传模式自动使用临时落盘目录。下方编码选项在此开启后生效。"
+        label="合成弹幕视频（额外投稿）"
+        fieldStyle={{
+          alignSelf: 'stretch',
+          padding: 0,
+        }}
+      />
+
+      <div style={{ marginLeft: 8, paddingLeft: 14, borderLeft: '2px solid var(--semi-color-fill-2)' }}>
+        <Form.Switch
+          field={field('danmaku_use_gpu')}
+          extraText="使用NVIDIA GPU加速视频编码（NVENC），需要NVIDIA显卡支持。"
+          label="使用GPU加速"
+          fieldStyle={{
+            alignSelf: 'stretch',
+            padding: 0,
+          }}
+        />
+
+        <Form.Select
+          field={field('danmaku_video_codec')}
+          extraText="视频编码器选择。使用GPU加速时自动使用h264_nvenc。"
+          label="视频编码器"
+          style={{ width: '100%' }}
+          fieldStyle={{
+            alignSelf: 'stretch',
+            padding: 0,
+          }}
+          showClear={true}
+        >
+          <Select.Option value="libx264">libx264 (CPU编码)</Select.Option>
+          <Select.Option value="h264_nvenc">h264_nvenc (NVIDIA GPU)</Select.Option>
+          <Select.Option value="h264_amf">h264_amf (AMD GPU)</Select.Option>
+          <Select.Option value="h264_qsv">h264_qsv (Intel QuickSync)</Select.Option>
+        </Form.Select>
+
+        <Form.Select
+          field={field('danmaku_preset')}
+          extraText="编码预设，影响编码速度和文件大小。ultrafast最快但文件最大，veryslow最慢但文件最小。"
+          label="编码预设"
+          style={{ width: '100%' }}
+          fieldStyle={{
+            alignSelf: 'stretch',
+            padding: 0,
+          }}
+          showClear={true}
+        >
+          <Select.Option value="ultrafast">ultrafast (最快)</Select.Option>
+          <Select.Option value="superfast">superfast</Select.Option>
+          <Select.Option value="veryfast">veryfast</Select.Option>
+          <Select.Option value="faster">faster</Select.Option>
+          <Select.Option value="fast">fast</Select.Option>
+          <Select.Option value="medium">medium (默认)</Select.Option>
+          <Select.Option value="slow">slow</Select.Option>
+          <Select.Option value="slower">slower</Select.Option>
+          <Select.Option value="veryslow">veryslow (最小文件)</Select.Option>
+        </Form.Select>
+
+        <Form.InputNumber
+          field={field('danmaku_crf')}
+          extraText="视频质量因子，0-51，越小质量越好。默认23，18为 visually lossless。"
+          label="质量因子(CRF)"
+          placeholder={23}
+          min={0}
+          max={51}
+          style={{ width: '100%' }}
+          fieldStyle={{
+            alignSelf: 'stretch',
+            padding: 0,
+          }}
+          showClear={true}
+        />
+      </div>
+
       <Form.Input
         field={field('danmaku_ass_font')}
         extraText="ASS字幕使用的字体名称，如 Microsoft YaHei、SimHei 等。"
@@ -94,81 +171,6 @@ const DanmakuConfigContent: React.FC<DanmakuConfigProps> = ({ prefix = '', platf
         extraText="弹幕显示行数，默认为12行。"
         label="弹幕行数"
         placeholder={12}
-        style={{ width: '100%' }}
-        fieldStyle={{
-          alignSelf: 'stretch',
-          padding: 0,
-        }}
-        showClear={true}
-      />
-
-      {/* 视频合成 */}
-      <Form.Switch
-        field={field('danmaku_render_video')}
-        extraText="使用FFmpeg将ASS字幕压制到视频中，生成带弹幕的视频。边录边传模式下开启后，会在原稿（多P）之外额外投稿一个【弹幕版】独立视频。需安装FFmpeg，并配置本地落盘目录(sync_save_dir)。"
-        label="合成弹幕视频"
-        fieldStyle={{
-          alignSelf: 'stretch',
-          padding: 0,
-        }}
-      />
-
-      <Form.Switch
-        field={field('danmaku_use_gpu')}
-        extraText="使用NVIDIA GPU加速视频编码（NVENC），需要NVIDIA显卡支持。"
-        label="使用GPU加速"
-        fieldStyle={{
-          alignSelf: 'stretch',
-          padding: 0,
-        }}
-      />
-
-      <Form.Select
-        field={field('danmaku_video_codec')}
-        extraText="视频编码器选择。使用GPU加速时自动使用h264_nvenc。"
-        label="视频编码器"
-        style={{ width: '100%' }}
-        fieldStyle={{
-          alignSelf: 'stretch',
-          padding: 0,
-        }}
-        showClear={true}
-      >
-        <Select.Option value="libx264">libx264 (CPU编码)</Select.Option>
-        <Select.Option value="h264_nvenc">h264_nvenc (NVIDIA GPU)</Select.Option>
-        <Select.Option value="h264_amf">h264_amf (AMD GPU)</Select.Option>
-        <Select.Option value="h264_qsv">h264_qsv (Intel QuickSync)</Select.Option>
-      </Form.Select>
-
-      <Form.Select
-        field={field('danmaku_preset')}
-        extraText="编码预设，影响编码速度和文件大小。ultrafast最快但文件最大，veryslow最慢但文件最小。"
-        label="编码预设"
-        style={{ width: '100%' }}
-        fieldStyle={{
-          alignSelf: 'stretch',
-          padding: 0,
-        }}
-        showClear={true}
-      >
-        <Select.Option value="ultrafast">ultrafast (最快)</Select.Option>
-        <Select.Option value="superfast">superfast</Select.Option>
-        <Select.Option value="veryfast">veryfast</Select.Option>
-        <Select.Option value="faster">faster</Select.Option>
-        <Select.Option value="fast">fast</Select.Option>
-        <Select.Option value="medium">medium (默认)</Select.Option>
-        <Select.Option value="slow">slow</Select.Option>
-        <Select.Option value="slower">slower</Select.Option>
-        <Select.Option value="veryslow">veryslow (最小文件)</Select.Option>
-      </Form.Select>
-
-      <Form.InputNumber
-        field={field('danmaku_crf')}
-        extraText="视频质量因子，0-51，越小质量越好。默认23，18为 visually lossless。"
-        label="质量因子(CRF)"
-        placeholder={23}
-        min={0}
-        max={51}
         style={{ width: '100%' }}
         fieldStyle={{
           alignSelf: 'stretch',
