@@ -165,6 +165,13 @@ jobs:
     - name: Install Rust stable
       uses: dtolnay/rust-toolchain@stable
 
+    - name: Force re-embed latest frontend
+      # 仅改前端 TSX 时 biliup-cli 的 Rust 源码未变，cargo 命中 target 缓存会跳过该 crate 重编译，
+      # 导致 rust-embed 不重新嵌入最新 out/（前端改动永远不生效，连早期字符串都不出现）。
+      # 此处仅在 CI 工作区给 spa.rs 追加一个时间戳注释以改变其内容，强制 cargo 重编 biliup-cli，
+      # 让 rust-embed 重新嵌入本次 npm run build 刚生成的 out/。该改动不提交，不污染仓库。
+      run: printf '\n// embed-bump %s\n' "$(date +%s)" >> crates/biliup-cli/src/server/api/spa.rs
+
     - name: Build Rust extension
       uses: PyO3/maturin-action@v1
       env:
