@@ -847,11 +847,36 @@ def _render_and_upload_danmaku_video(save_dir, output_prefix, stream_info, globa
         uploader2.upload([UploadBase.FileInfo(video=out_mp4, danmaku=None)],
                          database_row_id=database_row_id)
         logger.info(f"[danmaku-video] 弹幕版视频已作为独立稿件上传: {out_mp4}")
+        # 弹幕版上传成功后，清理本场原始分段视频（大文件）。
+        # ass/xml/json 体积小，保留以备复查/重压制。清理失败不影响流程。
+        _cleanup_segment_videos(save_dir, seg_paths)
     except Exception as e:
         logger.exception(f"[danmaku-video] 弹幕版视频上传失败: {e}")
     finally:
-        # 上传完成，清理压制产物（原始 tee 分段按 sync_save_dir 策略保留）
+        # 上传完成，清理压制产物（原始 tee 分段在弹幕版上传成功后另行清理）
         _safe_remove(out_mp4)
+
+
+def _cleanup_segment_videos(save_dir: str, seg_paths: List[str]):
+    """弹幕版上传成功后清理本场原始分段 mkv，释放磁盘空间。
+
+    只删分段视频本体；ass/xml/json 等小文件保留。每删一个都记日志，
+    任一失败仅告警不中断（下次可手动清理）。
+    """
+    freed = 0
+    removed = 0
+    for p in seg_paths:
+        try:
+            if p and os.path.exists(p):
+                size = os.path.getsize(p)
+                os.remove(p)
+                freed += size
+                removed += 1
+        except Exception as e:
+            logger.warning(f"[danmaku-video] 清理分段失败 {p}: {e}")
+    logger.info(
+        f"[danmaku-video] 已清理本场原始分段 {removed}/{len(seg_paths)} 个，"
+        f"释放 {freed / 1024 / 1024:.1f} MB（落盘目录: {save_dir}）")
 
 
 def get_valid_filename(name):
