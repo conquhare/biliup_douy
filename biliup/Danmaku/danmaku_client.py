@@ -126,50 +126,81 @@ class BaseDanmakuClient(ABC):
             json.dump(data, f, ensure_ascii=False, indent=2)
 
     async def _run(self):
-        """运行弹幕录制循环"""
-        try:
-            context = dict(self.context) if self.context else {}
-            context['url'] = self.url
-            ws_url, reg_datas = await self.get_ws_info(self.url, context)
+        """运行弹幕录制循环（带自动重连）
 
-            import websockets
+        连接失效（keepalive ping timeout / 连接已断开等）时，重新
+        get_ws_info + connect，而不是放弃本轮。上层 _keep_alive() 只是
+        while self._running 空转等待录制结束，若 _run() 直接退出，该段
+        之后的所有弹幕都会丢失（实测 2026-11-16 偷心九月天场次）。
+        退出条件：stop() 置 self._running=False。
+        """
+        # 接收异常重试策略（连接已断开时 recv() 会立即抛异常，不能无限重试）
+        self.MAX_RECV_ERRORS = 10
+        self.RECV_ERROR_BACKOFF_BASE = 1.0
+        self.RECV_ERROR_BACKOFF_MAX = 30.0
+        self.MAX_CONNECT_ERRORS = 10
 
-            # 接收异常重试策略（详见接收循环内的注释：连接已断开时不应无限重试）
-            self.MAX_RECV_ERRORS = 10
-            self.RECV_ERROR_BACKOFF_BASE = 1.0
-            self.RECV_ERROR_BACKOFF_MAX = 30.0
-            consecutive_errors = 0
+        import websockets
 
-            # 握手必须携带 Cookie（含 ttwid），否则抖音服务端拒绝升级连接：
-            # 返回 HTTP 200 而非 101 Switching Protocols，websockets 抛
-            # InvalidStatus: server rejected WebSocket connection: HTTP 200
-            connect_kwargs = {}
-            ws_headers = self.ws_headers if isinstance(self.ws_headers, dict) else None
-            if ws_headers:
-                connect_kwargs['additional_headers'] = ws_headers
-            # 支持显式指定代理（websockets 不读系统代理环境变量）
-            proxy = self.proxy
-            if not proxy:
-                try:
-                    from biliup.common.util import get_proxy_url
-                    proxy = get_proxy_url()
-                except Exception:
-                    proxy = None
-            if proxy:
-                # websockets >= 14 使用 proxy 参数；更早版本同样接受 proxy，
-                # 但部分版本对 None/空值敏感，故仅在有值时传入
-                connect_kwargs['proxy'] = proxy
-                logger.debug(f'弹幕 WebSocket 走代理: {proxy}')
+        # 握手必须携带 Cookie（含 ttwid），否则抖音服务端拒绝升级连接：
+        # 返回 HTTP 200 而非 101 Switching Protocols，websockets 抛 InvalidStatus。
+        connect_kwargs = {}
+        ws_headers = self.ws_headers if isinstance(self.ws_headers, dict) else None
+        if ws_headers:
+            connect_kwargs['additional_headers'] = ws_headers
+        # 支持显式指定代理（websockets 不读系统代理环境变量）
+        proxy = self.proxy
+        if not proxy:
+            try:
+                from biliup.common.util import get_proxy_url
+                proxy = get_proxy_url()
+            except Exception:
+                proxy = None
+        if proxy:
+            # websockets >= 14 使用 proxy 参数；更早版本同样接受 proxy，
+            # 但部分版本对 None/空值敏感，故仅在有值时传入
+            connect_kwargs['proxy'] = proxy
+            logger.debug(f'弹幕 WebSocket 走代理: {proxy}')
 
-            async with websockets.connect(ws_url, **connect_kwargs) as websocket:
-                # 发送注册数据
-                if reg_datas:
-                    for data in reg_datas:
-                        await websocket.send(data)
+        connect_errors = 0
+        while self._running:
+            try:
+                context = dict(self.context) if self.context else {}
+                context['url'] = self.url
+                ws_url, reg_datas = await self.get_ws_info(self.url, context)
+                await self._connect_once(websockets, ws_url, reg_datas, connect_kwargs)
+                connect_errors = 0  # 正常结束（录制停止）则重置
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                if not self._running:
+                    break  # 录制已停止，不用重连
+                connect_errors += 1
+                if connect_errors >= self.MAX_CONNECT_ERRORS:
+                    logger.error(
+                        f'弹幕连接连续 {connect_errors} 次建立失败，停止重连（最后错误: {e}）')
+                    break
+                backoff = min(self.RECV_ERROR_BACKOFF_MAX,
+                              self.RECV_ERROR_BACKOFF_BASE * (2 ** (connect_errors - 1)))
+                logger.warning(
+                    f'弹幕连接建立失败（第 {connect_errors}/{self.MAX_CONNECT_ERRORS} 次，'
+                    f'{backoff:.1f}s 后重连）: {e}')
+                await asyncio.sleep(backoff)
 
-                # 启动心跳任务
-                heartbeat_task = asyncio.create_task(self._heartbeat(websocket))
+    async def _connect_once(self, websockets, ws_url, reg_datas, connect_kwargs):
+        """建立单次连接并接收，连接失效后返回以触发外层重连"""
+        consecutive_errors = 0
 
+        async with websockets.connect(ws_url, **connect_kwargs) as websocket:
+            logger.info(f'弹幕 WebSocket 已连接: {ws_url}')
+            # 发送注册数据
+            if reg_datas:
+                for data in reg_datas:
+                    await websocket.send(data)
+
+            # 启动心跳任务
+            heartbeat_task = asyncio.create_task(self._heartbeat(websocket))
+            try:
                 while self._running:
                     try:
                         data = await asyncio.wait_for(websocket.recv(), timeout=30)
@@ -191,15 +222,13 @@ class BaseDanmakuClient(ABC):
                         continue
                     except Exception as e:
                         # ⚠️ 连接已断开时 recv() 会立即抛异常（如 keepalive ping timeout）。
-                        # 若这里只sleep 1 秒后 continue，while self._running 仍为 True
-                        # → 每秒重试一次，会把日志刷成几万条ERROR（实测 10-06 刷了 5995 条）
-                        # 而实际连接早已不可能恢复。改为：连续失败超阈值即退出本轮，
-                        # 由 save()/上层决定是否重连。
+                        # 不能在这里无限重试同一连接（连接已死不可能恢复），
+                        # 连续失败超阈值即 break → 返回外层 _run() 重新建立连接。
                         consecutive_errors += 1
                         if consecutive_errors >= self.MAX_RECV_ERRORS:
-                            logger.error(
+                            logger.warning(
                                 f'弹幕连接连续 {consecutive_errors} 次异常，判定连接已失效，'
-                                f'停止本轮接收（最后错误: {e}）')
+                                f'准备重连（最后错误: {e}）')
                             break
                         # 指数退避，避免疯狂重试
                         backoff = min(self.RECV_ERROR_BACKOFF_MAX,
@@ -208,12 +237,10 @@ class BaseDanmakuClient(ABC):
                             f'弹幕接收异常（第 {consecutive_errors}/{self.MAX_RECV_ERRORS} 次，'
                             f'{backoff:.1f}s 后重试）: {e}')
                         await asyncio.sleep(backoff)
-
+            finally:
                 heartbeat_task.cancel()
 
-        except Exception as e:
-            # 网络类异常很常见，用 error 即可；不再打完整堆栈刷屏
-            logger.error(f'弹幕录制错误: {e}')
+        # 正常走到这里说明连接关闭，返回外层循环重连（若仍在录制）
 
     async def _heartbeat(self, websocket):
         """发送心跳包"""
