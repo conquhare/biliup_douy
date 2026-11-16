@@ -488,6 +488,9 @@ class BiliBili:
             timeout=5)
         ret = resp.json()
         if "chunk_size" not in ret:
+            # preupload 未返回 chunk_size，无法上传。打「上传完成」日志供前端清除状态条目。
+            logger.warning(f"{file_name} preupload 未返回 chunk_size，跳过上传: {ret}")
+            logger.info(f"上传完成 {file_name} （preupload 异常，跳过投稿）")
             stop_event.set()
             return
         logger.debug(f"preupload: {ret}")
@@ -624,6 +627,10 @@ class BiliBili:
             parts.extend(results)
 
         if n == 0:
+            # 无有效分片（空流/尾巴碎片被过滤）。必须打「上传完成」格式的日志：
+            # 前端 parseUploads 以「uploaded >> / 上传完成」为清除信号，
+            # 缺这行会导致 UI 顶栏永久显示「↑ 上传中: xxx 0」。
+            logger.info(f"上传完成 {file_name} （无有效分片，跳过投稿）")
             return None
         logger.info(f"{file_name} - total_size: {total_size}, n: {n}")
         cost = time.perf_counter() - start
@@ -721,7 +728,14 @@ class BiliBili:
                 # 数据流结束，用0x00填充剩余的块
                 remaining_chunks = total_chunks - chunks_yielded
                 if remaining_chunks == total_chunks:
-                    # print("空包跳过")
+                    # 一个完整 chunk 都没凑齐（如下播瞬间的 <10MB 尾巴碎片）。
+                    # 丢弃是正确行为：避免上传 83% 是 0x00 填充的垃圾分P。
+                    # 但必须打日志——否则前端 parseUploads 的「开始上传」条目
+                    # 永远等不到「上传完成/uploaded >>」清除信号，顶栏永久卡显。
+                    logger.info(
+                        f"{file_name} 实际数据不足一个分片"
+                        f"（缓冲 {len(current_buffer)} 字节 < chunk_size {chunk_size}），"
+                        f"判定为无效尾巴分段，跳过上传")
                     break
                 if len(current_buffer) > 0:
                     # 处理当前缓冲区中的最后一块数据
