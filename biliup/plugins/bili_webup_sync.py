@@ -225,16 +225,20 @@ class BiliWebAsync(UploadBase):
 
         # 边录边传：全部投稿完成后，按分P切片统一上传整场弹幕字幕。
         # ⚠️ 必须在最终投稿之后——分P时长要等转码出来才能切片。
+        logger.info(f"[finalize-entry] 投稿收尾，准备字幕上传判定 aid={videos.aid} db_row={database_row_id} in_map={str(database_row_id) in context['sync_downloader_map']}")
         if videos.aid is not None and str(database_row_id) in context["sync_downloader_map"]:
             try:
                 last_part = (videos.videos or [{}])[-1].get('title') or ''
                 ass_path = resolve_ass_file(
                     os.path.join(self.save_dir or '', last_part + '.mkv'), self.save_dir)
+                logger.info(f"[finalize-entry] resolve_ass_file 返回: {ass_path}")
                 bili._finalize_subtitles(videos.aid, ass_path)
+                logger.info("[finalize-entry] _finalize_subtitles 已返回")
             except Exception as e:
                 logger.warning(f"弹幕字幕统一上传失败（不影响录制与投稿）: {e}")
 
         file_list = []
+        logger.info("[upload-return] upload() 即将 return，交还控制权给 sync_download")
         return file_list
 
     def creditsToDesc_v2(self):
@@ -962,6 +966,7 @@ class BiliBili:
         """
         deadline = time.time() + max_wait
         last_err = '未知'
+        logger.info(f'[aid-info] 开始轮询稿件分P aid={aid} max_wait={max_wait}s')
         while True:
             try:
                 r = self.__session.get('https://api.bilibili.com/x/web-interface/view',
@@ -1043,8 +1048,11 @@ class BiliBili:
         if not ass_file or not os.path.exists(ass_file):
             logger.warning(f'未找到 ASS 字幕文件，跳过字幕上传: {ass_file}')
             return
+        logger.info(f'[finalize-sub] 开始获取稿件分P信息 aid={aid} ass={ass_file}')
         bvid, pages = self._get_aid_info(aid)
+        logger.info(f'[finalize-sub] _get_aid_info 返回 bvid={bvid} pages={len(pages or [])}')
         if not bvid or not pages:
+            logger.info('[finalize-sub] 无 bvid/pages，跳过字幕切片上传')
             return
         # 每个分P 都按 B站返回的真实时长切片（含最后一个）：
         # 弹幕 ASS 常比视频总时长更长（直播结束后仍在录），不截断会被判 79014。

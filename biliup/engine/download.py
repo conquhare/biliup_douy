@@ -664,6 +664,7 @@ def sync_download(stream_url, headers, segment_duration=0, max_file_size=100, ou
 
         # ⚠️ 弹幕版：边录边传主流程（原始多P稿件）结束后，若开启 danmaku_render_video，
         # 把全场累计弹幕压制到合并后的视频，作为【独立稿件】上传（两套、两个视频）。
+        logger.info(f"[danmaku-video] upload 线程到达弹幕压制入口 render={danmaku_render_video} save_dir={save_dir}")
         _render_and_upload_danmaku_video(
             save_dir, output_prefix, stream_info, global_config, database_row_id,
             danmaku_render_video=danmaku_render_video)
