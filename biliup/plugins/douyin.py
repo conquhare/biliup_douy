@@ -442,29 +442,34 @@ class Douyin(DownloadBase):
         if not sec_uid:
             return None
 
-        loop = asyncio.get_event_loop()
-
-        # H5 接口：room_id 传空，靠 sec_user_id 定位
+        # ⚠️ 每次用独立临时 loop，用完即关。不能用 get_event_loop()：
+        # 录制重试(download)会 new_event_loop+set_event_loop+close，把线程当前 loop 关掉，
+        # 之后 monitor 轮询调本函数 get_event_loop() 拿到已关闭 loop → RuntimeError: Event loop is closed。
+        loop = asyncio.new_event_loop()
         try:
-            info = loop.run_until_complete(self.get_h5_room_info(sec_uid, ''))
-            data = (info or {}).get('data') or {}
-            room = data.get('room') or {}
-            rid = data.get('room_id') or room.get('id_str')
-            if rid:
-                logger.debug(f"{self.plugin_msg}: H5 解析到 room_id={rid}")
-                return str(rid)
-        except Exception as e:
-            logger.debug(f"{self.plugin_msg}: H5 接口获取 room_id 失败: {e}")
+            # H5 接口：room_id 传空，靠 sec_user_id 定位
+            try:
+                info = loop.run_until_complete(self.get_h5_room_info(sec_uid, ''))
+                data = (info or {}).get('data') or {}
+                room = data.get('room') or {}
+                rid = data.get('room_id') or room.get('id_str')
+                if rid:
+                    logger.debug(f"{self.plugin_msg}: H5 解析到 room_id={rid}")
+                    return str(rid)
+            except Exception as e:
+                logger.debug(f"{self.plugin_msg}: H5 接口获取 room_id 失败: {e}")
 
-        # 兜底：web 接口（部分 sec_uid 形态可能有效）
-        try:
-            info = loop.run_until_complete(self.get_web_room_info(sec_uid))
-            data = (info or {}).get('data') or {}
-            rid = data.get('room_id') or (data.get('room') or {}).get('id_str')
-            if rid:
-                return str(rid)
-        except Exception as e:
-            logger.debug(f"{self.plugin_msg}: web 接口获取 room_id 失败: {e}")
+            # 兜底：web 接口（部分 sec_uid 形态可能有效）
+            try:
+                info = loop.run_until_complete(self.get_web_room_info(sec_uid))
+                data = (info or {}).get('data') or {}
+                rid = data.get('room_id') or (data.get('room') or {}).get('id_str')
+                if rid:
+                    return str(rid)
+            except Exception as e:
+                logger.debug(f"{self.plugin_msg}: web 接口获取 room_id 失败: {e}")
+        finally:
+            loop.close()
 
         return None
 
