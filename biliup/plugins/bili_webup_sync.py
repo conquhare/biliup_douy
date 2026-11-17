@@ -114,6 +114,10 @@ class BiliWebAsync(UploadBase):
     def upload(self, total_size: int, stop_event: threading.Event, output_prefix: str, file_name_callback: Callable[[str], None] = None, database_row_id=0) -> List[UploadBase.FileInfo]:
         # print("开始同步上传")
         logger.info(f"开始同步上传 {database_row_id}")
+        # ⚠️ context 必须在此导入：投稿收尾(228/229行)的 sync_downloader_map 判定依赖它。
+        # 旧代码漏了这句 → videos.aid 非空时 229 行 NameError 杀死 upload 线程(子线程异常走 stderr 被丢弃, 静默),
+        # 导致永远到不了 download.py 的弹幕版压制(_render_and_upload_danmaku_video)。
+        from biliup.app import context
         file_index = 1
         videos = Data()
         bili = BiliBili(videos, save_dir=self.save_dir)
