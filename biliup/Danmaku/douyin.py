@@ -179,7 +179,12 @@ class Douyin:
 
             }
 
-            wss_url = f"wss://webcast100-ws-web-lq.douyin.com/webcast/im/push/v2/?{'&'.join([f'{k}={v}' for k, v in webcast5_params.items()])}"
+            # ⚠️ signature 必须 URL 编码：签名字母表含 + / = ，原样拼接时 + 会被服务端
+            # 查询解析解码为空格 → 签名校验失败 → WSS 端点返回 200 拒绝升级（间歇性，
+            # 取决于当次随机签名是否含 +//）。上游 LiukerSun/DouyinDanmu v2.7.0 用
+            # URLSearchParams 会自动百分号编码 signature，此处用 urlencode 对齐该行为。
+            from urllib.parse import urlencode
+            wss_url = f"wss://webcast100-ws-web-lq.douyin.com/webcast/im/push/v2/?{urlencode(webcast5_params)}"
 
             url = DouyinUtils.build_request_url(wss_url)
 
