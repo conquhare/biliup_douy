@@ -440,11 +440,21 @@ class BiliBili:
                 'name': f.name,
                 'size': total_size,
             }
-            resp = self.__session.get(
-                f"https://member.bilibili.com/preupload?{self._auto_os['query']}", params=query,
-                timeout=5)
-            ret = resp.json()
-            logger.debug(f"preupload: {ret}")
+            # preupload 偶发不返回 endpoint 字段(连续上传触发限流/风控)，重试最多5次
+            import time as _time
+            ret = {}
+            for _attempt in range(5):
+                resp = self.__session.get(
+                    f"https://member.bilibili.com/preupload?{self._auto_os['query']}", params=query,
+                    timeout=5)
+                ret = resp.json()
+                logger.debug(f"preupload: {ret}")
+                if 'endpoint' in ret and ret.get('os'):
+                    break
+                logger.warning(f"preupload 缺 endpoint(os={ret.get('os')}, keys={list(ret.keys())[:5]})，第{_attempt+1}次重试")
+                _time.sleep(2 * (_attempt + 1))
+            if 'endpoint' not in ret:
+                raise RuntimeError(f"preupload 持续未返回 endpoint，放弃上传: {list(ret.keys())[:8]}")
             if preferred_upos_cdn:
                 original_endpoint: str = ret['endpoint']
                 if re.match(r'//upos-(sz|cs)-upcdn(bda2|ws|qn)\.bilivideo\.com', original_endpoint):
