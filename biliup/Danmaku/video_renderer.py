@@ -11,6 +11,32 @@ from typing import Optional, Dict, Any, List
 logger = logging.getLogger('biliup')
 
 
+def _map_preset_to_nvenc(preset: str) -> str:
+    """把 x264 风格预设名映射为 NVENC 兼容预设名。
+
+    NVENC 只接受 default/slow/medium/fast/hp/hq/bd/ll/llhq/llhp/p1..p7，
+    不接受 x264 的 ultrafast..veryslow。按"速度档位"就近映射，unknown 保持 medium。
+    """
+    if not preset:
+        return 'medium'
+    p = str(preset).strip().lower()
+    if p in ('default', 'slow', 'medium', 'fast', 'hp', 'hq', 'bd',
+             'll', 'llhq', 'llhp') or p in ('p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'):
+        return p  # 已是 NVENC 合法值
+    mapping = {
+        'ultrafast': 'p1',
+        'superfast': 'p2',
+        'veryfast': 'p3',
+        'faster': 'p3',
+        'fast': 'p4',
+        'medium': 'p4',
+        'slow': 'p5',
+        'slower': 'p6',
+        'veryslow': 'p7',
+    }
+    return mapping.get(p, 'medium')
+
+
 class DanmakuVideoRenderer:
     """弹幕视频合成器"""
 
@@ -132,8 +158,14 @@ class DanmakuVideoRenderer:
             cmd.extend(['-b:a', str(audio_bitrate)])
 
         # 编码预设
+        # ⚠️ NVENC(GPU) 不认 x264 的预设名(ultrafast/faster/medium...)，必须映射到 nvenc 的
+        # p1-p7/slow/medium/fast，否则 ffmpeg 报 "Unable to parse preset option value" 崩溃。
+        # CPU(libx264) 可直接用 x264 预设名。
         preset = kwargs.get('preset')
         if preset:
+            effective_codec = video_codec or (self.gpu_encoder if self.use_gpu else 'libx264')
+            if 'nvenc' in str(effective_codec).lower():
+                preset = _map_preset_to_nvenc(preset)
             cmd.extend(['-preset', preset])
 
         # 质量因子（CPU编码时有效）
