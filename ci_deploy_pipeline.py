@@ -22,6 +22,11 @@ from urllib.request import ProxyHandler
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import deploy_replace  # noqa: E402
 
+if "--force" in sys.argv:
+    # CI 完成后直接停止并更新：跳过直播护栏（人工确认可接受中断录制时使用）
+    os.environ["CI_DEPLOY_FORCE"] = "1"
+    print("⚠️ 已启用 CI_DEPLOY_FORCE：CI 后将跳过直播护栏，直接停止并更新", flush=True)
+
 REPO = "conquhare/biliup_douy"
 API = f"https://api.github.com/repos/{REPO}"
 # 用法: python ci_deploy_pipeline.py [run_id] [want_sha]
@@ -109,13 +114,32 @@ def download():
     full = c["sha"]
     tree = japi(f"/git/trees/{full}")
     sha = None
+    total = 0
     for e in tree.get("tree", []):
         if e["path"] == "biliup-dist.zip":
             sha = e["sha"]
-            log(f"blob sha={sha[:12]} size={e.get('size')}")
+            total = e.get("size") or 0
+            log(f"blob sha={sha[:12]} size={total}")
     if not sha:
         return False
-    data = api(f"/git/blobs/{sha}", raw=True)
+    # 整包重试：49MB 直连约21s。api blob 不支持 Range(实测返回200全量)，
+    # 下载"有时断有时成"(断点多在~23MB)，故整包重下；不用续传(残留可能是旧产物前缀)。
+    import http.client
+    data = None
+    for attempt in range(1, 6):
+        try:
+            data = api(f"/git/blobs/{sha}", raw=True)
+            break
+        except http.client.IncompleteRead as e:
+            got = len(e.partial) if getattr(e, "partial", None) else -1
+            log(f"下载中断(第{attempt}次): 已读{got}/{total}bytes，整包重试...")
+            time.sleep(5)
+        except Exception as e:
+            log(f"下载异常(第{attempt}次): {repr(e)[:120]}，重试...")
+            time.sleep(5)
+    if data is None:
+        log("下载5次均失败，放弃")
+        return False
     with open(ZIP, "wb") as f:
         f.write(data)
     with open(DONE, "w") as f:

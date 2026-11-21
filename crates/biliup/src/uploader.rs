@@ -86,9 +86,6 @@ pub struct VideoStream {
 
 impl VideoStream {
     pub fn with_capacity(file: std::fs::File, capacity: usize) -> Self {
-        // self.capacity = capacity;
-        // self.buffer = vec![0u8; capacity];
-        // self.buf = BytesMut::with_capacity(capacity);
         VideoStream {
             capacity,
             buffer: vec![0u8; capacity],

@@ -95,14 +95,6 @@ mod get {
 
     use tracing::error;
 
-    // pub async fn login(
-    //     Query(NextUrl { next }): Query<NextUrl>,
-    // ) -> impl IntoResponse {
-    //     let mut login_url = "/login.html".to_string();
-    //     if let Some(next) = next {
-    //         login_url = format!("{login_url}?next={next}");
-    //     };
-    //     Redirect::permanent(&login_url).into_response()
     // }
 
     pub async fn logout(mut auth_session: AuthSession) -> impl IntoResponse {

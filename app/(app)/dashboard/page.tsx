@@ -48,18 +48,6 @@ const Dashboard: React.FC = () => {
   // useEffect(() => {
   //     const unRegister = registerMediaQuery(responsiveMap.lg, {
   //         match: () => {
-  //             setLabelPosition("left");
-  //         },
-  //         unmatch: () => {
-  //             setLabelPosition("top");
-  //         },
-  //     });
-  //     return () => unRegister();
-  // }, []);
-
-  // useEffect(() => {
-  //     remountForm();
-  // }, [entity]);
 
   const { biliUsers } = useBiliUsers()
 

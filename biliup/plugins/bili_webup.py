@@ -440,10 +440,10 @@ class BiliBili:
                 'name': f.name,
                 'size': total_size,
             }
-            # preupload 偶发不返回 endpoint 字段(连续上传触发限流/风控)，重试最多5次
+            # preupload 偶发不返回 endpoint 字段(连续上传触发限流/风控)，指数退避重试最多8次
             import time as _time
             ret = {}
-            for _attempt in range(5):
+            for _attempt in range(8):
                 resp = self.__session.get(
                     f"https://member.bilibili.com/preupload?{self._auto_os['query']}", params=query,
                     timeout=5)
@@ -451,10 +451,13 @@ class BiliBili:
                 logger.debug(f"preupload: {ret}")
                 if 'endpoint' in ret and ret.get('os'):
                     break
-                logger.warning(f"preupload 缺 endpoint(os={ret.get('os')}, keys={list(ret.keys())[:5]})，第{_attempt+1}次重试")
-                _time.sleep(2 * (_attempt + 1))
+                wait = min(5 * (_attempt + 1), 30)  # 5,10,15,20,25,30,30,30
+                logger.warning(f"preupload 缺 endpoint(os={ret.get('os')}, keys={list(ret.keys())[:5]})，第{_attempt+1}次重试，等{wait}s")
+                _time.sleep(wait)
             if 'endpoint' not in ret:
-                raise RuntimeError(f"preupload 持续未返回 endpoint，放弃上传: {list(ret.keys())[:8]}")
+                # 打印 info/code/message 真实内容，定位限流码(如601上传过快/406等)
+                logger.error(f"preupload 最终响应: {ret}")
+                raise RuntimeError(f"preupload 持续未返回 endpoint，放弃上传: {ret.get('info') or list(ret.keys())[:8]}")
             if preferred_upos_cdn:
                 original_endpoint: str = ret['endpoint']
                 if re.match(r'//upos-(sz|cs)-upcdn(bda2|ws|qn)\.bilivideo\.com', original_endpoint):

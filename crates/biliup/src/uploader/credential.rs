@@ -18,18 +18,6 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::{debug, info};
 use url::Url;
 
-// const APP_KEY: &str = "ae57252b0c09105d";
-// const APPSEC: &str = "c75875c596a69eb55bd119e74b07cfe3";
-// const APP_KEY: &str = "783bbb7264451d82";
-// const APPSEC: &str = "2653583c8873dea268ab9386918b1d65";
-// const APP_KEY: &str = "4409e2ce8ffd12b8";
-// const APPSEC: &str = "59b43e04ad6965f34319062b478f83dd";
-// const APP_KEY: &str = "37207f2beaebf8d7";
-// const APPSEC: &str = "e988e794d4d4b6dd43bc0e89d6e90c43";
-// const APP_KEY: &str = "bca7e84c2d947ac6";
-// const APPSEC: &str = "60698ba2f68e01ce44738920a0ffe768";
-// const APP_KEY: &str = "bb3101000e232e27";
-// const APPSEC: &str = "36efcfed79309338ced0380abd824ac1";
 pub(crate) enum AppKeyStore {
     BiliTV,
     Android,
@@ -162,9 +150,6 @@ impl Credential {
             .await?
             .json()
             .await?;
-        // if response.code != 0 {
-        //     return Err(CustomError::Custom(response.to_string()));
-        // }
 
         let refresh = match response {
             ResponseData {

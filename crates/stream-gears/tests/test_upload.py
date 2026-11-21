@@ -25,29 +25,6 @@ if __name__ == '__main__':
     # full kwargs 上传测试
     # stream_gears.upload(
     #     video_path=["examples/test.mp4"],
-    #     cookie_file="cookies.json",
-    #     title="测试视频标题",
-    #     tid=171,  # 电子竞技分区
-    #     tag="测试,上传,演示",
-    #     copyright=1,  # 自制
-    #     source="",
-    #     desc="这是一个测试视频的描述",
-    #     dynamic="发布动态内容",
-    #     cover="",  # 封面路径，空表示不设置封面
-    #     dolby=0,  # 不开启杜比音效
-    #     lossless_music=0,  # 不开启Hi-Res
-    #     no_reprint=0,  # 允许转载
-    #     charging_pay=0,  # 不开启充电
-    #     up_close_reply=False,  # 不关闭评论
-    #     up_selection_reply=False,  # 不开启精选评论
-    #     up_close_danmu=False,  # 不关闭弹幕
-    #     limit=3,  # 并发数
-    #     desc_v2=[],  # 视频简介v2
-    #     dtime=None,  # 立即发布
-    #     line=stream_gears.UploadLine.Bda2,  # 指定上传线路
-    #     extra_fields=None,  # 额外字段
-    #     submit="BCutAndroid",  # 使用必剪安卓版接口提交
-    #     proxy=None  # 不使用代理
     # )
 
     # 视频简介v2

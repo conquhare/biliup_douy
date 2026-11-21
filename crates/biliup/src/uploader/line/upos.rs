@@ -65,13 +65,6 @@ impl Upos {
             .and_then(|s| s.as_str())
             .ok_or_else(|| Kind::Custom(upload_id.to_string()))?
             .into();
-        // = upload_id["upload_id"].as_str().unwrap().into();
-        // let ret =  &upload.ret;
-        // let chunk_size = ret["chunk_size"].as_u64().unwrap() as usize;
-        // let auth = ret["auth"].as_str().unwrap();
-        // let endpoint = ret["endpoint"].as_str().unwrap();
-        // let biz_id = &ret["biz_id"];
-        // let upos_uri = ret["upos_uri"].as_str().unwrap();
         Ok(Upos {
             client,
             bucket,
@@ -91,11 +84,6 @@ impl Upos {
         F: Stream<Item = Result<(B, usize)>> + 'a,
         B: Into<Body> + Clone,
     {
-        // let mut parts = Vec::new();
-
-        // let total_size = file.metadata()?.len();
-        // let parts = Vec::new();
-        // let parts_cell = &RefCell::new(parts);
         let chunk_size = self.bucket.chunk_size;
         // 获取分块数量
         let chunks_num = (total_size as f64 / chunk_size as f64).ceil() as usize;

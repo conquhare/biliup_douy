@@ -204,13 +204,6 @@ pub async fn submit_to_bilibili(
     //     _ => SubmitOption::App,
     // };
 
-    // let submit_result = match submit {
-    //     SubmitOption::BCutAndroid => {
-    //         bilibili.submit_by_bcut_android(&studio, None).await
-    //     }
-    //     _ => bilibili.submit_by_app(&studio, None).await,
-    // };
-
     let submit_option = match submit_api {
         Some(submit) => SubmitOption::from_str(submit).unwrap_or(SubmitOption::App),
         _ => SubmitOption::App,

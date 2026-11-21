@@ -38,9 +38,5 @@ class Missevan(DownloadBase):
             return False
 
         self.room_title = room_info['info']['room']['name']
-        # if (config.get('missevanChannel') == 'flv'):
-        #     self.raw_stream_url = room_info['info']['room']['channel']['flv_pull_url']
-        # else:
-        #     self.raw_stream_url = room_info['info']['room']['channel']['hls_pull_url']
         self.raw_stream_url = room_info['info']['room']['channel']['flv_pull_url']
         return True

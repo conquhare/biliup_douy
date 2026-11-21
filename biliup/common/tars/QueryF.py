@@ -17,10 +17,6 @@ import time
 
 from .EndpointF import EndpointF
 from .__async import ServantProxyCallback
-# from tars.core import tarscore;
-# from tars.core import ServantProxy;
-# from tars.core import ServantProxyCallback;
-# from com.qq.register.EndpointF import *;
 from .__init__ import tarscore
 from .__servantproxy import ServantProxy
 

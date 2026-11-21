@@ -303,6 +303,12 @@ pub struct Config {
 
     pub loggers_level: Option<String>,
 
+    /// Python 日志配置块（ds_update.log 等），由前端开发者选项写入。
+    /// 必须用 serde_json::Value 透传整个嵌套块（root.level / loggers.biliup.level 等），
+    /// 否则强类型会在反序列化时丢弃未知键，导致前端回填不到、恒显 placeholder。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub LOGGING: Option<serde_json::Value>,
+
     // ===== 网络代理设置 =====
     /// HTTP代理地址（如 http://127.0.0.1:7890）
     #[serde(default)]

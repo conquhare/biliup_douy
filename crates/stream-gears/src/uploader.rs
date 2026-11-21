@@ -98,10 +98,6 @@ pub async fn upload(
     submit: Option<&str>,
     proxy: Option<&str>,
 ) -> AppResult<ResponseData> {
-    // let file = std::fs::File::options()
-    //     .read(true)
-    //     .write(true)
-    //     .open(&cookie_file);
     let StudioPre {
         video_path,
         cookie_file,

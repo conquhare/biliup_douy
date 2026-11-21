@@ -17,6 +17,10 @@ def run_cmd(cmd, **kw):
 
 def live_guard():
     """返回 True 表示安全（无在播/录制），False 表示应放弃。"""
+    if os.environ.get("CI_DEPLOY_FORCE"):
+        # CI 后强制直接停止并更新：跳过直播护栏（人工确认可接受中断录制时使用）
+        log("护栏强制放行（CI_DEPLOY_FORCE 已设置）：CI 后直接停止并更新")
+        return True
     try:
         d = json.loads(urllib.request.urlopen("http://127.0.0.1:19159/v1/streamers", timeout=5).read().decode())
         for s in d:

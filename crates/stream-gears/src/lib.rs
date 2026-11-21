@@ -40,12 +40,6 @@ pub async fn download_with_hook(
     let mut connection = Connection::new(response);
     // let buf = &mut [0u8; 9];
     let bytes = connection.read_frame(9).await.unwrap();
-    // response.read_exact(buf)?;
-    // let out = File::create(format!("{}.flv", file_name)).expect("Unable to create file.");
-    // let mut writer = BufWriter::new(out);
-    // let mut buf = [0u8; 8 * 1024];
-    // response.copy_to(&mut writer)?;
-    // io::copy(&mut resp, &mut out).expect("Unable to copy the content.");
     match header(&bytes) {
         Ok((_i, header)) => {
             debug!("header: {header:#?}");

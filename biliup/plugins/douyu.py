@@ -256,14 +256,6 @@ class Douyu(DownloadBase):
         if not self.__js_runable:
             raise RuntimeError("jsengine not found")
         url = f'https://{DOUYU_MOBILE_DOMAIN}/api/room/ratestream'
-        # elif preview:
-        #     c_time_str = str(time.time_ns())
-        #     url = f'https://playweb.douyucdn.cn/lapi/live/hlsH5Preview/{room_id}?{c_time_str[:18]}'
-        #     data = {
-        #         'rid': self.__room_id,
-        #         'did': data.get('did', ["10000000000000000000000000001501"])[0],
-        #     }
-        #     req_headers.update({
         #         'Rid': self.__room_id,
         #         'Time': c_time_str[:13],
         #         'Auth': hashlib.md5(f"{self.__room_id}{c_time_str[:13]}".encode('utf-8')).hexdigest(),
