@@ -209,7 +209,19 @@ class DownloadBase(ABC):
                     logger.info(f"{self.plugin_msg}: 使用同步下载器")
                     # 初始化弹幕客户端（边录边传模式下需要手动调用，
                     # 否则 self.danmaku 为 None，弹幕不会被录制）
-                    self.danmaku_init()
+                    # 诊断埋点：exe 环境曾出现 danmaku_init 静默失败导致弹幕完全不启动，
+                    # 此处记录调用前状态 + 捕获异常栈，定位 Nuitka 打包环境下的差异。
+                    logger.info(
+                        f"{self.plugin_msg}: [danmaku-diag] 调用 danmaku_init 前 "
+                        f"danmaku={self.danmaku!r} downloader={self.downloader!r}")
+                    try:
+                        self.danmaku_init()
+                    except Exception:
+                        logger.exception(
+                            f"{self.plugin_msg}: [danmaku-diag] danmaku_init() 抛异常")
+                    logger.info(
+                        f"{self.plugin_msg}: [danmaku-diag] danmaku_init 返回后 "
+                        f"danmaku={self.danmaku!r}")
                     # 弹幕客户端 start() 是异步方法，需要在事件循环中运行
                     # 边录边传是同步线程，所以用后台事件循环线程启动弹幕
                     if self.danmaku:

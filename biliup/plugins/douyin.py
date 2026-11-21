@@ -396,9 +396,18 @@ class Douyin(DownloadBase):
 
     def danmaku_init(self):
 
+        # 诊断埋点：exe 环境下弹幕静默不启动，逐步留痕定位卡在哪一道门禁
+        logger.info(
+            f"{self.plugin_msg}: [danmaku-diag] danmaku_init 进入 "
+            f"douyin_danmaku={self.douyin_danmaku!r}")
+
         if self.douyin_danmaku:
 
-            if (js_runable := test_jsengine()):
+            js_runable = test_jsengine()
+            logger.info(
+                f"{self.plugin_msg}: [danmaku-diag] test_jsengine={js_runable!r}")
+
+            if js_runable:
 
                 content = {
 
@@ -423,7 +432,14 @@ class Douyin(DownloadBase):
                         f"{self.plugin_msg}: 无法确定 room_id，弹幕可能收不到数据"
                     )
 
-                self.danmaku = DanmakuClient(self.url, self.gen_download_filename(), content)
+                try:
+                    self.danmaku = DanmakuClient(self.url, self.gen_download_filename(), content)
+                    logger.info(
+                        f"{self.plugin_msg}: [danmaku-diag] DanmakuClient 构造成功 "
+                        f"room_id={self._Douyin__room_id!r}")
+                except Exception:
+                    logger.exception(
+                        f"{self.plugin_msg}: [danmaku-diag] DanmakuClient 构造抛异常")
 
             else:
 
