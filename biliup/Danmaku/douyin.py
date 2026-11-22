@@ -58,6 +58,14 @@ class Douyin:
 
                 headers['Cookie'] = f'ttwid={DouyinUtils.get_ttwid()};{headers["Cookie"]}'
 
+            # 诊断埋点：抖音返回 handshake-msg=http: named cookie not present(417)，
+            # 说明握手 Cookie 缺失/无效。打印 ttwid 是否取到 + Cookie 头是否非空。
+            _ck = headers.get('Cookie', '')
+            _ttwid_ok = 'ttwid=' in _ck and 'ttwid=None' not in _ck and 'ttwid=;' not in _ck
+            logger.info(
+                f"{context.get('plugin_msg', '[Douyin]')}: [danmaku-diag] cookie_len={len(_ck)} "
+                f"ttwid_valid={_ttwid_ok} cookie_head={_ck[:60]!r}")
+
 
 
             USER_UNIQUE_ID = DouyinDanmakuUtils.get_user_unique_id()
