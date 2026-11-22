@@ -175,6 +175,23 @@ class BaseDanmakuClient(ABC):
             except Exception as e:
                 if not self._running:
                     break  # 录制已停止，不用重连
+                # 诊断埋点：握手被拒(HTTP 200)时提取完整响应，定位抖音拒绝原因。
+                # websockets 的 InvalidStatus 异常带 .response(status+body)。
+                if connect_errors == 0:
+                    resp = getattr(e, 'response', None)
+                    if resp is not None:
+                        body = b''
+                        try:
+                            body = resp.body or b''
+                        except Exception:
+                            pass
+                        logger.error(
+                            f'[danmaku-diag] 握手被拒详情: status={getattr(resp, "status_code", "?")} '
+                            f'headers={dict(getattr(resp, "headers", {}) or {})} '
+                            f'body={body[:500]!r}')
+                    else:
+                        logger.error(
+                            f'[danmaku-diag] 握手异常(无 response): {type(e).__name__}: {e}')
                 connect_errors += 1
                 if connect_errors >= self.MAX_CONNECT_ERRORS:
                     logger.error(

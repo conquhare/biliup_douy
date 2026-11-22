@@ -100,7 +100,11 @@ class Douyin:
 
             signature = DouyinDanmakuUtils.get_signature(DouyinDanmakuUtils.get_x_ms_stub(sig_params))
 
-            # logger.info(f"signature: {signature}")
+            # 诊断埋点：exe 环境 chakra 引擎可能静默产出无效签名(或兜底 00000000)，
+            # 本地 PyMiniRacer 却正常。打印实际值定位握手 HTTP 200 的签名根因。
+            logger.info(
+                f"{context.get('plugin_msg', '[Douyin]')}: [danmaku-diag] signature={signature!r} "
+                f"len={len(str(signature))} fallback={str(signature) == '00000000'}")
 
             # 参数集与端点对齐上游活跃实现（LiukerSun/DouyinDanmu v2.3.1 / 2026-09-30）：
             # 抖音已把 app_name / browser_* / cursor / im_path / internal_ext / tz_name
