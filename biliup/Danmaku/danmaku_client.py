@@ -142,13 +142,7 @@ class BaseDanmakuClient(ABC):
 
         import websockets
 
-        # 握手必须携带 Cookie（含 ttwid），否则抖音服务端拒绝升级连接：
-        # 返回 HTTP 200 而非 101 Switching Protocols，websockets 抛 InvalidStatus。
-        connect_kwargs = {}
-        ws_headers = self.ws_headers if isinstance(self.ws_headers, dict) else None
-        if ws_headers:
-            connect_kwargs['additional_headers'] = ws_headers
-        # 支持显式指定代理（websockets 不读系统代理环境变量）
+        # 代理在循环外解析一次即可（websockets 不读系统代理环境变量，需显式传 proxy）
         proxy = self.proxy
         if not proxy:
             try:
@@ -157,9 +151,6 @@ class BaseDanmakuClient(ABC):
             except Exception:
                 proxy = None
         if proxy:
-            # websockets >= 14 使用 proxy 参数；更早版本同样接受 proxy，
-            # 但部分版本对 None/空值敏感，故仅在有值时传入
-            connect_kwargs['proxy'] = proxy
             logger.debug(f'弹幕 WebSocket 走代理: {proxy}')
 
         connect_errors = 0
@@ -168,6 +159,17 @@ class BaseDanmakuClient(ABC):
                 context = dict(self.context) if self.context else {}
                 context['url'] = self.url
                 ws_url, reg_datas = await self.get_ws_info(self.url, context)
+                # ⚠️ 握手头必须在 get_ws_info 之后、循环内构建：self.ws_headers
+                # 由 get_ws_info() 生成（含 Cookie/ttwid）。原先在循环外、get_ws_info
+                # 之前构建 connect_kwargs，当时 self.ws_headers 仍为 None →
+                # additional_headers 从不写入 → Cookie 头从未发出 → 抖音 417
+                # "named cookie not present" 拒绝升级（根因，2026-11-23 定位）。
+                connect_kwargs = {}
+                ws_headers = self.ws_headers if isinstance(self.ws_headers, dict) else None
+                if ws_headers:
+                    connect_kwargs['additional_headers'] = ws_headers
+                if proxy:
+                    connect_kwargs['proxy'] = proxy
                 await self._connect_once(websockets, ws_url, reg_datas, connect_kwargs)
                 connect_errors = 0  # 正常结束（录制停止）则重置
             except asyncio.CancelledError:
